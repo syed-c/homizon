@@ -121,9 +121,14 @@ export default function ProvidersPage() {
   const [providers, setProviders] = useState(allProviders);
 
   const filteredProviders = providers.filter(provider => {
-    const matchesSearch = provider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         provider.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         provider.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const normalizedSearch = (searchTerm ?? '').toLowerCase();
+    const name = (provider.name ?? '').toLowerCase();
+    const company = (provider.company ?? '').toLowerCase();
+    const email = (provider.email ?? '').toLowerCase();
+
+    const matchesSearch = name.includes(normalizedSearch) ||
+                         company.includes(normalizedSearch) ||
+                         email.includes(normalizedSearch);
     
     const matchesStatus = statusFilter === 'all' || provider.status === statusFilter;
     

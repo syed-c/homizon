@@ -27,9 +27,15 @@ export default function SitemapPage() {
   const allCombinations = generateServiceAreaCombinations();
 
   const filteredCombinations = allCombinations.filter(combo => {
-    const matchesSearch = combo.serviceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         combo.areaName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (combo.subareaName && combo.subareaName.toLowerCase().includes(searchQuery.toLowerCase()));
+    const normalizedQuery = (searchQuery ?? '').toLowerCase();
+
+    const serviceName = (combo.serviceName ?? '').toLowerCase();
+    const areaName = (combo.areaName ?? '').toLowerCase();
+    const subareaName = (combo.subareaName ?? '').toLowerCase();
+
+    const matchesSearch = serviceName.includes(normalizedQuery) ||
+                         areaName.includes(normalizedQuery) ||
+                         (!!combo.subareaName && subareaName.includes(normalizedQuery));
     
     const matchesCategory = filterCategory === 'all' || combo.service.includes(filterCategory);
     const matchesArea = filterArea === 'all' || combo.area === filterArea;
