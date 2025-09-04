@@ -18,6 +18,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Link from 'next/link';
 import { sampleProviders, Provider } from '@/lib/data';
 
+const seededProviders: (Provider & { 
+  status: 'active' | 'pending' | 'suspended';
+  totalLeads: number;
+  completionRate: number;
+  monthlyRevenue: number;
+  lastActive: string;
+})[] = [];
+
+if (sampleProviders[0]) {
+  seededProviders.push({
+    ...sampleProviders[0],
+    status: 'active',
+    totalLeads: 156,
+    completionRate: 95,
+    monthlyRevenue: 8450,
+    lastActive: '2 hours ago'
+  });
+}
+
 const allProviders: (Provider & { 
   status: 'active' | 'pending' | 'suspended';
   totalLeads: number;
@@ -25,30 +44,7 @@ const allProviders: (Provider & {
   monthlyRevenue: number;
   lastActive: string;
 })[] = [
-  {
-    ...sampleProviders[0],
-    status: 'active',
-    totalLeads: 156,
-    completionRate: 95,
-    monthlyRevenue: 8450,
-    lastActive: '2 hours ago'
-  },
-  {
-    ...sampleProviders[1],
-    status: 'active',
-    totalLeads: 203,
-    completionRate: 92,
-    monthlyRevenue: 6720,
-    lastActive: '5 hours ago'
-  },
-  {
-    ...sampleProviders[2],
-    status: 'active',
-    totalLeads: 89,
-    completionRate: 88,
-    monthlyRevenue: 5340,
-    lastActive: '1 day ago'
-  },
+  ...seededProviders,
   {
     id: 'provider-4',
     name: 'Rajesh Kumar',
@@ -73,7 +69,12 @@ const allProviders: (Provider & {
       weekends: '9:00 AM - 4:00 PM'
     },
     isApproved: false,
+    isFeatured: false,
+    isPremium: false,
     joinedDate: '2024-01-20',
+    completedJobs: 0,
+    responseTime: 'Within 2 hours',
+    portfolioImages: [],
     status: 'pending',
     totalLeads: 0,
     completionRate: 0,
@@ -104,7 +105,12 @@ const allProviders: (Provider & {
       weekends: '8:00 AM - 5:00 PM'
     },
     isApproved: true,
+    isFeatured: false,
+    isPremium: false,
     joinedDate: '2023-11-15',
+    completedJobs: 0,
+    responseTime: 'Within 4 hours',
+    portfolioImages: [],
     status: 'suspended',
     totalLeads: 34,
     completionRate: 78,
