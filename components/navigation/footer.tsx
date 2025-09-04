@@ -1,0 +1,289 @@
+"use client";
+
+import { 
+  Home as HomeIcon, Phone, Mail, MapPin, MessageSquare,
+  Facebook, Twitter, Instagram, Linkedin, ExternalLink,
+  Star, Users, Shield, Clock, ChevronRight
+} from 'lucide-react';
+import Link from 'next/link';
+import { useSettings } from '@/lib/settings-context';
+import { serviceCategories, areas } from '@/lib/data';
+
+export default function Footer() {
+  const currentYear = new Date().getFullYear();
+  const { settings } = useSettings();
+
+  // Get popular services and areas
+  const popularServices = serviceCategories.filter(cat => cat.isPopular).slice(0, 8);
+  const topAreas = areas.slice(0, 12);
+
+  return (
+    <>
+      {/* Mobile Sticky Footer */}
+      <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-md border-t border-neon-green/20 p-4 z-50 md:hidden">
+        <div className="flex items-center justify-around max-w-sm mx-auto">
+          <Link href="/book" className="flex flex-col items-center space-y-1 group">
+            <div className="w-12 h-12 bg-gradient-to-r from-neon-green to-neon-blue rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+              <MessageSquare className="w-6 h-6 text-black" />
+            </div>
+            <span className="text-xs text-white font-medium">Book Now</span>
+          </Link>
+          
+          <a href={`tel:${settings.contact_phone}`} className="flex flex-col items-center space-y-1 group">
+            <div className="w-12 h-12 bg-gradient-to-r from-neon-blue to-purple-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Phone className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xs text-white font-medium">Call</span>
+          </a>
+          
+          <a href={`https://wa.me/${settings.contact_phone.replace(/\D/g, '')}?text=Hi! I need help with home services`} className="flex flex-col items-center space-y-1 group">
+            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+              <MessageSquare className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xs text-white font-medium">WhatsApp</span>
+          </a>
+          
+          <Link href="/providers" className="flex flex-col items-center space-y-1 group">
+            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xs text-white font-medium">Providers</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* Main Footer */}
+      <footer className="bg-gradient-to-br from-black via-neutral-900 to-black text-white pb-20 md:pb-0" data-macaly="main-footer">
+        
+        {/* Trust Indicators Bar */}
+        <div className="bg-gradient-to-r from-neon-green/5 to-neon-blue/5 border-y border-neon-green/10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="text-center group">
+                <div className="w-12 h-12 bg-gradient-to-r from-neon-green to-neon-blue rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform">
+                  <Shield className="w-6 h-6 text-black" />
+                </div>
+                <h3 className="text-sm font-semibold text-white mb-1">Verified Pros</h3>
+                <p className="text-xs text-white/60">Background checked</p>
+              </div>
+              
+              <div className="text-center group">
+                <div className="w-12 h-12 bg-gradient-to-r from-neon-blue to-purple-500 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform">
+                  <Clock className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-sm font-semibold text-white mb-1">Quick Response</h3>
+                <p className="text-xs text-white/60">Within 30 minutes</p>
+              </div>
+              
+              <div className="text-center group">
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform">
+                  <Star className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-sm font-semibold text-white mb-1">Top Rated</h3>
+                <p className="text-xs text-white/60">Customer reviewed</p>
+              </div>
+              
+              <div className="text-center group">
+                <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-red-500 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-sm font-semibold text-white mb-1">500+ Providers</h3>
+                <p className="text-xs text-white/60">Largest network</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Footer Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            
+            {/* Company Info */}
+            <div className="lg:col-span-1">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-to-r from-neon-green to-neon-blue rounded-lg flex items-center justify-center">
+                  <span className="text-black font-bold text-lg">H</span>
+                </div>
+                <span className="text-xl font-bold">
+                  <span className="bg-gradient-to-r from-neon-green to-neon-blue bg-clip-text text-transparent">
+                    {settings.site_name}
+                  </span>
+                </span>
+              </div>
+              
+              <p className="text-white/70 text-sm mb-6 leading-relaxed">
+                {settings.site_description}
+              </p>
+              
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center space-x-3 text-white/60 text-sm">
+                  <Phone className="h-4 w-4 text-neon-green flex-shrink-0" />
+                  <a href={`tel:${settings.contact_phone}`} className="hover:text-neon-green transition-colors">
+                    {settings.contact_phone}
+                  </a>
+                </div>
+                <div className="flex items-center space-x-3 text-white/60 text-sm">
+                  <Mail className="h-4 w-4 text-neon-blue flex-shrink-0" />
+                  <a href={`mailto:${settings.contact_email}`} className="hover:text-neon-blue transition-colors">
+                    {settings.contact_email}
+                  </a>
+                </div>
+                <div className="flex items-center space-x-3 text-white/60 text-sm">
+                  <MapPin className="h-4 w-4 text-neon-green flex-shrink-0" />
+                  <span>Dubai, UAE</span>
+                </div>
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link 
+                  href="/book" 
+                  className="bg-gradient-to-r from-neon-green to-neon-blue text-black font-semibold px-4 py-2 rounded-lg hover:scale-105 transition-transform text-sm text-center"
+                >
+                  Book Service
+                </Link>
+                <Link 
+                  href="/providers/register" 
+                  className="border border-neon-green text-neon-green font-semibold px-4 py-2 rounded-lg hover:bg-neon-green/10 transition-colors text-sm text-center"
+                >
+                  Join as Provider
+                </Link>
+              </div>
+            </div>
+
+            {/* Popular Services */}
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                <span className="w-1 h-6 bg-gradient-to-b from-neon-green to-neon-blue rounded-full mr-3"></span>
+                Popular Services
+              </h3>
+              <ul className="space-y-2">
+                {popularServices.map((category) => (
+                  <li key={category.id}>
+                    <Link 
+                      href={`/services/${category.slug}`}
+                      className="flex items-center text-white/60 hover:text-neon-green transition-colors text-sm group"
+                    >
+                      <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      {category.name}
+                    </Link>
+                  </li>
+                ))}
+                <li className="pt-2">
+                  <Link 
+                    href="/services"
+                    className="text-neon-green hover:text-neon-green/80 transition-colors text-sm font-medium flex items-center"
+                  >
+                    View All Services <ChevronRight className="w-4 h-4 ml-1" />
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Service Areas */}
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                <span className="w-1 h-6 bg-gradient-to-b from-neon-blue to-purple-500 rounded-full mr-3"></span>
+                Service Areas
+              </h3>
+              <ul className="space-y-2">
+                {topAreas.map((area) => (
+                  <li key={area.id}>
+                    <Link 
+                      href={`/areas/${area.slug}`}
+                      className="flex items-center text-white/60 hover:text-neon-blue transition-colors text-sm group"
+                    >
+                      <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      {area.name}
+                    </Link>
+                  </li>
+                ))}
+                <li className="pt-2">
+                  <Link 
+                    href="/areas"
+                    className="text-neon-blue hover:text-neon-blue/80 transition-colors text-sm font-medium flex items-center"
+                  >
+                    View All Areas <ChevronRight className="w-4 h-4 ml-1" />
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Company & Support */}
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                <span className="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full mr-3"></span>
+                Company & Support
+              </h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link href="/about" className="flex items-center text-white/60 hover:text-neon-green transition-colors text-sm group">
+                    <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    About Us
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/how-it-works" className="flex items-center text-white/60 hover:text-neon-green transition-colors text-sm group">
+                    <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    How It Works
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="flex items-center text-white/60 hover:text-neon-green transition-colors text-sm group">
+                    <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    Contact Us
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/faq" className="flex items-center text-white/60 hover:text-neon-green transition-colors text-sm group">
+                    <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    FAQ
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/providers" className="flex items-center text-white/60 hover:text-neon-green transition-colors text-sm group">
+                    <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    Find Providers
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/sitemap" className="flex items-center text-white/60 hover:text-neon-green transition-colors text-sm group">
+                    <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    Sitemap
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-white/10 bg-black/30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0">
+              
+              <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-6 text-sm text-white/60">
+                <p>&copy; {currentYear} {settings.site_name}. All rights reserved.</p>
+                <div className="flex items-center space-x-4">
+                  <Link href="/privacy" className="hover:text-neon-green transition-colors">
+                    Privacy Policy
+                  </Link>
+                  <span className="text-white/30">•</span>
+                  <Link href="/terms" className="hover:text-neon-green transition-colors">
+                    Terms of Service
+                  </Link>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <div className="bg-gradient-to-r from-neon-green/20 to-neon-blue/20 border border-neon-green/30 px-4 py-2 rounded-full">
+                  <span className="text-white/90 text-sm font-medium">Dubai's #1 Service Platform</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </>
+  );
+}

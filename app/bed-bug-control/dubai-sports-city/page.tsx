@@ -1,0 +1,19 @@
+import type { Metadata } from 'next';
+import siteMetadata from '@/app/metadata.json';
+import ServiceAreaPageContent from '@/components/service-area-page-content';
+
+export const metadata: Metadata = siteMetadata['/bed-bug-control/dubai-sports-city'] || {
+  title: 'Bed Bug Treatment in Dubai Sports City - Professional Services | HOMIZON',
+  description: 'Professional bed bug treatment services in Dubai Sports City. Verified providers, competitive rates, same-day service available.',
+};
+
+export default async function BedBugTreatmentDubaiSportsCityPage() {
+  return (
+    <ServiceAreaPageContent 
+      service="bed-bug-control"
+      serviceName="Bed Bug Treatment"
+      area="dubai-sports-city"
+      areaName="Dubai Sports City"
+    />
+  );
+}

@@ -1,0 +1,21 @@
+import type { Metadata } from 'next';
+import siteMetadata from '@/app/metadata.json';
+import ServiceAreaPageContent from '@/components/service-area-page-content';
+
+export const metadata: Metadata = siteMetadata['/bathroom-plumbing/dubai-sports-city/sports-city-central'] || {
+  title: 'Bathroom Plumbing in Sports City Central - Professional Services | HOMIZON',
+  description: 'Professional bathroom plumbing services in Sports City Central. Verified providers, competitive rates, same-day service available.',
+};
+
+export default async function BathroomPlumbingSportsCityCentralPage() {
+  return (
+    <ServiceAreaPageContent 
+      service="bathroom-plumbing"
+      serviceName="Bathroom Plumbing"
+      area="dubai-sports-city"
+      areaName="Dubai Sports City"
+      subarea="sports-city-central"
+      subareaName="Sports City Central"
+    />
+  );
+}

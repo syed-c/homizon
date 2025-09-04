@@ -1,0 +1,21 @@
+import type { Metadata } from 'next';
+import siteMetadata from '@/app/metadata.json';
+import ServiceAreaPageContent from '@/components/service-area-page-content';
+
+export const metadata: Metadata = siteMetadata['/bathroom-plumbing/al-satwa/al-satwa-residential'] || {
+  title: 'Bathroom Plumbing in Al Satwa Residential - Professional Services | HOMIZON',
+  description: 'Professional bathroom plumbing services in Al Satwa Residential. Verified providers, competitive rates, same-day service available.',
+};
+
+export default async function BathroomPlumbingAlSatwaResidentialPage() {
+  return (
+    <ServiceAreaPageContent 
+      service="bathroom-plumbing"
+      serviceName="Bathroom Plumbing"
+      area="al-satwa"
+      areaName="Al Satwa"
+      subarea="al-satwa-residential"
+      subareaName="Al Satwa Residential"
+    />
+  );
+}

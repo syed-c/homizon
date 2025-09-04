@@ -1,0 +1,195 @@
+type,service,area,url,exists,linked,in_sitemap,content_ok,faq_ok,providers_visible,form_ok
+service,Ice Maker Repair,,/services/ice-maker-repair,true,false,false,false,false,false,false
+service,AC Repair & Cleaning,,/services/ac-repair-cleaning,false,false,false,false,false,false,false
+service,Washing Machine Repair,,/services/washing-machine-repair,false,false,false,false,false,false,false
+service,Refrigerator Repair,,/services/refrigerator-repair,false,false,false,false,false,false,false
+service,Dishwasher Repair,,/services/dishwasher-repair,false,false,false,false,false,false,false
+service,Oven & Stove Repair,,/services/oven-stove-repair,false,false,false,false,false,false,false
+service,Dryer Repair,,/services/dryer-repair,false,false,false,false,false,false,false
+service,Wine Cooler Repair,,/services/wine-cooler-repair,false,false,false,false,false,false,false
+service,Home Deep Cleaning,,/services/home-deep-cleaning,false,false,false,false,false,false,false
+service,Sofa Cleaning,,/services/sofa-cleaning,false,false,false,false,false,false,false
+service,Carpet Cleaning,,/services/carpet-cleaning,false,false,false,false,false,false,false
+service,Mattress Cleaning,,/services/mattress-cleaning,false,false,false,false,false,false,false
+service,Kitchen Cleaning,,/services/kitchen-cleaning,false,false,false,false,false,false,false
+service,Bathroom Cleaning,,/services/bathroom-cleaning,false,false,false,false,false,false,false
+service,Move-In/Move-Out Cleaning,,/services/move-in-out-cleaning,false,false,false,false,false,false,false
+service,General Pest Control,,/services/general-pest-control,false,false,false,false,false,false,false
+service,Cockroach Control,,/services/cockroach-control,false,false,false,false,false,false,false
+service,Bed Bug Treatment,,/services/bed-bug-treatment,false,false,false,false,false,false,false
+service,Termite Control,,/services/termite-control,false,false,false,false,false,false,false
+service,Rodent Control,,/services/rodent-control,false,false,false,false,false,false,false
+service,Disinfection & Sanitization,,/services/disinfection-sanitization,false,false,false,false,false,false,false
+service,Electrical,,/services/electrical,false,false,false,false,false,false,false
+service,Plumbing,,/services/plumbing,false,false,false,false,false,false,false
+service,AC Servicing,,/services/ac-servicing,false,false,false,false,false,false,false
+service,Painting,,/services/painting,false,false,false,false,false,false,false
+service,Curtain/TV/Furniture Installations,,/services/installations,false,false,false,false,false,false,false
+service,Laundry & Dry Cleaning,,/services/laundry-dry-cleaning,false,false,false,false,false,false,false
+service,Packers & Movers,,/services/packers-movers,false,false,false,false,false,false,false
+area,,Dubai Marina,/areas/dubai-marina,true,false,false,false,false,false,false
+area,,Dubai Media City,/areas/dubai-media-city,true,false,false,false,false,false,false
+area,,Dubai Internet City,/areas/dubai-internet-city,true,false,false,false,false,false,false
+area,,Dubai Knowledge Park,/areas/dubai-knowledge-park,true,false,false,false,false,false,false
+area,,Dubai Hills Estate,/areas/dubai-hills-estate,true,false,false,false,false,false,false
+area,,Dubai Production City,/areas/dubai-production-city,true,false,false,false,false,false,false
+area,,Dubai Investment Park (DIP),/areas/dubai-investment-park-dip,true,false,false,false,false,false,false
+area,,Dubai Silicon Oasis,/areas/dubai-silicon-oasis,true,false,false,false,false,false,false
+area,,Dubai Creek Harbour,/areas/dubai-creek-harbour,true,false,false,false,false,false,false
+area,,Dubai South,/areas/dubai-south,true,false,false,false,false,false,false
+area,,Dubai Festival City,/areas/dubai-festival-city,true,false,false,false,false,false,false
+area,,Dubai Islands,/areas/dubai-islands,true,false,false,false,false,false,false
+area,,Al Barsha,/areas/al-barsha,false,false,false,false,false,false,false
+area,,Barsha Heights,/areas/barsha-heights,false,false,false,false,false,false,false
+area,,JBR,/areas/jbr,false,false,false,false,false,false,false
+area,,JLT,/areas/jlt,false,false,false,false,false,false,false
+area,,Palm Jumeirah,/areas/palm-jumeirah,false,false,false,false,false,false,false
+area,,Business Bay,/areas/business-bay,false,false,false,false,false,false,false
+area,,Downtown Dubai,/areas/downtown-dubai,false,false,false,false,false,false,false
+area,,DIFC,/areas/difc,false,false,false,false,false,false,false
+area,,City Walk,/areas/city-walk,false,false,false,false,false,false,false
+area,,Al Wasl,/areas/al-wasl,false,false,false,false,false,false,false
+area,,Jumeirah 1,/areas/jumeirah-1,false,false,false,false,false,false,false
+area,,Jumeirah 2,/areas/jumeirah-2,false,false,false,false,false,false,false
+area,,Jumeirah 3,/areas/jumeirah-3,false,false,false,false,false,false,false
+area,,Umm Suqeim,/areas/umm-suqeim,false,false,false,false,false,false,false
+area,,Al Safa,/areas/al-safa,false,false,false,false,false,false,false
+area,,Al Quoz,/areas/al-quoz,false,false,false,false,false,false,false
+area,,Al Quoz Industrial,/areas/al-quoz-industrial,false,false,false,false,false,false,false
+area,,Al Sufouh,/areas/al-sufouh,false,false,false,false,false,false,false
+area,,Emirates Hills,/areas/emirates-hills,false,false,false,false,false,false,false
+area,,The Meadows,/areas/the-meadows,false,false,false,false,false,false,false
+area,,The Springs,/areas/the-springs,false,false,false,false,false,false,false
+area,,The Lakes,/areas/the-lakes,false,false,false,false,false,false,false
+area,,Arabian Ranches,/areas/arabian-ranches,false,false,false,false,false,false,false
+area,,Arabian Ranches 2,/areas/arabian-ranches-2,false,false,false,false,false,false,false
+area,,Arabian Ranches 3,/areas/arabian-ranches-3,false,false,false,false,false,false,false
+area,,Motor City,/areas/motor-city,false,false,false,false,false,false,false
+area,,Sports City,/areas/sports-city,false,false,false,false,false,false,false
+area,,Arjan,/areas/arjan,false,false,false,false,false,false,false
+area,,Al Barari,/areas/al-barari,false,false,false,false,false,false,false
+area,,JVC (Jumeirah Village Circle),/areas/jvc-jumeirah-village-circle,false,false,false,false,false,false,false
+area,,JVT (Jumeirah Village Triangle),/areas/jvt-jumeirah-village-triangle,false,false,false,false,false,false,false
+area,,Al Furjan,/areas/al-furjan,false,false,false,false,false,false,false
+area,,Discovery Gardens,/areas/discovery-gardens,false,false,false,false,false,false,false
+area,,The Gardens,/areas/the-gardens,false,false,false,false,false,false,false
+area,,Academic City,/areas/academic-city,false,false,false,false,false,false,false
+area,,Mirdif,/areas/mirdif,false,false,false,false,false,false,false
+area,,Al Warqa,/areas/al-warqa,false,false,false,false,false,false,false
+area,,Al Mizhar,/areas/al-mizhar,false,false,false,false,false,false,false
+area,,Nad Al Sheba,/areas/nad-al-sheba,false,false,false,false,false,false,false
+area,,Meydan,/areas/meydan,false,false,false,false,false,false,false
+area,,Deira,/areas/deira,false,false,false,false,false,false,false
+area,,Bur Dubai,/areas/bur-dubai,false,false,false,false,false,false,false
+area,,Karama,/areas/karama,false,false,false,false,false,false,false
+area,,Satwa,/areas/satwa,false,false,false,false,false,false,false
+area,,Al Qusais,/areas/al-qusais,false,false,false,false,false,false,false
+area,,Al Nahda,/areas/al-nahda,false,false,false,false,false,false,false
+area,,International City,/areas/international-city,false,false,false,false,false,false,false
+area,,Silicon Central,/areas/silicon-central,false,false,false,false,false,false,false
+area,,Jebel Ali,/areas/jebel-ali,false,false,false,false,false,false,false
+area,,Bluewaters Island,/areas/bluewaters-island,false,false,false,false,false,false,false
+area,,Al Mamzar,/areas/al-mamzar,false,false,false,false,false,false,false
+area,,Town Square,/areas/town-square,false,false,false,false,false,false,false
+area,,Tilal Al Ghaf,/areas/tilal-al-ghaf,false,false,false,false,false,false,false
+area,,Emaar Beachfront,/areas/emaar-beachfront,false,false,false,false,false,false,false
+service-area,ac-repair-cleaning,al-barsha,/ac-repair-cleaning/al-barsha,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,barsha-heights,/ac-repair-cleaning/barsha-heights,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,dubai-marina,/ac-repair-cleaning/dubai-marina,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,jbr,/ac-repair-cleaning/jbr,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,jlt,/ac-repair-cleaning/jlt,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,dubai-media-city,/ac-repair-cleaning/dubai-media-city,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,dubai-internet-city,/ac-repair-cleaning/dubai-internet-city,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,dubai-knowledge-park,/ac-repair-cleaning/dubai-knowledge-park,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,palm-jumeirah,/ac-repair-cleaning/palm-jumeirah,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,business-bay,/ac-repair-cleaning/business-bay,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,downtown-dubai,/ac-repair-cleaning/downtown-dubai,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,difc,/ac-repair-cleaning/difc,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,city-walk,/ac-repair-cleaning/city-walk,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,al-wasl,/ac-repair-cleaning/al-wasl,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,jumeirah-1,/ac-repair-cleaning/jumeirah-1,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,jumeirah-2,/ac-repair-cleaning/jumeirah-2,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,jumeirah-3,/ac-repair-cleaning/jumeirah-3,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,umm-suqeim,/ac-repair-cleaning/umm-suqeim,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,al-safa,/ac-repair-cleaning/al-safa,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,al-quoz,/ac-repair-cleaning/al-quoz,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,al-quoz-industrial,/ac-repair-cleaning/al-quoz-industrial,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,al-sufouh,/ac-repair-cleaning/al-sufouh,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,dubai-hills-estate,/ac-repair-cleaning/dubai-hills-estate,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,emirates-hills,/ac-repair-cleaning/emirates-hills,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,the-meadows,/ac-repair-cleaning/the-meadows,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,the-springs,/ac-repair-cleaning/the-springs,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,the-lakes,/ac-repair-cleaning/the-lakes,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,arabian-ranches,/ac-repair-cleaning/arabian-ranches,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,arabian-ranches-2,/ac-repair-cleaning/arabian-ranches-2,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,arabian-ranches-3,/ac-repair-cleaning/arabian-ranches-3,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,motor-city,/ac-repair-cleaning/motor-city,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,sports-city,/ac-repair-cleaning/sports-city,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,arjan,/ac-repair-cleaning/arjan,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,al-barari,/ac-repair-cleaning/al-barari,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,jvc-jumeirah-village-circle,/ac-repair-cleaning/jvc-jumeirah-village-circle,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,jvt-jumeirah-village-triangle,/ac-repair-cleaning/jvt-jumeirah-village-triangle,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,al-furjan,/ac-repair-cleaning/al-furjan,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,discovery-gardens,/ac-repair-cleaning/discovery-gardens,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,the-gardens,/ac-repair-cleaning/the-gardens,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,dubai-production-city,/ac-repair-cleaning/dubai-production-city,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,dubai-investment-park-dip,/ac-repair-cleaning/dubai-investment-park-dip,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,dubai-silicon-oasis,/ac-repair-cleaning/dubai-silicon-oasis,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,academic-city,/ac-repair-cleaning/academic-city,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,mirdif,/ac-repair-cleaning/mirdif,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,al-warqa,/ac-repair-cleaning/al-warqa,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,al-mizhar,/ac-repair-cleaning/al-mizhar,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,nad-al-sheba,/ac-repair-cleaning/nad-al-sheba,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,meydan,/ac-repair-cleaning/meydan,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,dubai-creek-harbour,/ac-repair-cleaning/dubai-creek-harbour,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,deira,/ac-repair-cleaning/deira,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,bur-dubai,/ac-repair-cleaning/bur-dubai,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,karama,/ac-repair-cleaning/karama,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,satwa,/ac-repair-cleaning/satwa,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,al-qusais,/ac-repair-cleaning/al-qusais,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,al-nahda,/ac-repair-cleaning/al-nahda,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,international-city,/ac-repair-cleaning/international-city,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,silicon-central,/ac-repair-cleaning/silicon-central,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,dubai-south,/ac-repair-cleaning/dubai-south,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,jebel-ali,/ac-repair-cleaning/jebel-ali,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,bluewaters-island,/ac-repair-cleaning/bluewaters-island,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,al-mamzar,/ac-repair-cleaning/al-mamzar,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,dubai-festival-city,/ac-repair-cleaning/dubai-festival-city,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,town-square,/ac-repair-cleaning/town-square,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,tilal-al-ghaf,/ac-repair-cleaning/tilal-al-ghaf,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,emaar-beachfront,/ac-repair-cleaning/emaar-beachfront,true,false,false,false,false,false,false
+service-area,ac-repair-cleaning,dubai-islands,/ac-repair-cleaning/dubai-islands,true,false,false,false,false,false,false
+service-area,washing-machine-repair,al-barsha,/washing-machine-repair/al-barsha,true,false,false,false,false,false,false
+service-area,washing-machine-repair,barsha-heights,/washing-machine-repair/barsha-heights,true,false,false,false,false,false,false
+service-area,washing-machine-repair,dubai-marina,/washing-machine-repair/dubai-marina,true,false,false,false,false,false,false
+service-area,washing-machine-repair,jbr,/washing-machine-repair/jbr,true,false,false,false,false,false,false
+service-area,washing-machine-repair,jlt,/washing-machine-repair/jlt,true,false,false,false,false,false,false
+service-area,washing-machine-repair,dubai-media-city,/washing-machine-repair/dubai-media-city,true,false,false,false,false,false,false
+service-area,washing-machine-repair,dubai-internet-city,/washing-machine-repair/dubai-internet-city,true,false,false,false,false,false,false
+service-area,washing-machine-repair,dubai-knowledge-park,/washing-machine-repair/dubai-knowledge-park,true,false,false,false,false,false,false
+service-area,washing-machine-repair,palm-jumeirah,/washing-machine-repair/palm-jumeirah,true,false,false,false,false,false,false
+service-area,washing-machine-repair,business-bay,/washing-machine-repair/business-bay,true,false,false,false,false,false,false
+service-area,washing-machine-repair,downtown-dubai,/washing-machine-repair/downtown-dubai,true,false,false,false,false,false,false
+service-area,washing-machine-repair,difc,/washing-machine-repair/difc,true,false,false,false,false,false,false
+service-area,washing-machine-repair,city-walk,/washing-machine-repair/city-walk,true,false,false,false,false,false,false
+service-area,washing-machine-repair,al-wasl,/washing-machine-repair/al-wasl,true,false,false,false,false,false,false
+service-area,washing-machine-repair,jumeirah-1,/washing-machine-repair/jumeirah-1,true,false,false,false,false,false,false
+service-area,washing-machine-repair,jumeirah-2,/washing-machine-repair/jumeirah-2,true,false,false,false,false,false,false
+service-area,washing-machine-repair,jumeirah-3,/washing-machine-repair/jumeirah-3,true,false,false,false,false,false,false
+service-area,washing-machine-repair,umm-suqeim,/washing-machine-repair/umm-suqeim,true,false,false,false,false,false,false
+service-area,washing-machine-repair,al-safa,/washing-machine-repair/al-safa,true,false,false,false,false,false,false
+service-area,washing-machine-repair,al-quoz,/washing-machine-repair/al-quoz,true,false,false,false,false,false,false
+service-area,washing-machine-repair,al-quoz-industrial,/washing-machine-repair/al-quoz-industrial,true,false,false,false,false,false,false
+service-area,washing-machine-repair,al-sufouh,/washing-machine-repair/al-sufouh,true,false,false,false,false,false,false
+service-area,washing-machine-repair,dubai-hills-estate,/washing-machine-repair/dubai-hills-estate,true,false,false,false,false,false,false
+service-area,washing-machine-repair,emirates-hills,/washing-machine-repair/emirates-hills,true,false,false,false,false,false,false
+service-area,washing-machine-repair,the-meadows,/washing-machine-repair/the-meadows,true,false,false,false,false,false,false
+service-area,washing-machine-repair,the-springs,/washing-machine-repair/the-springs,true,false,false,false,false,false,false
+service-area,washing-machine-repair,the-lakes,/washing-machine-repair/the-lakes,true,false,false,false,false,false,false
+service-area,washing-machine-repair,arabian-ranches,/washing-machine-repair/arabian-ranches,true,false,false,false,false,false,false
+service-area,washing-machine-repair,arabian-ranches-2,/washing-machine-repair/arabian-ranches-2,true,false,false,false,false,false,false
+service-area,washing-machine-repair,arabian-ranches-3,/washing-machine-repair/arabian-ranches-3,true,false,false,false,false,false,false
+service-area,washing-machine-repair,motor-city,/washing-machine-repair/motor-city,true,false,false,false,false,false,false
+service-area,washing-machine-repair,sports-city,/washing-machine-repair/sports-city,true,false,false,false,false,false,false
+service-area,washing-machine-repair,arjan,/washing-machine-repair/arjan,true,false,false,false,false,false,false
+service-area,washing-machine-repair,al-barari,/washing-machine-repair/al-barari,true,false,false,false,false,false,false

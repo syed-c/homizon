@@ -1,0 +1,19 @@
+import type { Metadata } from 'next';
+import siteMetadata from '@/app/metadata.json';
+import ServiceAreaPageContent from '@/components/service-area-page-content';
+
+export const metadata: Metadata = siteMetadata['/pest-control/jbr'] || {
+  title: 'Pest Control in JBR - Professional Services | HOMIZON',
+  description: 'Professional pest control services in JBR. Verified providers, competitive rates, same-day service available.',
+};
+
+export default async function PestControlJBRPage() {
+  return (
+    <ServiceAreaPageContent 
+      service="pest-control"
+      serviceName="Pest Control"
+      area="jbr"
+      areaName="JBR"
+    />
+  );
+}

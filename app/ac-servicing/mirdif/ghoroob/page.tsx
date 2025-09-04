@@ -1,0 +1,21 @@
+import type { Metadata } from 'next';
+import siteMetadata from '@/app/metadata.json';
+import ServiceAreaPageContent from '@/components/service-area-page-content';
+
+export const metadata: Metadata = siteMetadata['/ac-servicing/mirdif/ghoroob'] || {
+  title: 'AC Servicing in Ghoroob - Professional Services | HOMIZON',
+  description: 'Professional ac servicing services in Ghoroob. Verified providers, competitive rates, same-day service available.',
+};
+
+export default async function ACServicingGhoroobPage() {
+  return (
+    <ServiceAreaPageContent 
+      service="ac-servicing"
+      serviceName="AC Servicing"
+      area="mirdif"
+      areaName="Mirdif"
+      subarea="ghoroob"
+      subareaName="Ghoroob"
+    />
+  );
+}

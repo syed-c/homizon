@@ -1,0 +1,262 @@
+{
+  "/": {
+    "title": "HOMIZON - Dubai's Premier Home Services Platform | AC Repair, Cleaning & More",
+    "description": "Connect with verified home service providers across Dubai. Get instant quotes for AC repair, cleaning, plumbing, electrical work, pest control & handyman services. Available 24/7 in all Dubai areas.",
+    "keywords": "Dubai home services, AC repair Dubai, cleaning services Dubai, plumbing Dubai, electrical services Dubai, pest control Dubai, handyman Dubai, home maintenance Dubai",
+    "openGraph": {
+      "title": "HOMIZON - Dubai's Premier Home Services Platform",
+      "description": "Connect with verified home service providers across Dubai. Get instant quotes for AC repair, cleaning, plumbing, electrical work, pest control & handyman services.",
+      "type": "website",
+      "locale": "en_AE",
+      "siteName": "HOMIZON"
+    },
+    "twitter": {
+      "card": "summary_large_image",
+      "title": "HOMIZON - Dubai's Premier Home Services Platform",
+      "description": "Connect with verified home service providers across Dubai. Get instant quotes for AC repair, cleaning, plumbing, electrical work, pest control & handyman services."
+    },
+    "alternates": {
+      "canonical": "https://homizon.com"
+    }
+  },
+  "/about": {
+    "title": "About HOMIZON - Dubai's Trusted Home Services Marketplace",
+    "description": "Learn about HOMIZON's mission to connect Dubai residents with verified, professional home service providers. Discover our commitment to quality, reliability, and customer satisfaction.",
+    "keywords": "about HOMIZON, Dubai home services company, trusted service providers Dubai, home maintenance Dubai, professional services Dubai",
+    "openGraph": {
+      "title": "About HOMIZON - Dubai's Trusted Home Services Marketplace",
+      "description": "Learn about HOMIZON's mission to connect Dubai residents with verified, professional home service providers.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/about"
+    }
+  },
+  "/contact": {
+    "title": "Contact HOMIZON - Get Home Services Support in Dubai",
+    "description": "Contact HOMIZON for home services support in Dubai. Get help with bookings, provider inquiries, or general questions. Available 24/7 via phone, email, and WhatsApp.",
+    "keywords": "contact HOMIZON, Dubai home services support, customer service Dubai, home services help Dubai",
+    "openGraph": {
+      "title": "Contact HOMIZON - Get Home Services Support in Dubai",
+      "description": "Contact HOMIZON for home services support in Dubai. Available 24/7 via phone, email, and WhatsApp.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/contact"
+    }
+  },
+  "/how-it-works": {
+    "title": "How HOMIZON Works - Simple Steps to Book Home Services in Dubai",
+    "description": "Learn how to book home services in Dubai with HOMIZON. Simple 3-step process: Request service, get matched with verified providers, and enjoy professional service delivery.",
+    "keywords": "how HOMIZON works, book home services Dubai, home service booking process, Dubai service providers",
+    "openGraph": {
+      "title": "How HOMIZON Works - Simple Steps to Book Home Services in Dubai",
+      "description": "Simple 3-step process: Request service, get matched with verified providers, and enjoy professional service delivery.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/how-it-works"
+    }
+  },
+  "/book": {
+    "title": "Book Home Services in Dubai - HOMIZON Online Booking",
+    "description": "Book professional home services in Dubai instantly. Choose from AC repair, cleaning, plumbing, electrical, pest control, and handyman services. Get quotes from verified providers.",
+    "keywords": "book home services Dubai, online booking Dubai, home service quotes Dubai, instant booking Dubai",
+    "openGraph": {
+      "title": "Book Home Services in Dubai - HOMIZON Online Booking",
+      "description": "Book professional home services in Dubai instantly. Get quotes from verified providers.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/book"
+    }
+  },
+  "/faq": {
+    "title": "Frequently Asked Questions - HOMIZON Dubai Home Services",
+    "description": "Find answers to common questions about HOMIZON's home services in Dubai. Learn about pricing, booking process, service areas, provider verification, and more.",
+    "keywords": "HOMIZON FAQ, Dubai home services questions, home service pricing Dubai, service booking help",
+    "openGraph": {
+      "title": "Frequently Asked Questions - HOMIZON Dubai Home Services",
+      "description": "Find answers to common questions about HOMIZON's home services in Dubai.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/faq"
+    }
+  },
+  "/thank-you": {
+    "title": "Thank You - HOMIZON Service Request Submitted",
+    "description": "Thank you for choosing HOMIZON! Your home service request has been submitted. Our verified providers will contact you shortly with competitive quotes.",
+    "keywords": "HOMIZON thank you, service request submitted, Dubai home services confirmation",
+    "robots": {
+      "index": false,
+      "follow": true
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/thank-you"
+    }
+  },
+  "/services": {
+    "title": "Home Services in Dubai - AC Repair, Cleaning, Plumbing & More | HOMIZON",
+    "description": "Comprehensive home services in Dubai. Professional AC repair, deep cleaning, plumbing, electrical work, pest control, and handyman services. Verified providers, competitive rates.",
+    "keywords": "Dubai home services, AC repair Dubai, cleaning services Dubai, plumbing Dubai, electrical Dubai, pest control Dubai, handyman Dubai",
+    "openGraph": {
+      "title": "Home Services in Dubai - AC Repair, Cleaning, Plumbing & More",
+      "description": "Comprehensive home services in Dubai with verified providers and competitive rates.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/services"
+    }
+  },
+  "/services/ac-repair": {
+    "title": "AC Repair Dubai - Professional Air Conditioning Services | HOMIZON",
+    "description": "Expert AC repair services in Dubai. 24/7 emergency AC repair, maintenance, installation, and cleaning. Certified technicians, competitive prices, same-day service available.",
+    "keywords": "AC repair Dubai, air conditioning repair Dubai, AC maintenance Dubai, AC installation Dubai, emergency AC repair Dubai, AC cleaning Dubai",
+    "openGraph": {
+      "title": "AC Repair Dubai - Professional Air Conditioning Services",
+      "description": "Expert AC repair services in Dubai. 24/7 emergency repair, maintenance, installation, and cleaning.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/services/ac-repair"
+    }
+  },
+  "/services/cleaning": {
+    "title": "Cleaning Services Dubai - Professional Home & Office Cleaning | HOMIZON",
+    "description": "Professional cleaning services in Dubai. Deep cleaning, regular maintenance, move-in/out cleaning, office cleaning. Trained staff, eco-friendly products, flexible scheduling.",
+    "keywords": "cleaning services Dubai, deep cleaning Dubai, home cleaning Dubai, office cleaning Dubai, maid service Dubai, professional cleaners Dubai",
+    "openGraph": {
+      "title": "Cleaning Services Dubai - Professional Home & Office Cleaning",
+      "description": "Professional cleaning services in Dubai with trained staff and eco-friendly products.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/services/cleaning"
+    }
+  },
+  "/services/plumbing": {
+    "title": "Plumbing Services Dubai - Expert Plumbers & Emergency Repairs | HOMIZON",
+    "description": "Professional plumbing services in Dubai. Emergency plumber, pipe repair, leak detection, bathroom renovation, kitchen plumbing. Licensed plumbers, 24/7 availability.",
+    "keywords": "plumbing services Dubai, emergency plumber Dubai, pipe repair Dubai, leak detection Dubai, bathroom plumbing Dubai, kitchen plumbing Dubai",
+    "openGraph": {
+      "title": "Plumbing Services Dubai - Expert Plumbers & Emergency Repairs",
+      "description": "Professional plumbing services in Dubai with licensed plumbers and 24/7 availability.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/services/plumbing"
+    }
+  },
+  "/services/electrical": {
+    "title": "Electrical Services Dubai - Licensed Electricians & Repairs | HOMIZON",
+    "description": "Professional electrical services in Dubai. Electrical repairs, wiring, installation, maintenance, emergency electrician. Licensed electricians, safety certified, competitive rates.",
+    "keywords": "electrical services Dubai, electrician Dubai, electrical repair Dubai, wiring Dubai, electrical installation Dubai, emergency electrician Dubai",
+    "openGraph": {
+      "title": "Electrical Services Dubai - Licensed Electricians & Repairs",
+      "description": "Professional electrical services in Dubai with licensed electricians and safety certification.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/services/electrical"
+    }
+  },
+  "/services/pest-control": {
+    "title": "Pest Control Dubai - Professional Extermination Services | HOMIZON",
+    "description": "Professional pest control services in Dubai. Cockroach, ant, termite, rodent control. Safe treatments, guaranteed results, residential & commercial pest management.",
+    "keywords": "pest control Dubai, extermination Dubai, cockroach control Dubai, ant control Dubai, termite control Dubai, rodent control Dubai",
+    "openGraph": {
+      "title": "Pest Control Dubai - Professional Extermination Services",
+      "description": "Professional pest control services in Dubai with safe treatments and guaranteed results.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/services/pest-control"
+    }
+  },
+  "/services/handyman": {
+    "title": "Handyman Services Dubai - Professional Home Repairs & Maintenance | HOMIZON",
+    "description": "Professional handyman services in Dubai. Home repairs, furniture assembly, painting, minor renovations, maintenance tasks. Skilled handymen, reliable service, competitive rates.",
+    "keywords": "handyman services Dubai, home repairs Dubai, furniture assembly Dubai, painting Dubai, home maintenance Dubai, handyman Dubai",
+    "openGraph": {
+      "title": "Handyman Services Dubai - Professional Home Repairs & Maintenance",
+      "description": "Professional handyman services in Dubai with skilled handymen and reliable service.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/services/handyman"
+    }
+  },
+  "/areas": {
+    "title": "Service Areas in Dubai - HOMIZON Home Services Coverage",
+    "description": "HOMIZON serves all major areas in Dubai. Find home services in Dubai Marina, Downtown Dubai, JBR, Business Bay, DIFC, and more. Complete Dubai coverage.",
+    "keywords": "Dubai service areas, home services Dubai Marina, Downtown Dubai services, JBR home services, Business Bay services, DIFC services",
+    "openGraph": {
+      "title": "Service Areas in Dubai - HOMIZON Home Services Coverage",
+      "description": "HOMIZON serves all major areas in Dubai with complete coverage.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/areas"
+    }
+  },
+  "/areas/dubai-marina": {
+    "title": "Home Services Dubai Marina - AC Repair, Cleaning & More | HOMIZON",
+    "description": "Professional home services in Dubai Marina. AC repair, cleaning, plumbing, electrical, pest control, handyman services. Local providers, quick response, competitive rates.",
+    "keywords": "Dubai Marina home services, AC repair Dubai Marina, cleaning Dubai Marina, plumbing Dubai Marina, electrical Dubai Marina",
+    "openGraph": {
+      "title": "Home Services Dubai Marina - AC Repair, Cleaning & More",
+      "description": "Professional home services in Dubai Marina with local providers and quick response.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/areas/dubai-marina"
+    }
+  },
+  "/providers": {
+    "title": "Join HOMIZON - Become a Service Provider in Dubai",
+    "description": "Join HOMIZON as a service provider in Dubai. Grow your business, get more customers, manage bookings easily. Register now for AC repair, cleaning, plumbing, and more services.",
+    "keywords": "join HOMIZON, service provider Dubai, grow business Dubai, home service provider registration, Dubai contractor platform",
+    "openGraph": {
+      "title": "Join HOMIZON - Become a Service Provider in Dubai",
+      "description": "Join HOMIZON as a service provider in Dubai and grow your business.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/providers"
+    }
+  },
+  "/providers/register": {
+    "title": "Register as Service Provider - HOMIZON Dubai",
+    "description": "Register as a service provider with HOMIZON Dubai. Complete the application process to start receiving customer leads and grow your home services business.",
+    "keywords": "register service provider Dubai, HOMIZON provider registration, home service provider signup Dubai",
+    "openGraph": {
+      "title": "Register as Service Provider - HOMIZON Dubai",
+      "description": "Register as a service provider with HOMIZON Dubai and start growing your business.",
+      "type": "website"
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/providers/register"
+    }
+  },
+  "/providers/dashboard": {
+    "title": "Provider Dashboard - HOMIZON",
+    "description": "HOMIZON provider dashboard. Manage your leads, track earnings, update profile, view analytics, and grow your home services business in Dubai.",
+    "keywords": "HOMIZON provider dashboard, manage leads Dubai, service provider portal",
+    "robots": {
+      "index": false,
+      "follow": false
+    },
+    "alternates": {
+      "canonical": "https://homizon.com/providers/dashboard"
+    }
+  },
+  "/admin": {
+    "title": "Admin Dashboard - HOMIZON",
+    "description": "HOMIZON admin dashboard for platform management.",
+    "robots": {
+      "index": false,
+      "follow": false
+    }
+  }
+}

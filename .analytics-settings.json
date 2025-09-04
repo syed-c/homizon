@@ -1,0 +1,18 @@
+{
+  "googleSearchConsole": {
+    "enabled": true,
+    "verificationCode": "UQIfx6c0iyMMO3f1PaaR1OlDHeKon23pU5V46ge-SbQ",
+    "status": "pending"
+  },
+  "googleAnalytics": {
+    "enabled": false,
+    "measurementId": "",
+    "status": "not_configured"
+  },
+  "googleTagManager": {
+    "enabled": false,
+    "containerId": "",
+    "status": "not_configured"
+  },
+  "lastUpdated": "2025-07-25T14:30:07.906Z"
+}

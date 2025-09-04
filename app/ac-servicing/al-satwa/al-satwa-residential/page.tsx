@@ -1,0 +1,21 @@
+import type { Metadata } from 'next';
+import siteMetadata from '@/app/metadata.json';
+import ServiceAreaPageContent from '@/components/service-area-page-content';
+
+export const metadata: Metadata = siteMetadata['/ac-servicing/al-satwa/al-satwa-residential'] || {
+  title: 'AC Servicing in Al Satwa Residential - Professional Services | HOMIZON',
+  description: 'Professional ac servicing services in Al Satwa Residential. Verified providers, competitive rates, same-day service available.',
+};
+
+export default async function ACServicingAlSatwaResidentialPage() {
+  return (
+    <ServiceAreaPageContent 
+      service="ac-servicing"
+      serviceName="AC Servicing"
+      area="al-satwa"
+      areaName="Al Satwa"
+      subarea="al-satwa-residential"
+      subareaName="Al Satwa Residential"
+    />
+  );
+}

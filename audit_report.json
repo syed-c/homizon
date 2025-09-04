@@ -1,0 +1,1525 @@
+{
+  "timestamp": "2025-08-08T17:22:04.175Z",
+  "summary": {
+    "totalExpectedPages": 1848,
+    "totalExistingPages": 1848,
+    "completionPercentage": 100,
+    "criticalIssues": 3
+  },
+  "services": {
+    "existing": [
+      {
+        "name": "AC Repair & Cleaning",
+        "slug": "ac-repair-cleaning",
+        "category": "appliance-repair"
+      },
+      {
+        "name": "Washing Machine Repair",
+        "slug": "washing-machine-repair",
+        "category": "appliance-repair"
+      },
+      {
+        "name": "Refrigerator Repair",
+        "slug": "refrigerator-repair",
+        "category": "appliance-repair"
+      },
+      {
+        "name": "Dishwasher Repair",
+        "slug": "dishwasher-repair",
+        "category": "appliance-repair"
+      },
+      {
+        "name": "Oven & Stove Repair",
+        "slug": "oven-stove-repair",
+        "category": "appliance-repair"
+      },
+      {
+        "name": "Dryer Repair",
+        "slug": "dryer-repair",
+        "category": "appliance-repair"
+      },
+      {
+        "name": "Wine Cooler Repair",
+        "slug": "wine-cooler-repair",
+        "category": "appliance-repair"
+      },
+      {
+        "name": "Ice Maker Repair",
+        "slug": "ice-maker-repair",
+        "category": "appliance-repair"
+      },
+      {
+        "name": "Home Deep Cleaning",
+        "slug": "home-deep-cleaning",
+        "category": "cleaning-services"
+      },
+      {
+        "name": "Carpet Cleaning",
+        "slug": "carpet-cleaning",
+        "category": "cleaning-services"
+      },
+      {
+        "name": "Mattress Cleaning",
+        "slug": "mattress-cleaning",
+        "category": "cleaning-services"
+      },
+      {
+        "name": "Move-In/Move-Out Cleaning",
+        "slug": "move-in-out-cleaning",
+        "category": "cleaning-services"
+      },
+      {
+        "name": "General Pest Control",
+        "slug": "general-pest-control",
+        "category": "pest-control"
+      },
+      {
+        "name": "Cockroach Control",
+        "slug": "cockroach-control",
+        "category": "pest-control"
+      },
+      {
+        "name": "Bed Bug Treatment",
+        "slug": "bed-bug-treatment",
+        "category": "pest-control"
+      },
+      {
+        "name": "Termite Control",
+        "slug": "termite-control",
+        "category": "pest-control"
+      },
+      {
+        "name": "Rodent Control",
+        "slug": "rodent-control",
+        "category": "pest-control"
+      },
+      {
+        "name": "Disinfection & Sanitization",
+        "slug": "disinfection-sanitization",
+        "category": "pest-control"
+      },
+      {
+        "name": "Electrical",
+        "slug": "electrical",
+        "category": "handyman"
+      },
+      {
+        "name": "Plumbing",
+        "slug": "plumbing",
+        "category": "handyman"
+      },
+      {
+        "name": "AC Servicing",
+        "slug": "ac-servicing",
+        "category": "handyman"
+      },
+      {
+        "name": "Painting",
+        "slug": "painting",
+        "category": "handyman"
+      },
+      {
+        "name": "Curtain/TV/Furniture Installations",
+        "slug": "installations",
+        "category": "handyman"
+      },
+      {
+        "name": "Laundry & Dry Cleaning",
+        "slug": "laundry-dry-cleaning",
+        "category": "other"
+      },
+      {
+        "name": "Packers & Movers",
+        "slug": "packers-movers",
+        "category": "other"
+      }
+    ],
+    "missing": [
+      {
+        "name": "Sofa Cleaning",
+        "slug": "sofa-cleaning",
+        "category": "cleaning-services"
+      },
+      {
+        "name": "Kitchen Cleaning",
+        "slug": "kitchen-cleaning",
+        "category": "cleaning-services"
+      },
+      {
+        "name": "Bathroom Cleaning",
+        "slug": "bathroom-cleaning",
+        "category": "cleaning-services"
+      }
+    ]
+  },
+  "areas": {
+    "existing": [
+      "Al Barsha",
+      "Barsha Heights",
+      "Dubai Marina",
+      "JBR",
+      "JLT",
+      "Dubai Media City",
+      "Dubai Internet City",
+      "Dubai Knowledge Park",
+      "Palm Jumeirah",
+      "Business Bay",
+      "Downtown Dubai",
+      "DIFC",
+      "City Walk",
+      "Al Wasl",
+      "Jumeirah 1",
+      "Jumeirah 2",
+      "Jumeirah 3",
+      "Umm Suqeim",
+      "Al Safa",
+      "Al Quoz",
+      "Al Quoz Industrial",
+      "Al Sufouh",
+      "Dubai Hills Estate",
+      "Emirates Hills",
+      "The Meadows",
+      "The Springs",
+      "The Lakes",
+      "Arabian Ranches",
+      "Arabian Ranches 2",
+      "Arabian Ranches 3",
+      "Motor City",
+      "Sports City",
+      "Arjan",
+      "Al Barari",
+      "JVC (Jumeirah Village Circle)",
+      "JVT (Jumeirah Village Triangle)",
+      "Al Furjan",
+      "Discovery Gardens",
+      "The Gardens",
+      "Dubai Production City",
+      "Dubai Investment Park (DIP)",
+      "Dubai Silicon Oasis",
+      "Academic City",
+      "Mirdif",
+      "Al Warqa",
+      "Al Mizhar",
+      "Nad Al Sheba",
+      "Meydan",
+      "Dubai Creek Harbour",
+      "Deira",
+      "Bur Dubai",
+      "Karama",
+      "Satwa",
+      "Al Qusais",
+      "Al Nahda",
+      "International City",
+      "Silicon Central",
+      "Dubai South",
+      "Jebel Ali",
+      "Bluewaters Island",
+      "Al Mamzar",
+      "Dubai Festival City",
+      "Town Square",
+      "Tilal Al Ghaf",
+      "Emaar Beachfront",
+      "Dubai Islands"
+    ],
+    "missing": []
+  },
+  "pages": {
+    "servicePages": {
+      "existing": [
+        {
+          "service": "Ice Maker Repair",
+          "slug": "ice-maker-repair",
+          "url": "/services/ice-maker-repair",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        }
+      ],
+      "missing": [
+        {
+          "service": "AC Repair & Cleaning",
+          "slug": "ac-repair-cleaning",
+          "url": "/services/ac-repair-cleaning",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Washing Machine Repair",
+          "slug": "washing-machine-repair",
+          "url": "/services/washing-machine-repair",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Refrigerator Repair",
+          "slug": "refrigerator-repair",
+          "url": "/services/refrigerator-repair",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Dishwasher Repair",
+          "slug": "dishwasher-repair",
+          "url": "/services/dishwasher-repair",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Oven & Stove Repair",
+          "slug": "oven-stove-repair",
+          "url": "/services/oven-stove-repair",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Dryer Repair",
+          "slug": "dryer-repair",
+          "url": "/services/dryer-repair",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Wine Cooler Repair",
+          "slug": "wine-cooler-repair",
+          "url": "/services/wine-cooler-repair",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Home Deep Cleaning",
+          "slug": "home-deep-cleaning",
+          "url": "/services/home-deep-cleaning",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Sofa Cleaning",
+          "slug": "sofa-cleaning",
+          "url": "/services/sofa-cleaning",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Carpet Cleaning",
+          "slug": "carpet-cleaning",
+          "url": "/services/carpet-cleaning",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Mattress Cleaning",
+          "slug": "mattress-cleaning",
+          "url": "/services/mattress-cleaning",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Kitchen Cleaning",
+          "slug": "kitchen-cleaning",
+          "url": "/services/kitchen-cleaning",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Bathroom Cleaning",
+          "slug": "bathroom-cleaning",
+          "url": "/services/bathroom-cleaning",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Move-In/Move-Out Cleaning",
+          "slug": "move-in-out-cleaning",
+          "url": "/services/move-in-out-cleaning",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "General Pest Control",
+          "slug": "general-pest-control",
+          "url": "/services/general-pest-control",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Cockroach Control",
+          "slug": "cockroach-control",
+          "url": "/services/cockroach-control",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Bed Bug Treatment",
+          "slug": "bed-bug-treatment",
+          "url": "/services/bed-bug-treatment",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Termite Control",
+          "slug": "termite-control",
+          "url": "/services/termite-control",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Rodent Control",
+          "slug": "rodent-control",
+          "url": "/services/rodent-control",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Disinfection & Sanitization",
+          "slug": "disinfection-sanitization",
+          "url": "/services/disinfection-sanitization",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Electrical",
+          "slug": "electrical",
+          "url": "/services/electrical",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Plumbing",
+          "slug": "plumbing",
+          "url": "/services/plumbing",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "AC Servicing",
+          "slug": "ac-servicing",
+          "url": "/services/ac-servicing",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Painting",
+          "slug": "painting",
+          "url": "/services/painting",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Curtain/TV/Furniture Installations",
+          "slug": "installations",
+          "url": "/services/installations",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Laundry & Dry Cleaning",
+          "slug": "laundry-dry-cleaning",
+          "url": "/services/laundry-dry-cleaning",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "service": "Packers & Movers",
+          "slug": "packers-movers",
+          "url": "/services/packers-movers",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        }
+      ]
+    },
+    "areaPages": {
+      "existing": [
+        {
+          "area": "Dubai Marina",
+          "slug": "dubai-marina",
+          "url": "/areas/dubai-marina",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Dubai Media City",
+          "slug": "dubai-media-city",
+          "url": "/areas/dubai-media-city",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Dubai Internet City",
+          "slug": "dubai-internet-city",
+          "url": "/areas/dubai-internet-city",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Dubai Knowledge Park",
+          "slug": "dubai-knowledge-park",
+          "url": "/areas/dubai-knowledge-park",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Dubai Hills Estate",
+          "slug": "dubai-hills-estate",
+          "url": "/areas/dubai-hills-estate",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Dubai Production City",
+          "slug": "dubai-production-city",
+          "url": "/areas/dubai-production-city",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Dubai Investment Park (DIP)",
+          "slug": "dubai-investment-park-dip",
+          "url": "/areas/dubai-investment-park-dip",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Dubai Silicon Oasis",
+          "slug": "dubai-silicon-oasis",
+          "url": "/areas/dubai-silicon-oasis",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Dubai Creek Harbour",
+          "slug": "dubai-creek-harbour",
+          "url": "/areas/dubai-creek-harbour",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Dubai South",
+          "slug": "dubai-south",
+          "url": "/areas/dubai-south",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Dubai Festival City",
+          "slug": "dubai-festival-city",
+          "url": "/areas/dubai-festival-city",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Dubai Islands",
+          "slug": "dubai-islands",
+          "url": "/areas/dubai-islands",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        }
+      ],
+      "missing": [
+        {
+          "area": "Al Barsha",
+          "slug": "al-barsha",
+          "url": "/areas/al-barsha",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Barsha Heights",
+          "slug": "barsha-heights",
+          "url": "/areas/barsha-heights",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "JBR",
+          "slug": "jbr",
+          "url": "/areas/jbr",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "JLT",
+          "slug": "jlt",
+          "url": "/areas/jlt",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Palm Jumeirah",
+          "slug": "palm-jumeirah",
+          "url": "/areas/palm-jumeirah",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Business Bay",
+          "slug": "business-bay",
+          "url": "/areas/business-bay",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Downtown Dubai",
+          "slug": "downtown-dubai",
+          "url": "/areas/downtown-dubai",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "DIFC",
+          "slug": "difc",
+          "url": "/areas/difc",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "City Walk",
+          "slug": "city-walk",
+          "url": "/areas/city-walk",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Al Wasl",
+          "slug": "al-wasl",
+          "url": "/areas/al-wasl",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Jumeirah 1",
+          "slug": "jumeirah-1",
+          "url": "/areas/jumeirah-1",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Jumeirah 2",
+          "slug": "jumeirah-2",
+          "url": "/areas/jumeirah-2",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Jumeirah 3",
+          "slug": "jumeirah-3",
+          "url": "/areas/jumeirah-3",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Umm Suqeim",
+          "slug": "umm-suqeim",
+          "url": "/areas/umm-suqeim",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Al Safa",
+          "slug": "al-safa",
+          "url": "/areas/al-safa",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Al Quoz",
+          "slug": "al-quoz",
+          "url": "/areas/al-quoz",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Al Quoz Industrial",
+          "slug": "al-quoz-industrial",
+          "url": "/areas/al-quoz-industrial",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Al Sufouh",
+          "slug": "al-sufouh",
+          "url": "/areas/al-sufouh",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Emirates Hills",
+          "slug": "emirates-hills",
+          "url": "/areas/emirates-hills",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "The Meadows",
+          "slug": "the-meadows",
+          "url": "/areas/the-meadows",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "The Springs",
+          "slug": "the-springs",
+          "url": "/areas/the-springs",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "The Lakes",
+          "slug": "the-lakes",
+          "url": "/areas/the-lakes",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Arabian Ranches",
+          "slug": "arabian-ranches",
+          "url": "/areas/arabian-ranches",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Arabian Ranches 2",
+          "slug": "arabian-ranches-2",
+          "url": "/areas/arabian-ranches-2",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Arabian Ranches 3",
+          "slug": "arabian-ranches-3",
+          "url": "/areas/arabian-ranches-3",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Motor City",
+          "slug": "motor-city",
+          "url": "/areas/motor-city",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Sports City",
+          "slug": "sports-city",
+          "url": "/areas/sports-city",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Arjan",
+          "slug": "arjan",
+          "url": "/areas/arjan",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Al Barari",
+          "slug": "al-barari",
+          "url": "/areas/al-barari",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "JVC (Jumeirah Village Circle)",
+          "slug": "jvc-jumeirah-village-circle",
+          "url": "/areas/jvc-jumeirah-village-circle",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "JVT (Jumeirah Village Triangle)",
+          "slug": "jvt-jumeirah-village-triangle",
+          "url": "/areas/jvt-jumeirah-village-triangle",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Al Furjan",
+          "slug": "al-furjan",
+          "url": "/areas/al-furjan",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Discovery Gardens",
+          "slug": "discovery-gardens",
+          "url": "/areas/discovery-gardens",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "The Gardens",
+          "slug": "the-gardens",
+          "url": "/areas/the-gardens",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Academic City",
+          "slug": "academic-city",
+          "url": "/areas/academic-city",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Mirdif",
+          "slug": "mirdif",
+          "url": "/areas/mirdif",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Al Warqa",
+          "slug": "al-warqa",
+          "url": "/areas/al-warqa",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Al Mizhar",
+          "slug": "al-mizhar",
+          "url": "/areas/al-mizhar",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Nad Al Sheba",
+          "slug": "nad-al-sheba",
+          "url": "/areas/nad-al-sheba",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Meydan",
+          "slug": "meydan",
+          "url": "/areas/meydan",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Deira",
+          "slug": "deira",
+          "url": "/areas/deira",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Bur Dubai",
+          "slug": "bur-dubai",
+          "url": "/areas/bur-dubai",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Karama",
+          "slug": "karama",
+          "url": "/areas/karama",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Satwa",
+          "slug": "satwa",
+          "url": "/areas/satwa",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Al Qusais",
+          "slug": "al-qusais",
+          "url": "/areas/al-qusais",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Al Nahda",
+          "slug": "al-nahda",
+          "url": "/areas/al-nahda",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "International City",
+          "slug": "international-city",
+          "url": "/areas/international-city",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Silicon Central",
+          "slug": "silicon-central",
+          "url": "/areas/silicon-central",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Jebel Ali",
+          "slug": "jebel-ali",
+          "url": "/areas/jebel-ali",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Bluewaters Island",
+          "slug": "bluewaters-island",
+          "url": "/areas/bluewaters-island",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Al Mamzar",
+          "slug": "al-mamzar",
+          "url": "/areas/al-mamzar",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Town Square",
+          "slug": "town-square",
+          "url": "/areas/town-square",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Tilal Al Ghaf",
+          "slug": "tilal-al-ghaf",
+          "url": "/areas/tilal-al-ghaf",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "area": "Emaar Beachfront",
+          "slug": "emaar-beachfront",
+          "url": "/areas/emaar-beachfront",
+          "exists": false,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        }
+      ]
+    },
+    "serviceAreaPages": {
+      "total": 1848,
+      "existing": 1848,
+      "missing": 0,
+      "samples": [
+        {
+          "type": "service-area",
+          "service": "ac-repair-cleaning",
+          "area": "al-barsha",
+          "url": "/ac-repair-cleaning/al-barsha",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "type": "service-area",
+          "service": "ac-repair-cleaning",
+          "area": "barsha-heights",
+          "url": "/ac-repair-cleaning/barsha-heights",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "type": "service-area",
+          "service": "ac-repair-cleaning",
+          "area": "dubai-marina",
+          "url": "/ac-repair-cleaning/dubai-marina",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "type": "service-area",
+          "service": "ac-repair-cleaning",
+          "area": "jbr",
+          "url": "/ac-repair-cleaning/jbr",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "type": "service-area",
+          "service": "ac-repair-cleaning",
+          "area": "jlt",
+          "url": "/ac-repair-cleaning/jlt",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "type": "service-area",
+          "service": "ac-repair-cleaning",
+          "area": "dubai-media-city",
+          "url": "/ac-repair-cleaning/dubai-media-city",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "type": "service-area",
+          "service": "ac-repair-cleaning",
+          "area": "dubai-internet-city",
+          "url": "/ac-repair-cleaning/dubai-internet-city",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "type": "service-area",
+          "service": "ac-repair-cleaning",
+          "area": "dubai-knowledge-park",
+          "url": "/ac-repair-cleaning/dubai-knowledge-park",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "type": "service-area",
+          "service": "ac-repair-cleaning",
+          "area": "palm-jumeirah",
+          "url": "/ac-repair-cleaning/palm-jumeirah",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        },
+        {
+          "type": "service-area",
+          "service": "ac-repair-cleaning",
+          "area": "business-bay",
+          "url": "/ac-repair-cleaning/business-bay",
+          "exists": true,
+          "linked": false,
+          "in_sitemap": false,
+          "content_ok": false,
+          "faq_ok": false,
+          "providers_visible": false,
+          "form_ok": false
+        }
+      ]
+    }
+  },
+  "navigation": {
+    "issues": []
+  },
+  "sitemap": {
+    "issues": []
+  },
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "category": "Services",
+      "issue": "3 services missing from master list",
+      "action": "Update lib/data.ts to include all master services"
+    },
+    {
+      "priority": "MEDIUM",
+      "category": "Service Pages",
+      "issue": "27 service pages missing",
+      "action": "Create individual service pages or ensure dynamic routing covers all services"
+    }
+  ]
+}

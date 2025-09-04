@@ -1,0 +1,424 @@
+"use client";
+
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  Search, Filter, Star, Clock, Shield, Award, Users, Phone, 
+  ArrowRight, CheckCircle, Eye, Wind, Settings, Sparkles, 
+  Bug, Wrench, Zap, Hammer, Shirt, Truck, MapPin, ChevronDown
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Link from 'next/link';
+import { serviceCategories, services, areas, getProvidersByCategory } from '@/lib/data';
+
+export default function ServicesPageContent() {
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('popular');
+  const [showFilters, setShowFilters] = useState(false);
+
+  console.log("Services directory page loaded");
+  console.log("Selected category:", selectedCategory);
+  console.log("Search query:", searchQuery);
+
+  const filteredServices = services.filter(service => {
+    const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory;
+    const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         service.keywords.some(keyword => keyword.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesCategory && matchesSearch;
+  });
+
+  const sortedServices = [...filteredServices].sort((a, b) => {
+    switch (sortBy) {
+      case 'popular': return (b.isPopular ? 1 : 0) - (a.isPopular ? 1 : 0);
+      case 'alphabetical': return a.name.localeCompare(b.name);
+      case 'price-low': return parseInt(a.averagePrice.match(/\d+/)?.[0] || '0') - parseInt(b.averagePrice.match(/\d+/)?.[0] || '0');
+      case 'price-high': return parseInt(b.averagePrice.match(/\d+/)?.[0] || '0') - parseInt(a.averagePrice.match(/\d+/)?.[0] || '0');
+      default: return 0;
+    }
+  });
+
+  const getIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'Wind': return Wind;
+      case 'Settings': return Settings;
+      case 'Sparkles': return Sparkles;
+      case 'Bug': return Bug;
+      case 'Wrench': return Wrench;
+      case 'Zap': return Zap;
+      case 'Hammer': return Hammer;
+      case 'Shirt': return Shirt;
+      case 'Truck': return Truck;
+      case 'Shield': return Shield;
+      default: return Settings;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-black via-charcoal-900 to-black text-white">
+      {/* Hero Section */}
+      <section className="relative py-20 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-black via-charcoal-900 to-black">
+          <div className="absolute top-10 left-10 w-72 h-72 bg-neon-blue/10 rounded-full blur-3xl animate-float"></div>
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-neon-green/10 rounded-full blur-3xl animate-float" style={{animationDelay: '1s'}}></div>
+        </div>
+        
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight" data-macaly="services-hero-title">
+              <span className="bg-gradient-to-r from-white to-neon-blue bg-clip-text text-transparent">
+                Service Directory
+              </span>
+            </h1>
+            <p className="text-xl md:text-2xl text-white/70 mb-12 max-w-4xl mx-auto leading-relaxed" data-macaly="services-hero-description">
+              Browse our comprehensive directory of verified service providers. Compare profiles, read reviews, and connect directly with professionals.
+            </p>
+          </div>
+
+          {/* Search and Filter Section */}
+          <div className="max-w-6xl mx-auto mb-16">
+            <div className="bg-black/40 backdrop-blur-lg rounded-3xl p-8 border border-neon-blue/30 shadow-neon">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neon-blue h-5 w-5" />
+                  <Input
+                    placeholder="Search services..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-12 h-12 bg-black/50 border-neon-blue/50 text-white placeholder-white/60 rounded-xl focus:border-neon-blue focus:ring-neon-blue/50"
+                  />
+                </div>
+                
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="h-12 bg-black/50 border-neon-green/50 text-white rounded-xl focus:border-neon-green">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black/95 border-neon-green/30">
+                    <SelectItem value="all" className="text-white hover:bg-neon-green/10">All Categories</SelectItem>
+                    {serviceCategories.map(category => (
+                      <SelectItem key={category.id} value={category.slug} className="text-white hover:bg-neon-green/10">
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="h-12 bg-black/50 border-neon-blue/50 text-white rounded-xl focus:border-neon-blue">
+                    <SelectValue placeholder="Sort By" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black/95 border-neon-blue/30">
+                    <SelectItem value="popular" className="text-white hover:bg-neon-blue/10">Most Popular</SelectItem>
+                    <SelectItem value="alphabetical" className="text-white hover:bg-neon-blue/10">Alphabetical</SelectItem>
+                    <SelectItem value="price-low" className="text-white hover:bg-neon-blue/10">Price: Low to High</SelectItem>
+                    <SelectItem value="price-high" className="text-white hover:bg-neon-blue/10">Price: High to Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="text-center text-white/60 text-sm mt-6">
+                Found {sortedServices.length} services across {serviceCategories.length} categories
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Service Categories */}
+        <section className="py-16">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4 text-white" data-macaly="categories-title">
+              <span className="bg-gradient-to-r from-white to-neon-green bg-clip-text text-transparent">
+                Browse by Category
+              </span>
+            </h2>
+            <p className="text-white/60 text-lg max-w-2xl mx-auto" data-macaly="categories-description">
+              Explore our comprehensive range of professional home services across Dubai
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
+                selectedCategory === 'all'
+                  ? 'border-neon-blue bg-neon-blue/10 shadow-neon'
+                  : 'border-white/10 bg-gradient-card hover:border-neon-blue/50'
+              }`}
+              onClick={() => setSelectedCategory('all')}
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-neon-blue to-neon-green rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <Star className="h-8 w-8 text-black" />
+                </div>
+                <h3 className="font-bold text-white text-lg mb-2">All Services</h3>
+                <p className="text-white/60 text-sm">Browse our complete directory</p>
+                <div className="mt-4 text-neon-blue font-semibold">
+                  {services.length} services available
+                </div>
+              </div>
+            </motion.div>
+
+            {serviceCategories.map((category, index) => {
+              const Icon = getIcon(category.icon);
+              const providersCount = getProvidersByCategory(category.slug).length;
+              
+              return (
+                <motion.div
+                  key={category.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                  whileHover={{ scale: 1.02 }}
+                  className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
+                    selectedCategory === category.slug
+                      ? 'border-neon-green bg-neon-green/10 shadow-neon-green'
+                      : 'border-white/10 bg-gradient-card hover:border-neon-green/50'
+                  }`}
+                  onClick={() => setSelectedCategory(category.slug)}
+                >
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-gradient-to-r from-neon-blue to-neon-green rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <Icon className="h-8 w-8 text-black" />
+                    </div>
+                    <h3 className="font-bold text-white text-lg mb-2">{category.name}</h3>
+                    <p className="text-white/60 text-sm mb-4">{category.description}</p>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-neon-blue font-medium">{category.services.length} services</span>
+                      <span className="text-neon-green font-medium">{providersCount} providers</span>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Services Grid */}
+        <section className="pb-20">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h3 className="text-2xl font-bold text-white">
+                {selectedCategory === 'all' 
+                  ? `All Services (${sortedServices.length})`
+                  : `${serviceCategories.find(cat => cat.slug === selectedCategory)?.name || ''} (${sortedServices.length})`
+                }
+              </h3>
+              <p className="text-white/60 text-sm mt-1">
+                Click on any service to view providers and book instantly
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sortedServices.map((service, index) => {
+              const Icon = getIcon(service.icon);
+              const providersCount = getProvidersByCategory(service.category).length;
+              
+              return (
+                <motion.div
+                  key={service.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.05 }}
+                  viewport={{ once: true }}
+                  whileHover={{ y: -5 }}
+                  className="group"
+                >
+                  <Card className="bg-gradient-card backdrop-blur-sm border border-white/10 overflow-hidden hover:border-neon-blue/50 transition-all duration-500 h-full hover:shadow-card-hover">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 bg-gradient-to-r from-neon-blue to-neon-green rounded-lg flex items-center justify-center">
+                            <Icon className="h-6 w-6 text-black" />
+                          </div>
+                          <div>
+                            <Link href={`/services/${service.slug}`}>
+                              <CardTitle className="text-lg text-white mb-1 group-hover:text-neon-blue transition-colors cursor-pointer hover:underline">
+                                {service.name}
+                              </CardTitle>
+                            </Link>
+                            <p className="text-sm text-white/60">{service.category.replace('-', ' ')}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col items-end space-y-1">
+                          {service.isPopular && (
+                            <Badge className="bg-neon-green/20 text-neon-green border-neon-green/50 text-xs">
+                              Popular
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <p className="text-white/70 text-sm leading-relaxed">{service.description}</p>
+                    </CardHeader>
+                    
+                    <CardContent className="pt-0">
+                      <div className="space-y-4">
+                        {/* Pricing and Duration */}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-xl font-bold text-neon-blue">{service.averagePrice}</div>
+                            <div className="flex items-center space-x-1 text-sm text-white/60">
+                              <Clock className="w-4 h-4" />
+                              <span>{service.estimatedTime}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="text-right">
+                            <div className="flex items-center space-x-1 mb-1">
+                              <Users className="h-4 w-4 text-neon-green" />
+                              <span className="text-white font-medium">{providersCount}</span>
+                            </div>
+                            <div className="text-white/60 text-xs">
+                              {providersCount > 0 ? 'providers available' : 'new service'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Keywords */}
+                        <div className="flex flex-wrap gap-1">
+                          {service.keywords.slice(0, 3).map((keyword, i) => (
+                            <Badge key={i} variant="outline" className="text-xs border-neon-blue/30 text-neon-blue/80">
+                              {keyword}
+                            </Badge>
+                          ))}
+                          {service.keywords.length > 3 && (
+                            <Badge variant="outline" className="text-xs border-neon-green/30 text-neon-green/80">
+                              +{service.keywords.length - 3} more
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex space-x-2 pt-2">
+                          <Link href={`/services/${service.slug}`} className="flex-1">
+                            <Button className="w-full bg-gradient-to-r from-neon-blue to-neon-green hover:from-neon-blue/80 hover:to-neon-green/80 text-black font-semibold rounded-xl transition-all duration-300 hover:scale-105">
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Service Details
+                            </Button>
+                          </Link>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="border-neon-green/50 text-neon-green hover:bg-neon-green/10 px-4"
+                          >
+                            <Phone className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {sortedServices.length === 0 && (
+            <div className="text-center py-20">
+              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="h-8 w-8 text-white/50" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">No services found</h3>
+              <p className="text-white/60 mb-6">Try adjusting your search or filter criteria</p>
+              <Button 
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCategory('all');
+                }}
+                className="bg-gradient-to-r from-neon-blue to-neon-green hover:from-neon-blue/80 hover:to-neon-green/80 text-black font-semibold"
+              >
+                Reset Filters
+              </Button>
+            </div>
+          )}
+        </section>
+
+        {/* Why Choose Us */}
+        <section className="py-20 bg-gradient-card rounded-3xl border border-white/10">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4 text-white" data-macaly="why-choose-title">
+              <span className="bg-gradient-to-r from-white to-neon-green bg-clip-text text-transparent">
+                Why Choose Our Directory?
+              </span>
+            </h2>
+            <p className="text-white/60 text-lg max-w-2xl mx-auto" data-macaly="why-choose-description">
+              Experience the difference with Dubai's most comprehensive service provider directory
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              {
+                icon: Shield,
+                title: 'Verified Professionals',
+                description: 'All service providers are background-checked and verified for your safety'
+              },
+              {
+                icon: Award,
+                title: 'Quality Guaranteed',
+                description: 'Browse ratings and reviews from real customers to make informed decisions'
+              },
+              {
+                icon: Clock,
+                title: 'Quick Connection',
+                description: 'Connect directly with providers and get responses within hours'
+              },
+              {
+                icon: Users,
+                title: 'Wide Selection',
+                description: 'Choose from hundreds of providers across all major service categories'
+              }
+            ].map((feature, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="text-center"
+              >
+                <div className="w-16 h-16 bg-gradient-to-r from-neon-blue to-neon-green rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <feature.icon className="h-8 w-8 text-black" />
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-3">{feature.title}</h3>
+                <p className="text-white/70 leading-relaxed">{feature.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-20 text-center">
+          <div className="bg-gradient-to-r from-neon-blue/20 to-neon-green/20 rounded-3xl p-12 border border-neon-blue/30">
+            <h2 className="text-4xl font-bold text-white mb-4" data-macaly="cta-title">Ready to Get Started?</h2>
+            <p className="text-white/70 text-lg mb-8 max-w-2xl mx-auto" data-macaly="cta-description">
+              Join thousands of satisfied customers who trust our directory to find the best service providers in Dubai
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/providers">
+                <Button className="bg-gradient-to-r from-neon-blue to-neon-green hover:from-neon-blue/80 hover:to-neon-green/80 text-black px-8 py-3 rounded-full font-semibold text-lg shadow-neon hover:shadow-neon-strong transition-all duration-300">
+                  Browse All Providers
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/providers/register">
+                <Button className="border-2 border-neon-green text-neon-green hover:bg-neon-green hover:text-black px-8 py-3 rounded-full font-semibold text-lg transition-all duration-300">
+                  Join as Provider
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}

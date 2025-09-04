@@ -1,0 +1,255 @@
+{
+  "timestamp": "2025-08-08T17:21:06.330Z",
+  "summary": {
+    "totalTests": 28,
+    "totalPassed": 26,
+    "totalFailed": 2,
+    "successRate": "92.9%"
+  },
+  "categories": {
+    "routing": {
+      "passed": 3,
+      "failed": 2,
+      "tests": [
+        {
+          "name": "Route /ac-repair-cleaning/dubai-marina",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Dynamic route file exists"
+        },
+        {
+          "name": "Route /washing-machine-repair/business-bay",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Dynamic route file exists"
+        },
+        {
+          "name": "Route /general-pest-control/downtown-dubai",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Dynamic route file exists"
+        },
+        {
+          "name": "Route /invalid-service/dubai-marina",
+          "expected": false,
+          "actual": true,
+          "passed": false,
+          "details": "Dynamic route file exists"
+        },
+        {
+          "name": "Route /ac-repair-cleaning/invalid-area",
+          "expected": false,
+          "actual": true,
+          "passed": false,
+          "details": "Dynamic route file exists"
+        }
+      ]
+    },
+    "content": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "name": "Content for AC Repair & Cleaning in Dubai Marina",
+          "expected": ">= 100 words",
+          "actual": "118 words",
+          "passed": true,
+          "details": "Generated 118 words of content"
+        },
+        {
+          "name": "Content for Deep Home Cleaning in Downtown Dubai",
+          "expected": ">= 100 words",
+          "actual": "114 words",
+          "passed": true,
+          "details": "Generated 114 words of content"
+        },
+        {
+          "name": "Content for General Pest Control in Business Bay",
+          "expected": ">= 100 words",
+          "actual": "114 words",
+          "passed": true,
+          "details": "Generated 114 words of content"
+        }
+      ]
+    },
+    "navigation": {
+      "passed": 6,
+      "failed": 0,
+      "tests": [
+        {
+          "name": "Header component exists",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "Footer component exists",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "Header contains services dropdown",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "Header contains areas dropdown",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "Footer contains service links",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "Footer contains sitemap link",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        }
+      ]
+    },
+    "sitemap": {
+      "passed": 5,
+      "failed": 0,
+      "tests": [
+        {
+          "name": "sitemap.xml route exists",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "Human sitemap page exists",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "sitemap.xml includes service combinations",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "sitemap.xml includes individual services",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "Human sitemap includes search functionality",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        }
+      ]
+    },
+    "booking": {
+      "passed": 4,
+      "failed": 0,
+      "tests": [
+        {
+          "name": "Booking modal component exists",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "Leads API endpoint exists",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "Booking modal includes form validation",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "Leads API handles POST requests",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        }
+      ]
+    },
+    "admin": {
+      "passed": 5,
+      "failed": 0,
+      "tests": [
+        {
+          "name": "Admin pages management exists",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "Create page modal exists",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "Pages API endpoint exists",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "Create modal includes service selection",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        },
+        {
+          "name": "Pages API handles bulk creation",
+          "expected": true,
+          "actual": true,
+          "passed": true,
+          "details": "Found"
+        }
+      ]
+    }
+  },
+  "recommendations": [
+    {
+      "category": "ROUTING",
+      "priority": "MEDIUM",
+      "issue": "2 failed tests in routing",
+      "action": "Review and fix failed routing tests",
+      "failedTests": [
+        "Route /invalid-service/dubai-marina",
+        "Route /ac-repair-cleaning/invalid-area"
+      ]
+    }
+  ]
+}

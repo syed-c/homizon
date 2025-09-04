@@ -1,0 +1,21 @@
+import type { Metadata } from 'next';
+import siteMetadata from '@/app/metadata.json';
+import ServiceAreaPageContent from '@/components/service-area-page-content';
+
+export const metadata: Metadata = siteMetadata['/bed-bug-control/mirdif/ghoroob'] || {
+  title: 'Bed Bug Treatment in Ghoroob - Professional Services | HOMIZON',
+  description: 'Professional bed bug treatment services in Ghoroob. Verified providers, competitive rates, same-day service available.',
+};
+
+export default async function BedBugTreatmentGhoroobPage() {
+  return (
+    <ServiceAreaPageContent 
+      service="bed-bug-control"
+      serviceName="Bed Bug Treatment"
+      area="mirdif"
+      areaName="Mirdif"
+      subarea="ghoroob"
+      subareaName="Ghoroob"
+    />
+  );
+}
