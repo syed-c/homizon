@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -727,7 +726,7 @@ export default function NotificationsPage() {
               </div>
               <div>
                 <Label>Type</Label>
-                <Select value={templateForm.type} onValueChange={(value: 'email' | 'sms' | 'push' | 'system') => setTemplateForm({...templateForm, type: value})}>
+                <Select value={templateForm.type} onValueChange={(value) => setTemplateForm({...templateForm, type: value})}>
                   <SelectTrigger className="bg-white/10 border-white/20 text-white">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
@@ -744,7 +743,7 @@ export default function NotificationsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Trigger</Label>
-                <Select value={templateForm.trigger} onValueChange={(value: 'lead-assigned' | 'booking-created' | 'booking-completed' | 'payment-received' | 'registration-approved' | 'custom') => setTemplateForm({...templateForm, trigger: value})}>
+                <Select value={templateForm.trigger} onValueChange={(value) => setTemplateForm({...templateForm, trigger: value})}>
                   <SelectTrigger className="bg-white/10 border-white/20 text-white">
                     <SelectValue placeholder="Select trigger" />
                   </SelectTrigger>
@@ -760,7 +759,7 @@ export default function NotificationsPage() {
               </div>
               <div>
                 <Label>Audience</Label>
-                <Select value={templateForm.audience} onValueChange={(value: 'customers' | 'providers' | 'admins' | 'all') => setTemplateForm({...templateForm, audience: value})}>
+                <Select value={templateForm.audience} onValueChange={(value) => setTemplateForm({...templateForm, audience: value})}>
                   <SelectTrigger className="bg-white/10 border-white/20 text-white">
                     <SelectValue placeholder="Select audience" />
                   </SelectTrigger>

@@ -7,21 +7,20 @@ import Footer from "@/components/navigation/footer";
 export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   
+  // Check if current path is an admin route
   const isAdminRoute = pathname?.startsWith('/admin');
   
   if (isAdminRoute) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-charcoal-900 to-black text-white">
-        <main>{children}</main>
-      </div>
-    );
+    // Admin routes don't get header/footer
+    return <>{children}</>;
   }
   
+  // Regular routes get header/footer
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-charcoal-900 to-black text-white">
+    <>
       <Header />
       <main>{children}</main>
       <Footer />
-    </div>
+    </>
   );
 }

@@ -51,7 +51,6 @@ export default function AnalyticsIntegrationPage() {
     googleSearchConsole: {
       enabled: false,
       verificationCode: '',
-      siteUrl: '',
       status: 'not_configured'
     },
     lastUpdated: ''

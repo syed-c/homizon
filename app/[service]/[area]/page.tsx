@@ -8,7 +8,7 @@ import {
   services,
   areas
 } from '@/lib/data';
-import ServiceAreaPageClient from '@/app/[service]/[area]/service-area-page-client';
+import ServiceAreaPageClient from './service-area-page-client';
 
 interface ServiceAreaPageProps {
   params: Promise<{
@@ -57,8 +57,23 @@ export async function generateMetadata({ params }: ServiceAreaPageProps): Promis
 }
 
 export async function generateStaticParams() {
-  // Return empty array to disable static generation and use dynamic rendering
-  return [];
+  // Generate static params for the most popular service-area combinations
+  const popularCombinations: { service: string; area: string }[] = [];
+  
+  // Get popular services and areas
+  const popularServices = services.filter(s => s.isPopular).slice(0, 10);
+  const popularAreas = areas.slice(0, 20); // Top 20 areas
+  
+  for (const service of popularServices) {
+    for (const area of popularAreas) {
+      popularCombinations.push({
+        service: service.slug,
+        area: area.slug
+      });
+    }
+  }
+  
+  return popularCombinations;
 }
 
 export default async function ServiceAreaPage({ params }: ServiceAreaPageProps) {
@@ -81,4 +96,3 @@ export default async function ServiceAreaPage({ params }: ServiceAreaPageProps) 
     />
   );
 }
-

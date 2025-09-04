@@ -82,41 +82,41 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
   const emergencyProviders = providers.filter(p => p.availability.emergency).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-charcoal-900 to-black text-white overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 text-white overflow-x-hidden">
       {/* Breadcrumb */}
       <div className="bg-white/5 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <nav className="flex items-center space-x-2 text-sm overflow-x-auto">
-            <Link href="/" className="text-white/60 hover:text-neon-blue whitespace-nowrap transition-colors">Home</Link>
+            <Link href="/" className="text-white/60 hover:text-white whitespace-nowrap">Home</Link>
             <ChevronRight className="h-4 w-4 text-white/40 flex-shrink-0" />
-            <Link href="/areas" className="text-white/60 hover:text-neon-blue whitespace-nowrap transition-colors">Areas</Link>
+            <Link href="/areas" className="text-white/60 hover:text-white whitespace-nowrap">Areas</Link>
             <ChevronRight className="h-4 w-4 text-white/40 flex-shrink-0" />
-            <span className="text-neon-blue whitespace-nowrap">{area.name}</span>
+            <span className="text-primary-400 whitespace-nowrap">{area.name}</span>
           </nav>
         </div>
       </div>
 
       {/* Hero Section */}
       <section className="py-16 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-black via-charcoal-900 to-black"></div>
-        <div className="absolute top-20 left-10 w-72 h-72 bg-neon-blue/10 rounded-full blur-3xl animate-float"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-neon-green/10 rounded-full blur-3xl animate-float" style={{animationDelay: '1s'}}></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/20 via-neutral-900 to-accent-900/20"></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent-500/10 rounded-full blur-3xl"></div>
         
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <div className="flex items-center justify-center space-x-3 mb-6">
-              <div className="w-16 h-16 bg-gradient-to-r from-neon-blue to-neon-green rounded-xl flex items-center justify-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
                 <MapPin className="h-8 w-8 text-white" />
               </div>
-              <span className="text-neon-blue font-medium text-lg">Service Area</span>
+              <span className="text-primary-400 font-medium text-lg">Service Area</span>
             </div>
 
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-              <span className="bg-gradient-to-r from-white to-neon-blue bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-white to-primary-200 bg-clip-text text-transparent">
                 Home Services in
               </span>
               <br />
-              <span className="bg-gradient-to-r from-neon-blue to-neon-green bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent">
                 {area.name}
               </span>
             </h1>
@@ -129,32 +129,32 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
             {/* Quick Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto mb-8">
               <div className="text-center">
-                <div className="text-2xl font-bold text-neon-blue">{providers.length}</div>
+                <div className="text-2xl font-bold text-primary-400">{providers.length}</div>
                 <div className="text-white/60 text-sm">Available Providers</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-neon-green">{averageRating.toFixed(1)}★</div>
+                <div className="text-2xl font-bold text-accent-400">{averageRating.toFixed(1)}★</div>
                 <div className="text-white/60 text-sm">Average Rating</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-neon-blue">{emergencyProviders}</div>
+                <div className="text-2xl font-bold text-primary-400">{emergencyProviders}</div>
                 <div className="text-white/60 text-sm">Emergency Available</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-neon-green">{area.subAreas.length}</div>
+                <div className="text-2xl font-bold text-accent-400">{area.subAreas.length}</div>
                 <div className="text-white/60 text-sm">Sub Areas</div>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href={`/book?area=${area.slug}`}>
-                <Button className="bg-gradient-to-r from-neon-blue to-neon-green hover:from-neon-blue/80 hover:to-neon-green/80 text-black px-8 py-3 rounded-full font-bold shadow-neon-strong">
+                <Button className="bg-gradient-to-r from-primary-500 to-accent-500 hover:from-primary-600 hover:to-accent-600 text-white px-8 py-3 rounded-full font-semibold">
                   Book Service in {area.name}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link href={`tel:${settings.contact_phone}`}>
-                <Button variant="outline" className="text-neon-blue border-neon-blue/50 hover:bg-neon-blue/10 px-8 py-3 rounded-full font-semibold">
+                <Button variant="outline" className="text-white border-white/20 hover:bg-white/10 px-8 py-3 rounded-full font-semibold">
                   <Phone className="mr-2 h-5 w-5" />
                   Call {settings.contact_phone}
                 </Button>
@@ -169,7 +169,7 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center space-x-8 text-sm">
             <div className="flex items-center space-x-2 text-white/60">
-              <Shield className="h-4 w-4 text-neon-blue" />
+              <Shield className="h-4 w-4 text-primary-400" />
               <span>Verified Professionals</span>
             </div>
             <div className="flex items-center space-x-2 text-white/60">
@@ -177,7 +177,7 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
               <span>4.9/5 Customer Rating</span>
             </div>
             <div className="flex items-center space-x-2 text-white/60">
-              <Clock className="h-4 w-4 text-neon-green" />
+              <Clock className="h-4 w-4 text-accent-400" />
               <span>Same-Day Service Available</span>
             </div>
           </div>
@@ -195,13 +195,13 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
           {services.slice(0, 12).map((service, index) => (
             <div key={service.id}>
               <Link href={`/${service.slug}/${area.slug}`}>
-                <Card className="bg-white/5 backdrop-blur-sm border border-white/10 hover:border-neon-blue/50 transition-all duration-300 cursor-pointer group">
+                <Card className="bg-white/5 backdrop-blur-sm border border-white/10 hover:border-primary-500/50 transition-all duration-300 cursor-pointer group">
                   <CardContent className="p-4 text-center">
-                    <h3 className="font-semibold text-white group-hover:text-neon-blue transition-colors text-sm">
+                    <h3 className="font-semibold text-white group-hover:text-primary-400 transition-colors text-sm">
                       {service.name}
                     </h3>
                     <p className="text-white/60 text-xs mt-1">{service.averagePrice}</p>
-                    <div className="text-neon-green text-xs mt-2">
+                    <div className="text-accent-400 text-xs mt-2">
                       Book in {area.name} →
                     </div>
                   </CardContent>
@@ -223,13 +223,13 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
           {area.subAreas.map((subArea, index) => (
             <div key={subArea.id}>
               <Link href={`/areas/${area.slug}/${subArea.slug}`}>
-                <Card className="bg-white/5 backdrop-blur-sm border border-white/10 hover:border-neon-blue/50 transition-all duration-300 cursor-pointer group">
+                <Card className="bg-white/5 backdrop-blur-sm border border-white/10 hover:border-primary-500/50 transition-all duration-300 cursor-pointer group">
                   <CardContent className="p-4 text-center">
-                    <h3 className="font-semibold text-white group-hover:text-neon-blue transition-colors">
+                    <h3 className="font-semibold text-white group-hover:text-primary-400 transition-colors">
                       {subArea.name}
                     </h3>
                     <p className="text-white/60 text-sm mt-1">{subArea.description}</p>
-                    <div className="text-neon-green text-xs mt-2">
+                    <div className="text-accent-400 text-xs mt-2">
                       View Services →
                     </div>
                   </CardContent>
@@ -242,23 +242,23 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
 
       {/* Filters and Search */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-        <div className="bg-black/40 backdrop-blur-xl rounded-2xl p-6 border border-neon-blue/30">
+        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neon-blue h-5 w-5" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/50 h-5 w-5" />
               <Input
                 placeholder="Search providers..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 h-12 bg-black/50 border-neon-blue/50 text-white placeholder-white/50 rounded-xl focus:border-neon-blue focus:ring-neon-blue/50"
+                className="pl-12 h-12 bg-white/10 border-white/20 text-white placeholder-white/50 rounded-xl"
               />
             </div>
             
             <Select value={filterBy} onValueChange={setFilterBy}>
-              <SelectTrigger className="w-full lg:w-48 h-12 bg-black/50 border-neon-blue/50 text-white rounded-xl">
+              <SelectTrigger className="w-full lg:w-48 h-12 bg-white/10 border-white/20 text-white rounded-xl">
                 <SelectValue placeholder="Filter by" />
               </SelectTrigger>
-              <SelectContent className="bg-black/95 border-neon-blue/30">
+              <SelectContent className="bg-neutral-900 border-white/20">
                 <SelectItem value="all" className="text-white">All Providers</SelectItem>
                 <SelectItem value="emergency" className="text-white">Emergency Available</SelectItem>
                 <SelectItem value="top-rated" className="text-white">Top Rated (4.5+)</SelectItem>
@@ -267,10 +267,10 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
             </Select>
 
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full lg:w-48 h-12 bg-black/50 border-neon-blue/50 text-white rounded-xl">
+              <SelectTrigger className="w-full lg:w-48 h-12 bg-white/10 border-white/20 text-white rounded-xl">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
-              <SelectContent className="bg-black/95 border-neon-blue/30">
+              <SelectContent className="bg-neutral-900 border-white/20">
                 <SelectItem value="rating" className="text-white">Highest Rated</SelectItem>
                 <SelectItem value="reviews" className="text-white">Most Reviews</SelectItem>
                 <SelectItem value="experience" className="text-white">Most Experienced</SelectItem>
@@ -311,7 +311,7 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
               Try adjusting your search criteria or browse all areas
             </p>
             <Link href="/areas">
-              <Button variant="outline" className="text-neon-blue border-neon-blue/50 hover:bg-neon-blue/10">
+              <Button variant="outline" className="text-white border-white/20 hover:bg-white/10">
                 Browse All Areas
               </Button>
             </Link>
@@ -322,9 +322,9 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
       {/* Custom Content Section */}
       {customContent && (customContent.customHeading || customContent.customContent) && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
-          <div className="bg-gradient-to-r from-neon-blue/10 to-neon-green/10 backdrop-blur-sm rounded-2xl p-8 border border-neon-blue/30">
+          <div className="bg-gradient-to-r from-primary-900/30 to-accent-900/30 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-neon-blue to-neon-green rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
                 <Info className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -348,11 +348,11 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
                 <span>Verified Information</span>
               </div>
               <div className="flex items-center space-x-1">
-                <Clock className="h-4 w-4 text-neon-blue" />
+                <Clock className="h-4 w-4 text-blue-400" />
                 <span>Updated {customContent.lastModified || 'recently'}</span>
               </div>
               <div className="flex items-center space-x-1">
-                <Users className="h-4 w-4 text-neon-green" />
+                <Users className="h-4 w-4 text-purple-400" />
                 <span>Curated by {settings.site_name} Team</span>
               </div>
             </div>
@@ -395,10 +395,10 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
             }
           ]).map((faq: any, index: number) => (
             <div key={index}>
-              <Card className="bg-white/5 backdrop-blur-sm border border-white/10 hover:border-neon-blue/50 transition-colors h-full">
+              <Card className="bg-white/5 backdrop-blur-sm border border-white/10 hover:border-primary-500/50 transition-colors h-full">
                 <CardContent className="p-6">
                   <div className="flex items-start space-x-4">
-                    <div className="w-8 h-8 bg-gradient-to-r from-neon-blue to-neon-green rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg flex items-center justify-center flex-shrink-0">
                       <span className="text-white font-bold text-sm">Q</span>
                     </div>
                     <div className="flex-1">
@@ -414,7 +414,7 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
 
         {/* Call to Action */}
         <div className="text-center mt-12">
-          <div className="bg-gradient-to-r from-neon-blue/10 to-neon-green/10 backdrop-blur-sm rounded-2xl p-8 border border-neon-blue/30">
+          <div className="bg-gradient-to-r from-primary-900/50 to-accent-900/50 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
             <h3 className="text-2xl font-bold text-white mb-4">
               Need Home Services in {area.name}? We're Here to Help!
             </h3>
@@ -424,13 +424,13 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href={`/book?area=${area.slug}`}>
-                <Button className="bg-gradient-to-r from-neon-blue to-neon-green hover:from-neon-blue/80 hover:to-neon-green/80 text-black px-8 py-3 rounded-full font-bold shadow-neon-strong">
+                <Button className="bg-gradient-to-r from-primary-500 to-accent-500 hover:from-primary-600 hover:to-accent-600 text-white px-8 py-3 rounded-full font-semibold">
                   Book Service in {area.name}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link href={`tel:${settings.contact_phone}`}>
-                <Button variant="outline" className="text-neon-blue border-neon-blue/50 hover:bg-neon-blue/10 px-8 py-3 rounded-full font-semibold">
+                <Button variant="outline" className="text-white border-white/20 hover:bg-white/10 px-8 py-3 rounded-full font-semibold">
                   <Phone className="mr-2 h-5 w-5" />
                   Call {settings.contact_phone}
                 </Button>
@@ -449,7 +449,7 @@ function ProviderLineItem({ provider, area, index }: {
   index: number; 
 }) {
   return (
-    <div className="bg-white/5 backdrop-blur-sm border border-white/10 hover:border-neon-blue/50 transition-all duration-300 rounded-xl p-4 md:p-6">
+    <div className="bg-white/5 backdrop-blur-sm border border-white/10 hover:border-primary-500/50 transition-all duration-300 rounded-xl p-4 md:p-6">
       {/* Mobile Layout */}
       <div className="block md:hidden">
         <div className="flex items-start space-x-3 mb-4">
@@ -458,7 +458,7 @@ function ProviderLineItem({ provider, area, index }: {
             <img 
               src={provider.profileImage || 'https://images.pexels.com/photos/4050291/pexels-photo-4050291.jpeg?auto=compress&cs=tinysrgb&h=80&w=80'} 
               alt={provider.name}
-              className="w-12 h-12 rounded-full object-cover border-2 border-neon-blue/50"
+              className="w-12 h-12 rounded-full object-cover border-2 border-primary-500/50"
             />
             {provider.availability.emergency && (
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
@@ -478,7 +478,7 @@ function ProviderLineItem({ provider, area, index }: {
             </div>
             
             {provider.company && (
-              <p className="text-neon-blue text-xs font-medium truncate mb-1">@ {provider.company}</p>
+              <p className="text-primary-400 text-xs font-medium truncate mb-1">@ {provider.company}</p>
             )}
             
             <div className="flex flex-wrap items-center gap-2 text-xs text-white/60 mb-2">
@@ -514,16 +514,16 @@ function ProviderLineItem({ provider, area, index }: {
           
           <div className="flex items-center space-x-2">
             <Link href={`/book?provider=${provider.id}&area=${area.slug}`}>
-              <Button size="sm" className="bg-gradient-to-r from-neon-blue to-neon-green hover:from-neon-blue/80 hover:to-neon-green/80 text-black px-4 py-2 rounded-lg font-medium text-xs">
+              <Button size="sm" className="bg-gradient-to-r from-primary-500 to-accent-500 hover:from-primary-600 hover:to-accent-600 text-white px-4 py-2 rounded-lg font-medium text-xs">
                 Book Now
               </Button>
             </Link>
             
-            <Button variant="outline" size="sm" className="text-neon-blue border-neon-blue/50 hover:bg-neon-blue/10 rounded-lg p-2">
+            <Button variant="outline" size="sm" className="text-white border-white/20 hover:bg-white/10 rounded-lg p-2">
               <MessageSquare className="h-3 w-3" />
             </Button>
             
-            <Button variant="outline" size="sm" className="text-neon-blue border-neon-blue/50 hover:bg-neon-blue/10 rounded-lg p-2">
+            <Button variant="outline" size="sm" className="text-white border-white/20 hover:bg-white/10 rounded-lg p-2">
               <Phone className="h-3 w-3" />
             </Button>
           </div>
@@ -539,7 +539,7 @@ function ProviderLineItem({ provider, area, index }: {
               <img 
                 src={provider.profileImage || 'https://images.pexels.com/photos/4050291/pexels-photo-4050291.jpeg?auto=compress&cs=tinysrgb&h=80&w=80'} 
                 alt={provider.name}
-                className="w-16 h-16 rounded-full object-cover border-2 border-neon-blue/50"
+                className="w-16 h-16 rounded-full object-cover border-2 border-primary-500/50"
               />
               {provider.availability.emergency && (
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
@@ -553,7 +553,7 @@ function ProviderLineItem({ provider, area, index }: {
               <div className="flex items-center space-x-3 mb-1">
                 <h3 className="text-lg font-semibold text-white truncate">{provider.name}</h3>
                 {provider.company && (
-                  <span className="text-neon-blue text-sm font-medium truncate">@ {provider.company}</span>
+                  <span className="text-primary-400 text-sm font-medium truncate">@ {provider.company}</span>
                 )}
                 <div className="flex items-center space-x-1">
                   <Star className="h-4 w-4 text-amber-400 fill-current" />
@@ -590,16 +590,16 @@ function ProviderLineItem({ provider, area, index }: {
             </div>
             
             <Link href={`/book?provider=${provider.id}&area=${area.slug}`}>
-              <Button className="bg-gradient-to-r from-neon-blue to-neon-green hover:from-neon-blue/80 hover:to-neon-green/80 text-black px-6 py-2 rounded-xl font-medium">
+              <Button className="bg-gradient-to-r from-primary-500 to-accent-500 hover:from-primary-600 hover:to-accent-600 text-white px-6 py-2 rounded-xl font-medium">
                 Book Now
               </Button>
             </Link>
             
-            <Button variant="outline" size="icon" className="text-neon-blue border-neon-blue/50 hover:bg-neon-blue/10 rounded-xl">
+            <Button variant="outline" size="icon" className="text-white border-white/20 hover:bg-white/10 rounded-xl">
               <MessageSquare className="h-4 w-4" />
             </Button>
             
-            <Button variant="outline" size="icon" className="text-neon-blue border-neon-blue/50 hover:bg-neon-blue/10 rounded-xl">
+            <Button variant="outline" size="icon" className="text-white border-white/20 hover:bg-white/10 rounded-xl">
               <Phone className="h-4 w-4" />
             </Button>
           </div>

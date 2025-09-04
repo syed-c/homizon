@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   MapPin, Star, Clock, Shield, Phone, MessageSquare, 
@@ -14,103 +14,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import BookingModal from '@/components/booking-modal';
 import Link from 'next/link';
-import { Service, Area, Provider, getServiceBySlug, getAreaBySlug, getProvidersForServiceArea } from '@/lib/data';
+import { Service, Area, Provider } from '@/lib/data';
 
 interface ServiceAreaPageClientProps {
-  service: Service | string;
-  area: Area | string;
-  providers?: Provider[];
-  serviceName?: string;
-  areaName?: string;
-  subArea?: string;
-  subAreaName?: string;
+  service: Service;
+  area: Area;
+  providers: Provider[];
 }
 
 export default function ServiceAreaPageClient({ 
-  service: serviceProp, 
-  area: areaProp, 
-  providers: providersProp,
-  serviceName,
-  areaName
+  service, 
+  area, 
+  providers 
 }: ServiceAreaPageClientProps) {
   const [selectedProvider, setSelectedProvider] = useState<Provider | undefined>(undefined);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState('rating');
   const [filterBy, setFilterBy] = useState('all');
-  const [service, setService] = useState<Service | null>(null);
-  const [area, setArea] = useState<Area | null>(null);
-  const [providers, setProviders] = useState<Provider[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Handle service data
-    let serviceData: Service | null = null;
-    if (typeof serviceProp === 'string') {
-      serviceData = getServiceBySlug(serviceProp);
-      if (!serviceData) {
-        console.error('Service not found:', serviceProp);
-        setLoading(false);
-        return;
-      }
-    } else {
-      serviceData = serviceProp;
-    }
-
-    // Handle area data
-    let areaData: Area | null = null;
-    if (typeof areaProp === 'string') {
-      areaData = getAreaBySlug(areaProp);
-      if (!areaData) {
-        console.error('Area not found:', areaProp);
-        setLoading(false);
-        return;
-      }
-    } else {
-      areaData = areaProp;
-    }
-
-    // Set the data
-    setService(serviceData);
-    setArea(areaData);
-
-    // Get providers
-    const providersData = providersProp || getProvidersForServiceArea(serviceData.slug, areaData.slug);
-    setProviders(providersData);
-    setLoading(false);
-
-    console.log('ServiceAreaPageClient loaded:', { 
-      service: serviceData.name, 
-      area: areaData.name, 
-      providersCount: providersData.length 
-    });
-  }, [serviceProp, areaProp, providersProp]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-charcoal-900 to-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-neon-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white/60">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!service || !area) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-charcoal-900 to-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Service or Area Not Found</h1>
-          <p className="text-white/60 mb-6">The requested service or area could not be found.</p>
-          <Link href="/">
-            <Button className="bg-gradient-to-r from-neon-blue to-neon-green hover:from-neon-blue/80 hover:to-neon-green/80 text-black">
-              Go Home
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  console.log('ServiceAreaPageClient rendered:', { 
+    service: service.name, 
+    area: area.name, 
+    providersCount: providers.length 
+  });
 
   // Sort and filter providers
   const filteredProviders = providers
@@ -508,5 +434,3 @@ export default function ServiceAreaPageClient({
     </div>
   );
 }
-
-

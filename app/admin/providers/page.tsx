@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import { useState } from 'react';
@@ -18,25 +16,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Link from 'next/link';
 import { sampleProviders, Provider } from '@/lib/data';
 
-const seededProviders: (Provider & { 
-  status: 'active' | 'pending' | 'suspended';
-  totalLeads: number;
-  completionRate: number;
-  monthlyRevenue: number;
-  lastActive: string;
-})[] = [];
-
-if (sampleProviders[0]) {
-  seededProviders.push({
-    ...sampleProviders[0],
-    status: 'active',
-    totalLeads: 156,
-    completionRate: 95,
-    monthlyRevenue: 8450,
-    lastActive: '2 hours ago'
-  });
-}
-
 const allProviders: (Provider & { 
   status: 'active' | 'pending' | 'suspended';
   totalLeads: number;
@@ -44,7 +23,30 @@ const allProviders: (Provider & {
   monthlyRevenue: number;
   lastActive: string;
 })[] = [
-  ...seededProviders,
+  {
+    ...sampleProviders[0],
+    status: 'active',
+    totalLeads: 156,
+    completionRate: 95,
+    monthlyRevenue: 8450,
+    lastActive: '2 hours ago'
+  },
+  {
+    ...sampleProviders[1],
+    status: 'active',
+    totalLeads: 203,
+    completionRate: 92,
+    monthlyRevenue: 6720,
+    lastActive: '5 hours ago'
+  },
+  {
+    ...sampleProviders[2],
+    status: 'active',
+    totalLeads: 89,
+    completionRate: 88,
+    monthlyRevenue: 5340,
+    lastActive: '1 day ago'
+  },
   {
     id: 'provider-4',
     name: 'Rajesh Kumar',
@@ -69,12 +71,7 @@ const allProviders: (Provider & {
       weekends: '9:00 AM - 4:00 PM'
     },
     isApproved: false,
-    isFeatured: false,
-    isPremium: false,
     joinedDate: '2024-01-20',
-    completedJobs: 0,
-    responseTime: 'Within 2 hours',
-    portfolioImages: [],
     status: 'pending',
     totalLeads: 0,
     completionRate: 0,
@@ -105,12 +102,7 @@ const allProviders: (Provider & {
       weekends: '8:00 AM - 5:00 PM'
     },
     isApproved: true,
-    isFeatured: false,
-    isPremium: false,
     joinedDate: '2023-11-15',
-    completedJobs: 0,
-    responseTime: 'Within 4 hours',
-    portfolioImages: [],
     status: 'suspended',
     totalLeads: 34,
     completionRate: 78,
@@ -124,17 +116,11 @@ export default function ProvidersPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [serviceFilter, setServiceFilter] = useState('all');
   const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
-  const [providers, setProviders] = useState(allProviders);
 
-  const filteredProviders = providers.filter(provider => {
-    const normalizedSearch = (searchTerm ?? '').toLowerCase();
-    const name = (provider.name ?? '').toLowerCase();
-    const company = (provider.company ?? '').toLowerCase();
-    const email = (provider.email ?? '').toLowerCase();
-
-    const matchesSearch = name.includes(normalizedSearch) ||
-                         company.includes(normalizedSearch) ||
-                         email.includes(normalizedSearch);
+  const filteredProviders = allProviders.filter(provider => {
+    const matchesSearch = provider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         provider.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         provider.email.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || provider.status === statusFilter;
     
@@ -162,25 +148,25 @@ export default function ProvidersPage() {
   const stats = [
     {
       title: 'Total Providers',
-      value: providers.length.toString(),
+      value: allProviders.length.toString(),
       icon: Users,
       color: 'from-blue-500 to-cyan-500'
     },
     {
       title: 'Active',
-      value: providers.filter(p => p.status === 'active').length.toString(),
+      value: allProviders.filter(p => p.status === 'active').length.toString(),
       icon: UserCheck,
       color: 'from-green-500 to-emerald-500'
     },
     {
       title: 'Pending Approval',
-      value: providers.filter(p => p.status === 'pending').length.toString(),
+      value: allProviders.filter(p => p.status === 'pending').length.toString(),
       icon: Clock,
       color: 'from-yellow-500 to-orange-500'
     },
     {
       title: 'Suspended',
-      value: providers.filter(p => p.status === 'suspended').length.toString(),
+      value: allProviders.filter(p => p.status === 'suspended').length.toString(),
       icon: UserX,
       color: 'from-red-500 to-pink-500'
     }
@@ -196,7 +182,7 @@ export default function ProvidersPage() {
 
       if (response.ok) {
         // Update local state
-        setProviders(prev => 
+        setAllProviders(prev => 
           prev.map(p => 
             p.id === providerId 
               ? { ...p, status: 'active', isApproved: true }
@@ -220,7 +206,7 @@ export default function ProvidersPage() {
 
       if (response.ok) {
         // Update local state
-        setProviders(prev => 
+        setAllProviders(prev => 
           prev.map(p => 
             p.id === providerId 
               ? { ...p, status: 'suspended', isApproved: false }
@@ -245,7 +231,7 @@ export default function ProvidersPage() {
 
         if (response.ok) {
           // Update local state
-          setProviders(prev => prev.filter(p => p.id !== providerId));
+          setAllProviders(prev => prev.filter(p => p.id !== providerId));
           alert('Provider deleted successfully!');
         }
       } catch (error) {
@@ -538,4 +524,3 @@ export default function ProvidersPage() {
     </div>
   );
 }
-

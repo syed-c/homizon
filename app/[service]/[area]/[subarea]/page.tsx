@@ -9,7 +9,7 @@ import {
   services,
   areas
 } from '@/lib/data';
-import ServiceAreaPageClient from '@/app/[service]/[area]/service-area-page-client';
+import ServiceAreaPageClient from '../service-area-page-client';
 
 interface ServiceAreaSubareaPageProps {
   params: Promise<{
