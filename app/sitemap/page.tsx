@@ -15,6 +15,9 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { serviceCategories, services, areas, generateServiceAreaCombinations } from '@/lib/data';
 
+// Derive a type that matches the combination objects
+type Combination = ReturnType<typeof generateServiceAreaCombinations>[number];
+
 export default function SitemapPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -22,20 +25,21 @@ export default function SitemapPage() {
   const [viewMode, setViewMode] = useState('grid');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
-  console.log("Sitemap page loaded");
-
   const allCombinations = generateServiceAreaCombinations();
 
-  const filteredCombinations = allCombinations.filter(combo => {
+  const filteredCombinations = allCombinations.filter((combo: Combination) => {
     const normalizedQuery = (searchQuery ?? '').toLowerCase();
 
-    const serviceName = (combo.serviceName ?? '').toLowerCase();
-    const areaName = (combo.areaName ?? '').toLowerCase();
-    const subareaName = (combo.subareaName ?? '').toLowerCase();
+    // Map display names from slugs
+    const serviceName = (services.find(s => s.slug === combo.service)?.name ?? '').toLowerCase();
+    const areaName = (areas.find(a => a.slug === combo.area)?.name ?? '').toLowerCase();
+    const subareaName = (combo.subArea 
+      ? (areas.find(a => a.slug === combo.area)?.subAreas.find(sa => sa.slug === combo.subArea)?.name ?? '')
+      : '').toLowerCase();
 
     const matchesSearch = serviceName.includes(normalizedQuery) ||
                          areaName.includes(normalizedQuery) ||
-                         (!!combo.subareaName && subareaName.includes(normalizedQuery));
+                         (!!combo.subArea && subareaName.includes(normalizedQuery));
     
     const matchesCategory = filterCategory === 'all' || combo.service.includes(filterCategory);
     const matchesArea = filterArea === 'all' || combo.area === filterArea;
@@ -59,6 +63,14 @@ export default function SitemapPage() {
     areaPages: areas.length,
     serviceAreaPages: allCombinations.filter(c => c.type === 'service-area').length,
     serviceAreaSubareaPages: allCombinations.filter(c => c.type === 'service-area-subarea').length
+  };
+
+  const getServiceName = (combo: Combination) => services.find(s => s.slug === combo.service)?.name ?? combo.service;
+  const getAreaName = (combo: Combination) => areas.find(a => a.slug === combo.area)?.name ?? combo.area;
+  const getSubareaName = (combo: Combination) => {
+    if (!combo.subArea) return undefined;
+    const area = areas.find(a => a.slug === combo.area);
+    return area?.subAreas.find(sa => sa.slug === combo.subArea)?.name ?? combo.subArea;
   };
 
   return (
@@ -288,9 +300,9 @@ export default function SitemapPage() {
                           <div key={service.slug} className="bg-black/20 rounded-lg p-3 border border-white/10">
                             <div className="flex items-center justify-between">
                               <span className="text-white/80 text-sm">{service.name}</span>
-                              <Badge className="bg-neon-blue/20 text-neon-blue text-xs">
+                              <div className="bg-neon-blue/20 text-neon-blue text-xs rounded-full px-2.5 py-0.5">
                                 {areas.length} areas
-                              </Badge>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -313,69 +325,79 @@ export default function SitemapPage() {
           
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredCombinations.slice(0, 100).map((combo, index) => (
-                <motion.div
-                  key={combo.url}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: (index % 20) * 0.05 }}
-                  viewport={{ once: true }}
-                >
-                  <Link href={combo.url}>
-                    <Card className="bg-gradient-card backdrop-blur-sm border border-white/10 hover:border-neon-blue/50 transition-all duration-300 cursor-pointer group">
-                      <CardContent className="p-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gradient-to-r from-neon-blue to-neon-green rounded-lg flex items-center justify-center">
-                            {combo.type === 'service-area-subarea' ? (
-                              <Building className="h-4 w-4 text-black" />
-                            ) : (
-                              <MapPin className="h-4 w-4 text-black" />
-                            )}
+              {filteredCombinations.slice(0, 100).map((combo, index) => {
+                const serviceDisplay = getServiceName(combo);
+                const areaDisplay = getAreaName(combo);
+                const subareaDisplay = getSubareaName(combo);
+                return (
+                  <motion.div
+                    key={combo.url}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: (index % 20) * 0.05 }}
+                    viewport={{ once: true }}
+                  >
+                    <Link href={combo.url}>
+                      <Card className="bg-gradient-card backdrop-blur-sm border border-white/10 hover:border-neon-blue/50 transition-all duration-300 cursor-pointer group">
+                        <CardContent className="p-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-gradient-to-r from-neon-blue to-neon-green rounded-lg flex items-center justify-center">
+                              {combo.type === 'service-area-subarea' ? (
+                                <Building className="h-4 w-4 text-black" />
+                              ) : (
+                                <MapPin className="h-4 w-4 text-black" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-white font-medium text-sm group-hover:text-neon-blue transition-colors">
+                                {serviceDisplay}
+                              </h3>
+                              <p className="text-white/60 text-xs">
+                                {subareaDisplay ? `${areaDisplay} - ${subareaDisplay}` : areaDisplay}
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex-1">
-                            <h3 className="text-white font-medium text-sm group-hover:text-neon-blue transition-colors">
-                              {combo.serviceName}
-                            </h3>
-                            <p className="text-white/60 text-xs">
-                              {combo.subareaName ? `${combo.areaName} - ${combo.subareaName}` : combo.areaName}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </motion.div>
-              ))}
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  </motion.div>
+                );
+              })}
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredCombinations.slice(0, 100).map((combo, index) => (
-                <motion.div
-                  key={combo.url}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: (index % 20) * 0.02 }}
-                  viewport={{ once: true }}
-                >
-                  <Link href={combo.url}>
-                    <div className="flex items-center justify-between p-4 bg-gradient-card backdrop-blur-sm border border-white/10 rounded-lg hover:border-neon-green/50 transition-all duration-300 cursor-pointer group">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-6 h-6 bg-gradient-to-r from-neon-blue to-neon-green rounded flex items-center justify-center">
-                          {combo.type === 'service-area-subarea' ? (
-                            <Building className="h-3 w-3 text-black" />
-                          ) : (
-                            <MapPin className="h-3 w-3 text-black" />
-                          )}
+              {filteredCombinations.slice(0, 100).map((combo, index) => {
+                const serviceDisplay = getServiceName(combo);
+                const areaDisplay = getAreaName(combo);
+                const subareaDisplay = getSubareaName(combo);
+                return (
+                  <motion.div
+                    key={combo.url}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: (index % 20) * 0.02 }}
+                    viewport={{ once: true }}
+                  >
+                    <Link href={combo.url}>
+                      <div className="flex items-center justify-between p-4 bg-gradient-card backdrop-blur-sm border border-white/10 rounded-lg hover:border-neon-green/50 transition-all duration-300 cursor-pointer group">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-6 h-6 bg-gradient-to-r from-neon-blue to-neon-green rounded flex items-center justify-center">
+                            {combo.type === 'service-area-subarea' ? (
+                              <Building className="h-3 w-3 text-black" />
+                            ) : (
+                              <MapPin className="h-3 w-3 text-black" />
+                            )}
+                          </div>
+                          <span className="text-white/80 text-sm group-hover:text-neon-green transition-colors">
+                            {serviceDisplay} in {subareaDisplay ? `${areaDisplay} - ${subareaDisplay}` : areaDisplay}
+                          </span>
                         </div>
-                        <span className="text-white/80 text-sm group-hover:text-neon-green transition-colors">
-                          {combo.serviceName} in {combo.subareaName ? `${combo.areaName} - ${combo.subareaName}` : combo.areaName}
-                        </span>
+                        <ArrowRight className="h-4 w-4 text-white/40 group-hover:text-neon-blue transition-colors" />
                       </div>
-                      <ArrowRight className="h-4 w-4 text-white/40 group-hover:text-neon-blue transition-colors" />
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
+                    </Link>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
           
