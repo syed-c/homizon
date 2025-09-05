@@ -108,16 +108,24 @@ export default function ProviderRegisterPage() {
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
+      console.log('Starting provider registration process...');
 
       // 1) Upload image if present
       let profileUrl: string | undefined = undefined;
       if (profileFile) {
+        console.log('Uploading profile image...');
         const uploaded = await uploadImageToSupabaseStorage(profileFile, `providers/${Date.now()}`);
-        if ((uploaded as any).url) profileUrl = (uploaded as any).url;
+        if ((uploaded as any).url) {
+          profileUrl = (uploaded as any).url;
+          console.log('Profile image uploaded successfully:', profileUrl);
+        } else {
+          console.warn('Profile image upload failed or returned no URL');
+        }
       }
 
       // 2) Build provider row - Use UUID to prevent duplicate key errors
       const providerId = `provider-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      console.log('Generated provider ID:', providerId);
 
       const providerRow: ProviderInsert = {
         id: providerId,
@@ -140,15 +148,35 @@ export default function ProviderRegisterPage() {
         joineddate: new Date().toISOString()
       };
 
+      console.log('Provider data prepared:', {
+        id: providerRow.id,
+        name: providerRow.name,
+        email: providerRow.email,
+        services: providerRow.services.length,
+        areas: providerRow.areas.length
+      });
+
       // 3) Save to Supabase providers table
-      await createProviderInSupabase(providerRow);
+      console.log('Attempting to save provider to Supabase...');
+      const result = await createProviderInSupabase(providerRow);
+      console.log('Supabase create result:', result);
+
+      if (result.skipped) {
+        throw new Error('Supabase is not configured properly. Please check environment variables.');
+      }
+
+      if (!result.data) {
+        throw new Error('Provider was not created in Supabase. No data returned.');
+      }
+
+      console.log('Provider successfully created in Supabase:', result.data);
 
       // 4) Navigate to thank-you
       router.push('/thank-you');
     } catch (e: any) {
-      const message = typeof e?.message === 'string' ? e.message : 'Unknown error';
-      alert(`Failed to submit registration. ${message}`);
-      console.error(e);
+      console.error('Provider registration error:', e);
+      const message = typeof e?.message === 'string' ? e.message : 'Unknown error occurred';
+      alert(`Failed to submit registration: ${message}\n\nPlease check the console for more details.`);
     } finally {
       setSubmitting(false);
     }

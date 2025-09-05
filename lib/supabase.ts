@@ -82,24 +82,50 @@ export type ProviderInsert = {
 };
 
 export async function createProviderInSupabase(provider: ProviderInsert) {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { skipped: true };
-  const endpoint = `${SUPABASE_URL}/rest/v1/providers`;
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      Prefer: 'return=representation'
-    },
-    body: JSON.stringify(provider)
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Supabase provider insert failed: HTTP ${res.status} ${text}`);
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.warn('Supabase not configured - SUPABASE_URL or SUPABASE_ANON_KEY missing');
+    return { skipped: true };
   }
-  const data = await res.json();
-  return { data: Array.isArray(data) ? data[0] : data };
+  
+  try {
+    const endpoint = `${SUPABASE_URL}/rest/v1/providers`;
+    console.log('Creating provider in Supabase:', {
+      endpoint,
+      providerId: provider.id,
+      providerName: provider.name,
+      providerEmail: provider.email
+    });
+    
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        Prefer: 'return=representation'
+      },
+      body: JSON.stringify(provider)
+    });
+    
+    console.log('Supabase response status:', res.status, res.statusText);
+    
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.error('Supabase provider insert failed:', {
+        status: res.status,
+        statusText: res.statusText,
+        responseText: text
+      });
+      throw new Error(`Supabase provider insert failed: HTTP ${res.status} ${text}`);
+    }
+    
+    const data = await res.json();
+    console.log('Supabase provider created successfully:', data);
+    return { data: Array.isArray(data) ? data[0] : data };
+  } catch (error) {
+    console.error('Error in createProviderInSupabase:', error);
+    throw error;
+  }
 }
 
 export async function updateProviderStatusInSupabase(providerId: string, status: 'active' | 'suspended' | 'pending', isApproved: boolean) {
