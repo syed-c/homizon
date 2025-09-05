@@ -116,15 +116,11 @@ export default function ProviderRegisterPage() {
         if ((uploaded as any).url) profileUrl = (uploaded as any).url;
       }
 
-      // 2) Build provider row
-      const slug = formData.personalInfo.name
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '') || `provider-${Date.now()}`;
+      // 2) Build provider row - Use UUID to prevent duplicate key errors
+      const providerId = `provider-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
       const providerRow: ProviderInsert = {
-        id: slug,
+        id: providerId,
         name: formData.personalInfo.name,
         email: formData.personalInfo.email,
         phone: formData.personalInfo.phone,

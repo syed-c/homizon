@@ -50,24 +50,49 @@ export default function ProvidersPage() {
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [providerToDelete, setProviderToDelete] = useState<Provider | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadProviders = async () => {
+    try {
+      setLoading(true);
+      setRefreshing(true);
+      console.log('Loading providers from admin API...');
+      const res = await fetch('/api/admin/providers?_t=' + Date.now(), { 
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      
+      if (!res.ok) {
+        console.error('API response not ok:', res.status, res.statusText);
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      
+      const apiProviders = await res.json();
+      console.log('Received providers:', apiProviders?.length || 0);
+      
+      if (Array.isArray(apiProviders)) {
+        setAllProviders(apiProviders);
+        console.log('Providers loaded successfully:', apiProviders.length);
+      } else {
+        console.warn('API returned non-array data:', apiProviders);
+        setAllProviders([]);
+      }
+    } catch (error) {
+      console.error('Error loading providers:', error);
+      // Fallback to empty array on error
+      setAllProviders([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch('/api/admin/providers', { cache: 'no-store' });
-        if (!res.ok) return;
-        const apiProviders = await res.json();
-        if (Array.isArray(apiProviders)) {
-          setAllProviders(apiProviders);
-        }
-      } catch (error) {
-        console.error('Error loading providers:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    loadProviders();
   }, []);
 
   const filteredProviders = allProviders.filter(provider => {
@@ -282,6 +307,24 @@ export default function ProvidersPage() {
                 className="pl-10 h-12 bg-white/10 border-white/20 text-white placeholder-white/50"
               />
             </div>
+            <Button 
+              onClick={loadProviders}
+              disabled={refreshing}
+              variant="outline"
+              className="h-12 px-6 border-white/20 text-white hover:bg-white/10"
+            >
+              {refreshing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Refreshing...
+                </>
+              ) : (
+                <>
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Refresh
+                </>
+              )}
+            </Button>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full lg:w-48 h-12 bg-white/10 border-white/20 text-white">
                 <SelectValue placeholder="Filter by Status" />

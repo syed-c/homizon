@@ -164,17 +164,37 @@ export async function updateProviderStatusInSupabase(providerId: string, status:
 }
 
 export async function listProvidersFromSupabase() {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { data: [] };
-  const endpoint = `${SUPABASE_URL}/rest/v1/providers?select=*`;
-  const res = await fetch(endpoint, {
-    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Supabase providers fetch failed: HTTP ${res.status} ${text}`);
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.warn('Supabase not configured, returning empty providers list');
+    return { data: [] };
   }
-  const data = await res.json();
-  return { data };
+  
+  try {
+    const endpoint = `${SUPABASE_URL}/rest/v1/providers?select=*&order=joineddate.desc`;
+    console.log('Fetching providers from Supabase:', endpoint);
+    
+    const res = await fetch(endpoint, {
+      headers: { 
+        apikey: SUPABASE_ANON_KEY, 
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Cache-Control': 'no-cache'
+      },
+      cache: 'no-store'
+    });
+    
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.error(`Supabase providers fetch failed: HTTP ${res.status}`, text);
+      throw new Error(`Supabase providers fetch failed: HTTP ${res.status} ${text}`);
+    }
+    
+    const data = await res.json();
+    console.log('Successfully fetched providers from Supabase:', data?.length || 0);
+    return { data: data || [] };
+  } catch (error) {
+    console.error('Error in listProvidersFromSupabase:', error);
+    return { data: [] };
+  }
 }
 
 export async function getProviderByIdFromSupabase(providerId: string) {
