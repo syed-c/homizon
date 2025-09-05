@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Search, MapPin, Star, Award, Clock, TrendingUp, Filter, 
@@ -12,7 +12,24 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
-import { sampleProviders, serviceCategories, areas } from '@/lib/data';
+import { serviceCategories, areas } from '@/lib/data';
+
+interface ProviderDisplay {
+  id: string;
+  name: string;
+  company?: string;
+  profileImage?: string;
+  rating: number;
+  reviewCount: number;
+  experience: number;
+  services: string[];
+  areas: string[];
+  description: string;
+  completedJobs?: number;
+  responseTime?: string;
+  isFeatured?: boolean;
+  isPremium?: boolean;
+}
 
 export default function ProvidersPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,47 +37,77 @@ export default function ProvidersPage() {
   const [selectedArea, setSelectedArea] = useState('all');
   const [sortBy, setSortBy] = useState('rating');
   const [showFilters, setShowFilters] = useState(false);
+  const [providers, setProviders] = useState<ProviderDisplay[]>([]);
 
-  const filteredProviders = sampleProviders
-    .filter(provider => provider.isApproved)
-    .filter(provider => {
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        return (
-          provider.name.toLowerCase().includes(searchLower) ||
-          provider.company?.toLowerCase().includes(searchLower) ||
-          provider.services.some(service => service.includes(searchLower))
-        );
+  useEffect(() => {
+    (async () => {
+      try {
+        const { listProvidersFromSupabase } = await import('@/lib/supabase');
+        const { data } = await listProvidersFromSupabase();
+        const mapped: ProviderDisplay[] = (data as any[]).map(p => ({
+          id: p.id,
+          name: p.name,
+          company: p.company,
+          profileImage: p.profileimage,
+          rating: Number(p.rating) || 4.5,
+          reviewCount: Number(p.reviewcount) || 0,
+          experience: Number(p.experience) || 0,
+          services: p.services || [],
+          areas: p.areas || [],
+          description: p.description || '',
+          completedJobs: Number(p.completedjobs) || 0,
+          responseTime: p.responsetime || 'Within 30 minutes',
+          isFeatured: !!p.isfeatured,
+          isPremium: !!p.ispremium,
+        }));
+        setProviders(mapped);
+      } catch {
+        setProviders([]);
       }
-      return true;
-    })
-    .filter(provider => {
-      if (selectedCategory !== 'all') {
-        const categoryServices = serviceCategories.find(cat => cat.slug === selectedCategory)?.services.map(s => s.id) || [];
-        return provider.services.some(service => categoryServices.includes(service));
-      }
-      return true;
-    })
-    .filter(provider => {
-      if (selectedArea !== 'all') {
-        return provider.areas.includes(selectedArea);
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'rating':
-          return b.rating - a.rating;
-        case 'reviews':
-          return b.reviewCount - a.reviewCount;
-        case 'experience':
-          return b.experience - a.experience;
-        case 'jobs':
-          return b.completedJobs - a.completedJobs;
-        default:
-          return 0;
-      }
-    });
+    })();
+  }, []);
+
+  const filteredProviders = useMemo(() => {
+    return providers
+      .filter(provider => {
+        if (searchTerm) {
+          const searchLower = searchTerm.toLowerCase();
+          return (
+            provider.name.toLowerCase().includes(searchLower) ||
+            provider.company?.toLowerCase().includes(searchLower) ||
+            provider.services.some(service => service.includes(searchLower))
+          );
+        }
+        return true;
+      })
+      .filter(provider => {
+        if (selectedCategory !== 'all') {
+          const categoryServices = serviceCategories.find(cat => cat.slug === selectedCategory)?.services.map(s => s.id) || [];
+          return provider.services.some(service => categoryServices.includes(service));
+        }
+        return true;
+      })
+      .filter(provider => {
+        if (selectedArea !== 'all') {
+          return provider.areas.includes(selectedArea);
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        switch (sortBy) {
+          case 'rating':
+            return b.rating - a.rating;
+          case 'reviews':
+            return b.reviewCount - a.reviewCount;
+          case 'experience':
+            return b.experience - a.experience;
+          case 'jobs':
+            return (b.completedJobs || 0) - (a.completedJobs || 0);
+          default:
+            return 0;
+        }
+      });
+  }, [providers, searchTerm, selectedCategory, selectedArea, sortBy]);
 
   const featuredProviders = filteredProviders.filter(provider => provider.isFeatured);
   const regularProviders = filteredProviders.filter(provider => !provider.isFeatured);

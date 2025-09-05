@@ -52,6 +52,9 @@ function BookingForm() {
     whatsapp: true
   });
 
+  const isPhoneValid = /^(\+|00)?[0-9\s-]{7,15}$/.test(formData.phone.trim());
+  const isEmailValid = !formData.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
+
   console.log("Booking form loaded with params:", Object.fromEntries(searchParams.entries()));
   console.log("Current form data:", formData);
 
@@ -103,14 +106,16 @@ function BookingForm() {
 
   const handleSubmit = async () => {
     console.log("Form submitted:", formData);
+    if (!isPhoneValid || !isEmailValid || !formData.name) {
+      alert('Please provide a valid name, phone number and email (if provided).');
+      setCurrentStep(3);
+      return;
+    }
     
     try {
-      // Here you would submit to your API
       const response = await fetch('/api/leads', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
           source: 'booking_form',
@@ -118,13 +123,31 @@ function BookingForm() {
         }),
       });
 
-      if (response.ok) {
-        alert('Booking submitted successfully! We will contact you within 30 minutes.');
-        // Redirect to thank you page
-        window.location.href = '/thank-you';
-      } else {
-        throw new Error('Failed to submit booking');
-      }
+      if (!response.ok) throw new Error('Failed to submit booking');
+
+      // Save to Supabase as well
+      try {
+        const { saveLeadToSupabase } = await import('@/lib/supabase');
+        await saveLeadToSupabase({
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email,
+          servicecategory: formData.serviceCategory,
+          subservices: formData.subServices,
+          area: selectedArea?.name || formData.area,
+          subarea: formData.subArea,
+          address: formData.address,
+          description: formData.description,
+          urgency: formData.urgency,
+          status: 'new',
+          source: 'booking_form',
+          whatsapp: formData.whatsapp,
+          createdat: new Date().toISOString(),
+          updatedat: new Date().toISOString(),
+        })
+      } catch {}
+
+      window.location.href = '/thank-you';
     } catch (error) {
       console.error('Error submitting booking:', error);
       alert('Failed to submit booking. Please try again or call us directly.');
@@ -438,9 +461,12 @@ function BookingForm() {
                         placeholder="+971 50 XXX XXXX"
                         value={formData.phone}
                         onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                        className="pl-10 h-12 bg-white/10 border-white/20 text-white placeholder-white/50"
+                        className={`pl-10 h-12 bg-white/10 border-white/20 text-white placeholder-white/50 ${formData.phone && !isPhoneValid ? 'border-red-500' : ''}`}
                       />
                     </div>
+                    {formData.phone && !isPhoneValid && (
+                      <p className="text-red-400 text-xs mt-1">Enter a valid phone number (7-15 digits).</p>
+                    )}
                   </div>
                 </div>
 
@@ -453,9 +479,12 @@ function BookingForm() {
                       placeholder="your.email@example.com"
                       value={formData.email}
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      className="pl-10 h-12 bg-white/10 border-white/20 text-white placeholder-white/50"
+                      className={`pl-10 h-12 bg-white/10 border-white/20 text-white placeholder-white/50 ${formData.email && !isEmailValid ? 'border-red-500' : ''}`}
                     />
                   </div>
+                  {formData.email && !isEmailValid && (
+                    <p className="text-red-400 text-xs mt-1">Enter a valid email address.</p>
+                  )}
                 </div>
 
                 <div>

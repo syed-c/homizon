@@ -26,8 +26,8 @@ export default function ProviderProfileClient({ provider, services, areas }: Pro
   const telHref = useMemo(() => `tel:${provider.phone.replace(/\s+/g, '')}`, [provider.phone]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-charcoal-900 to-black text-white overflow-x-hidden">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-black text-white">
+      <div className="container mx-auto py-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex items-start gap-6 flex-wrap">
             <div className="relative">

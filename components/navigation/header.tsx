@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, Phone, MapPin, User, Menu, X, Search, UserCheck, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { usePathname } from 'next/navigation';
+import { Bell, Settings, LogOut } from 'lucide-react';
 import { useSettings } from '@/lib/settings-context';
 
 // Lightweight data for header - only what's needed
@@ -39,6 +41,15 @@ export default function Header() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [dropdownTimeout, setDropdownTimeout] = useState<NodeJS.Timeout | null>(null);
   const { settings } = useSettings();
+  const pathname = usePathname();
+  const isProviderRoute = pathname?.startsWith('/provider/');
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem('provider');
+      window.location.href = '/login';
+    } catch {}
+  };
 
   const handleDropdownToggle = (dropdown: string) => {
     setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
@@ -175,27 +186,43 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* CTA Buttons */}
+          {/* CTA Buttons or Provider Actions */}
           <div className="flex items-center space-x-4">
             <div className="hidden md:flex items-center space-x-2 text-white/80 text-sm">
               <Phone className="h-4 w-4" />
               <span>{settings.contact_phone}</span>
             </div>
-            
-            <Link href="/providers">
-              <Button 
-                variant="outline" 
-                className="hidden md:flex border-neon-green/50 text-neon-green hover:bg-neon-green/10 transition-all duration-300"
-              >
-                Browse Providers
-              </Button>
-            </Link>
-            
-            <Link href="/providers">
-              <Button className="bg-gradient-to-r from-neon-blue to-neon-green hover:from-neon-blue/80 hover:to-neon-green/80 text-black font-semibold transition-all duration-300">
-                Find Services
-              </Button>
-            </Link>
+            {!isProviderRoute && (
+              <>
+                <Link href="/providers">
+                  <Button 
+                    variant="outline" 
+                    className="hidden md:flex border-neon-green/50 text-neon-green hover:bg-neon-green/10 transition-all duration-300"
+                  >
+                    Browse Providers
+                  </Button>
+                </Link>
+                <Link href="/providers">
+                  <Button className="bg-gradient-to-r from-neon-blue to-neon-green hover:from-neon-blue/80 hover:to-neon-green/80 text-black font-semibold transition-all duration-300">
+                    Find Services
+                  </Button>
+                </Link>
+              </>
+            )}
+            {isProviderRoute && (
+              <div className="hidden md:flex items-center space-x-2">
+                <Button variant="outline" size="icon" className="text-white border-white/20 hover:bg-white/10">
+                  <Bell className="h-5 w-5" />
+                </Button>
+                <Button variant="outline" size="icon" className="text-white border-white/20 hover:bg-white/10">
+                  <Settings className="h-5 w-5" />
+                </Button>
+                <Button variant="outline" onClick={handleLogout} className="text-white border-white/20 hover:bg-white/10">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
+            )}
 
             {/* Mobile Menu Toggle */}
             <button

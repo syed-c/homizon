@@ -34,13 +34,7 @@ interface Lead {
   responses: number;
 }
 
-const MOCK_PROVIDERS = [
-  { id: 'provider-123', name: 'Ahmed Hassan' },
-  { id: 'provider-456', name: 'Sarah Mohammed' },
-  { id: 'provider-789', name: 'Omar Ali' },
-  { id: 'provider-abc', name: 'Fatima Al-Zahra' },
-  { id: 'provider-def', name: 'Mohammad Khan' }
-];
+type SimpleProvider = { id: string; name: string };
 
 export default function LeadsManagement() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -48,92 +42,88 @@ export default function LeadsManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [error, setError] = useState('');
+  const [providers, setProviders] = useState<SimpleProvider[]>([]);
 
   const loadLeads = async () => {
     try {
       setLoading(true);
       setError('');
-      console.log('🔄 Loading leads from API endpoint...');
-      
-      const response = await fetch('/api/leads?_t=' + Date.now(), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
+
+      // Prefer our API which now pulls from Supabase
+      const response = await fetch('/api/leads?_t=' + Date.now(), { method: 'GET' });
+      if (!response.ok) throw new Error(String(response.status));
       const data = await response.json();
-      console.log('✅ API Response received:', data);
-      
-      if (data.leads && Array.isArray(data.leads)) {
+      if (Array.isArray(data.leads)) {
         setLeads(data.leads);
-        console.log(`📝 Successfully loaded ${data.leads.length} leads`);
-        
-        if (data.leads.length > 0) {
-          toast({
-            title: "Leads Loaded Successfully",
-            description: `Found ${data.leads.length} customer inquiries`,
-          });
-        }
-      } else {
-        console.warn('⚠️ No leads array in API response:', data);
-        setLeads([]);
+        return;
       }
-      
-    } catch (error) {
-      console.error('❌ Error loading leads:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load leads');
-      toast({
-        title: "Error Loading Leads",
-        description: "Failed to fetch leads data. Please try again.",
-        variant: "destructive",
-      });
+      throw new Error('Bad shape');
+    } catch (err) {
+      // Fallback to direct Supabase fetch
+      try {
+        const { listLeadsFromSupabase } = await import('@/lib/supabase');
+        const { data } = await listLeadsFromSupabase();
+        const mapped = (data as any[]).map(l => ({
+          id: l.id,
+          name: l.name,
+          phone: l.phone,
+          email: l.email || '',
+          serviceCategory: l.servicecategory,
+          subServices: l.subservices || [],
+          area: l.area,
+          subArea: l.subarea || '',
+          address: l.address || '',
+          description: l.description || '',
+          urgency: (l.urgency || 'normal') as any,
+          status: (l.status || 'new') as any,
+          createdAt: l.createdat || new Date().toISOString(),
+          updatedAt: l.updatedat || l.createdat || new Date().toISOString(),
+          source: l.source || 'supabase',
+          whatsapp: !!l.whatsapp,
+          assignedProviders: l.providerid ? [l.providerid] : [],
+          responses: 0,
+        }));
+        setLeads(mapped);
+      } catch (e) {
+        setError('Failed to fetch leads');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const assignProvider = async (leadId: string, providerId: string) => {
+  const loadProviders = async () => {
     try {
-      console.log('🔄 Assigning provider:', providerId, 'to lead:', leadId);
-      
-      const response = await fetch('/api/admin/leads', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadId,
-          providerId,
-          action: 'assign'
-        })
-      });
-
-      if (response.ok) {
-        console.log('✅ Provider assigned successfully');
-        toast({
-          title: "Provider Assigned",
-          description: "Lead has been assigned to the provider successfully",
-        });
-        loadLeads(); // Refresh the leads
-      } else {
-        throw new Error('Failed to assign provider');
-      }
-    } catch (error) {
-      console.error('❌ Error assigning provider:', error);
-      toast({
-        title: "Assignment Failed",
-        description: "Failed to assign provider to lead",
-        variant: "destructive",
-      });
+      const { listProvidersFromSupabase } = await import('@/lib/supabase');
+      const { data } = await listProvidersFromSupabase();
+      const mapped = (data as any[]).map(p => ({ id: p.id, name: p.name }));
+      setProviders(mapped);
+    } catch {
+      setProviders([]);
     }
   };
 
-  useEffect(() => {
-    loadLeads();
-  }, []);
+  const assignProvider = async (leadId: string, providerId: string) => {
+    try {
+      // Update both shared admin leads and main leads endpoint for consistency
+      const response = await fetch('/api/admin/leads', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId, providerId, action: 'assign' })
+      });
+      const response2 = await fetch('/api/leads', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId, providerId, action: 'assign_provider' })
+      });
+      if (response.ok && response2.ok) {
+        toast({ title: 'Provider Assigned', description: 'Lead has been assigned to the provider successfully' });
+        loadLeads();
+      }
+    } catch {}
+  };
+
+  useEffect(() => { loadLeads(); loadProviders(); }, []);
 
   // Filter leads
   const filteredLeads = leads.filter(lead => {
@@ -362,7 +352,7 @@ export default function LeadsManagement() {
                         <SelectValue placeholder="Assign Provider" />
                       </SelectTrigger>
                       <SelectContent>
-                        {MOCK_PROVIDERS.map((provider) => (
+                        {providers.map((provider) => (
                           <SelectItem key={provider.id} value={provider.id}>
                             {provider.name}
                           </SelectItem>

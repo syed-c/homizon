@@ -225,23 +225,56 @@ export async function PUT(request: Request) {
 }
 
 export async function GET(request: NextRequest) {
-  const url = new URL(request.url);
-  const limit = parseInt(url.searchParams.get('limit') || '50');
-  const offset = parseInt(url.searchParams.get('offset') || '0');
-  
-  // Get shared leads data
-  const mockLeads = getMockLeads();
-  
-  // Return recent leads (sorted by creation date)
-  const recentLeads = mockLeads
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(offset, offset + limit);
-  
-  return NextResponse.json({
-    leads: recentLeads,
-    total: mockLeads.length,
-    hasMore: offset + limit < mockLeads.length
-  });
+  try {
+    const url = new URL(request.url);
+    const limit = parseInt(url.searchParams.get('limit') || '50');
+    const offset = parseInt(url.searchParams.get('offset') || '0');
+
+    // Prefer Supabase leads
+    let supabaseLeads: any[] = [];
+    try {
+      const { listLeadsFromSupabase } = await import('@/lib/supabase');
+      const { data } = await listLeadsFromSupabase();
+      if (Array.isArray(data)) {
+        supabaseLeads = data.map(l => ({
+          id: l.id || `LEAD_${Date.now()}`,
+          name: l.name,
+          phone: l.phone,
+          email: l.email,
+          serviceCategory: l.servicecategory,
+          subServices: l.subservices || [],
+          area: l.area,
+          subArea: l.subarea || '',
+          address: l.address || '',
+          description: l.description || '',
+          urgency: l.urgency || 'normal',
+          status: l.status || 'new',
+          source: l.source || 'supabase',
+          providerId: l.providerid || null,
+          providerName: l.providername || null,
+          preferredTime: l.preferredtime || '',
+          whatsapp: !!l.whatsapp,
+          createdAt: l.createdat || new Date().toISOString(),
+          updatedAt: l.updatedat || l.createdat || new Date().toISOString(),
+          assignedProviders: l.providerid ? [l.providerid] : [],
+          responses: 0,
+        }));
+      }
+    } catch {}
+
+    const source = supabaseLeads.length ? supabaseLeads : getMockLeads();
+    const recentLeads = source
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(offset, offset + limit);
+
+    return NextResponse.json({
+      leads: recentLeads,
+      total: source.length,
+      hasMore: offset + limit < source.length
+    });
+  } catch (e) {
+    return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 });
+  }
 }
 
 // Helper function to find matching providers

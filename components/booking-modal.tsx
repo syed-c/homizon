@@ -14,6 +14,8 @@ import {
   Calendar, MessageSquare, Send, X, Shield, Award, ArrowLeft, ArrowRight
 } from 'lucide-react'
 import { saveLeadToSupabase } from '@/lib/supabase'
+import { areas as allAreas } from '@/lib/data'
+import { services as allServices } from '@/lib/data'
 
 interface Provider {
   id: string
@@ -58,21 +60,31 @@ export default function BookingModal({
     urgency: 'normal',
     preferredTime: ''
   })
+  const [selectedAreaSlug, setSelectedAreaSlug] = useState<string>('')
+  const [selectedServiceSlug, setSelectedServiceSlug] = useState<string>('')
+  const providerAreaSlugs = provider?.areas || []
+  const selectableAreas = providerAreaSlugs.length
+    ? allAreas.filter(a => providerAreaSlugs.includes(a.slug))
+    : allAreas
   const [step, setStep] = useState(1)
   const totalSteps = 3
+
+  const isPhoneValid = useMemo(() => /^(\+|00)?[0-9\s-]{7,15}$/.test(formData.phone.trim()), [formData.phone])
+  const isEmailValid = useMemo(() => !formData.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim()), [formData.email])
+
   const nextDisabled = useMemo(() => {
-    if (step === 1) return !formData.name || !formData.phone
+    if (step === 1) return !formData.name || !isPhoneValid || !isEmailValid
     return false
-  }, [step, formData.name, formData.phone])
+  }, [step, formData.name, isPhoneValid, isEmailValid])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.name || !formData.phone) {
+    if (!formData.name || !isPhoneValid || !isEmailValid) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in your name and phone number to proceed.",
-        variant: "destructive",
+        title: 'Check your details',
+        description: 'Please enter a valid name, phone and email (if provided).',
+        variant: 'destructive',
         duration: 5000,
       })
       setStep(1)
@@ -82,13 +94,17 @@ export default function BookingModal({
     setIsSubmitting(true)
 
     try {
+      const chosenAreaName = selectedAreaSlug
+        ? (allAreas.find(a => a.slug === selectedAreaSlug)?.name || areaName)
+        : areaName
+
       const payload = {
         name: formData.name,
         phone: formData.phone,
         email: formData.email,
-        serviceCategory: service,
-        subServices: [service],
-        area: areaName,
+        serviceCategory: selectedServiceSlug || service,
+        subServices: [selectedServiceSlug || service],
+        area: chosenAreaName,
         subArea: '',
         address: formData.address,
         description: formData.message,
@@ -101,7 +117,6 @@ export default function BookingModal({
         whatsapp: true
       }
 
-      // 1) Existing API
       const response = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -109,28 +124,48 @@ export default function BookingModal({
       })
       if (!response.ok) throw new Error('Failed to submit booking request')
 
-      // 2) Save to Supabase if configured
-      try { await saveLeadToSupabase(payload) } catch { /* non-blocking */ }
+      try { 
+        await saveLeadToSupabase({
+          name: payload.name,
+          phone: payload.phone,
+          email: payload.email,
+          servicecategory: payload.serviceCategory,
+          subservices: payload.subServices,
+          area: payload.area,
+          subarea: payload.subArea,
+          address: payload.address,
+          description: payload.description,
+          urgency: payload.urgency,
+          status: payload.status,
+          source: payload.source,
+          providerid: payload.providerId,
+          providername: payload.providerName,
+          preferredtime: payload.preferredTime,
+          whatsapp: payload.whatsapp,
+          createdat: new Date().toISOString(),
+          updatedat: new Date().toISOString(),
+        }) 
+      } catch { /* non-blocking */ }
 
       toast({
-        title: "🎉 Booking Request Sent!",
+        title: '🎉 Booking Request Sent!',
         description: provider 
           ? `Your request has been sent to ${provider.name}. They will contact you within 30 minutes to confirm your booking.`
-          : `Your service request has been received. We'll connect you with verified providers in ${areaName} shortly.`,
-        duration: 8000,
+          : `Your service request has been received. We'll connect you with verified providers in ${chosenAreaName} shortly.`,
+        duration: 3000,
       })
 
-      // Reset
       setFormData({ name: '', phone: '', email: '', address: '', message: '', urgency: 'normal', preferredTime: '' })
+      setSelectedAreaSlug('')
       setStep(1)
       onOpenChange(false)
-
+      setTimeout(() => { window.location.href = '/thank-you' }, 400)
     } catch (error) {
       console.error('Error submitting booking:', error)
       toast({
-        title: "❌ Booking Failed",
-        description: "There was an error submitting your booking request. Please try again or call us directly.",
-        variant: "destructive",
+        title: '❌ Booking Failed',
+        description: 'There was an error submitting your booking request. Please try again or call us directly.',
+        variant: 'destructive',
         duration: 7000,
       })
     } finally {
@@ -161,7 +196,6 @@ export default function BookingModal({
           <div className="pt-2"><StepIndicator /></div>
         </DialogHeader>
 
-        {/* Provider Info Card (sticky summary) */}
         {provider && (
           <div className="bg-white/5 rounded-lg p-4 border border-white/10 mb-6">
             <div className="flex items-center space-x-4">
@@ -174,9 +208,7 @@ export default function BookingModal({
                 <div className="flex items-center space-x-2 mb-2">
                   <h3 className="text-lg font-semibold text-white">{provider.name}</h3>
                   {provider.isApproved && (
-                    <Badge className="bg-green-600 text-white">
-                      Verified
-                    </Badge>
+                    <Badge className="bg-green-600 text-white">Verified</Badge>
                   )}
                 </div>
                 <div className="flex items-center space-x-4 text-sm text-white/60">
@@ -195,8 +227,8 @@ export default function BookingModal({
           </div>
         )}
 
-        {/* Wizard */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Prevent implicit submit; explicitly call handleSubmit on click */}
+        <form onKeyDown={(ev) => { if (ev.key === 'Enter' && step < totalSteps) ev.preventDefault() }} className="space-y-6">
           {step === 1 && (
             <section className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -212,12 +244,18 @@ export default function BookingModal({
                     <Phone className="h-4 w-4 inline mr-2" />
                     Phone Number *
                   </Label>
-                  <Input id="phone" value={formData.phone} onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))} className="mt-2 bg-white/10 border-white/20 text-white" placeholder="+971 50 123 4567" required />
+                  <Input id="phone" value={formData.phone} onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))} className={`mt-2 bg-white/10 border-white/20 text-white ${formData.phone && !isPhoneValid ? 'border-red-500' : ''}`} placeholder="+971 50 123 4567" required />
+                  {!isPhoneValid && formData.phone && (
+                    <p className="text-red-400 text-xs mt-1">Enter a valid phone number (7-15 digits).</p>
+                  )}
                 </div>
               </div>
               <div>
                 <Label htmlFor="email" className="text-white font-medium">Email (Optional)</Label>
-                <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} className="mt-2 bg-white/10 border-white/20 text-white" placeholder="your.email@example.com" />
+                <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} className={`mt-2 bg-white/10 border-white/20 text-white ${formData.email && !isEmailValid ? 'border-red-500' : ''}`} placeholder="your.email@example.com" />
+                {!isEmailValid && formData.email && (
+                  <p className="text-red-400 text-xs mt-1">Enter a valid email address.</p>
+                )}
               </div>
             </section>
           )}
@@ -225,8 +263,39 @@ export default function BookingModal({
           {step === 2 && (
             <section className="space-y-4">
               <div>
-                <Label htmlFor="address" className="text-white font-medium">
+                <Label className="text-white font-medium">Select Service</Label>
+                <Select value={selectedServiceSlug} onValueChange={setSelectedServiceSlug}>
+                  <SelectTrigger className="mt-2 bg-white/10 border-white/20 text-white">
+                    <SelectValue placeholder={serviceName || 'Choose service'} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-neutral-900 border-white/20">
+                    {(provider?.services?.length ? provider.services : allServices.map(s => s.slug)).map((slug) => {
+                      const svc = allServices.find(s => s.slug === slug);
+                      return (
+                        <SelectItem key={slug} value={slug} className="text-white">{svc?.name || slug}</SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-white font-medium">
                   <MapPin className="h-4 w-4 inline mr-2" />
+                  Select Service Area
+                </Label>
+                <Select value={selectedAreaSlug} onValueChange={setSelectedAreaSlug}>
+                  <SelectTrigger className="mt-2 bg-white/10 border-white/20 text-white">
+                    <SelectValue placeholder={areaName || 'Choose area'} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-neutral-900 border-white/20">
+                    {selectableAreas.map(a => (
+                      <SelectItem key={a.slug} value={a.slug} className="text-white">{a.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="address" className="text-white font-medium">
                   Service Address
                 </Label>
                 <Input id="address" value={formData.address} onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))} className="mt-2 bg-white/10 border-white/20 text-white" placeholder={`Building, apartment/villa number in ${areaName}`} />
@@ -297,7 +366,7 @@ export default function BookingModal({
                 Next <ArrowRight className="h-4 w-4 ml-2"/>
               </Button>
             ) : (
-              <Button type="submit" disabled={isSubmitting || !formData.name || !formData.phone} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white min-w-[160px]">
+              <Button type="button" onClick={handleSubmit} disabled={isSubmitting || !formData.name || !isPhoneValid || !isEmailValid} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white min-w-[160px]">
                 {isSubmitting ? (
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

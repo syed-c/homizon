@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Provider Authentication</title>
+</head>
+<body>
+    <h1>Test Provider Authentication</h1>
+    <form id="loginForm">
+        <div>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="shuja@example.com" required>
+        </div>
+        <div>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" value="password123" required>
+        </div>
+        <button type="submit">Login</button>
+    </form>
+    
+    <div id="result"></div>
+    
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const response = await fetch('/api/auth/provider-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.provider) {
+                    resultDiv.innerHTML = `
+                        <h3>Login Successful!</h3>
+                        <p><strong>Provider Name:</strong> ${data.provider.name}</p>
+                        <p><strong>Email:</strong> ${data.provider.email}</p>
+                        <p><strong>Status:</strong> ${data.provider.status}</p>
+                        <p><strong>Expected URL:</strong> /${data.provider.name.toLowerCase().replace(/\s+/g, '-')}/dashboard</p>
+                        <a href="/${data.provider.name.toLowerCase().replace(/\s+/g, '-')}/dashboard" target="_blank">
+                            Test Dashboard Link
+                        </a>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p style="color: red;">Login Failed: ${data.error}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
