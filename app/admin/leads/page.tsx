@@ -32,6 +32,8 @@ interface Lead {
   whatsapp: boolean;
   assignedProviders: string[];
   responses: number;
+  providerId?: string;
+  providerName?: string;
 }
 
 type SimpleProvider = { id: string; name: string };
@@ -43,18 +45,21 @@ export default function LeadsManagement() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [error, setError] = useState('');
   const [providers, setProviders] = useState<SimpleProvider[]>([]);
+  const [pendingAssignments, setPendingAssignments] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
 
   const loadLeads = async () => {
     try {
       setLoading(true);
       setError('');
 
-      // Prefer our API which now pulls from Supabase
-      const response = await fetch('/api/leads?_t=' + Date.now(), { method: 'GET' });
+      // Use admin leads endpoint for consistency
+      const response = await fetch('/api/admin/leads?_t=' + Date.now(), { method: 'GET' });
       if (!response.ok) throw new Error(String(response.status));
       const data = await response.json();
-      if (Array.isArray(data.leads)) {
-        setLeads(data.leads);
+      if (Array.isArray(data)) {
+        console.log('Loaded leads data:', data);
+        setLeads(data);
         return;
       }
       throw new Error('Bad shape');
@@ -103,24 +108,173 @@ export default function LeadsManagement() {
     }
   };
 
-  const assignProvider = async (leadId: string, providerId: string) => {
+  const setPendingAssignment = (leadId: string, providerId: string) => {
+    setPendingAssignments(prev => ({
+      ...prev,
+      [leadId]: providerId
+    }));
+  };
+
+  const saveAssignments = async () => {
+    if (Object.keys(pendingAssignments).length === 0) {
+      toast({ 
+        title: 'No Changes', 
+        description: 'No pending assignments to save',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setSaving(true);
     try {
-      // Update both shared admin leads and main leads endpoint for consistency
+      const assignmentPromises = Object.entries(pendingAssignments).map(async ([leadId, providerId]) => {
+        // Store original lead data for potential rollback
+        const originalLead = leads.find(lead => lead.id === leadId);
+        
+        // Optimistic UI update - immediately update the local state
+        console.log('Optimistic update: assigning lead', leadId, 'to provider', providerId);
+        const providerName = providers.find(p => p.id === providerId)?.name;
+        setLeads(prevLeads => 
+          prevLeads.map(lead => 
+            lead.id === leadId 
+              ? { 
+                  ...lead, 
+                  status: 'assigned' as any, 
+                  assignedProviders: [providerId],
+                  providerId: providerId,
+                  providerName: providerName,
+                  updatedAt: new Date().toISOString()
+                }
+              : lead
+          )
+        );
+
+        // Use only the admin leads endpoint for consistency
+        const response = await fetch('/api/admin/leads', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leadId, providerId, action: 'assign' })
+        });
+        
+        const success = response.ok;
+        if (!success) {
+          console.error('Assignment failed:', {
+            leadId,
+            providerId,
+            responseStatus: response.status,
+            responseOk: response.ok
+          });
+          
+          // Revert optimistic update on failure - restore original lead data
+          if (originalLead) {
+            setLeads(prevLeads => 
+              prevLeads.map(lead => 
+                lead.id === leadId ? originalLead : lead
+              )
+            );
+          }
+        }
+        return { leadId, providerId, success };
+      });
+
+      const results = await Promise.all(assignmentPromises);
+      const successful = results.filter(r => r.success);
+      const failed = results.filter(r => !r.success);
+
+      if (successful.length > 0) {
+        toast({ 
+          title: 'Assignments Saved', 
+          description: `Successfully assigned ${successful.length} lead(s) to providers` 
+        });
+        setPendingAssignments({});
+        // Don't refresh - optimistic updates already handled the UI
+      }
+
+      if (failed.length > 0) {
+        toast({ 
+          title: 'Some Assignments Failed', 
+          description: `${failed.length} assignment(s) could not be saved`,
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Save assignments error:', error);
+      toast({ 
+        title: 'Save Failed', 
+        description: 'Failed to save assignments. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deassignLead = async (leadId: string) => {
+    try {
+      // Store original lead data for potential rollback
+      const originalLead = leads.find(lead => lead.id === leadId);
+      
+      // Optimistic UI update - immediately update the local state
+      console.log('Optimistic update: de-assigning lead', leadId);
+      setLeads(prevLeads => 
+        prevLeads.map(lead => 
+          lead.id === leadId 
+            ? { 
+                ...lead, 
+                status: 'new' as any, 
+                assignedProviders: [],
+                providerId: undefined,
+                providerName: undefined,
+                updatedAt: new Date().toISOString()
+              }
+            : lead
+        )
+      );
+
       const response = await fetch('/api/admin/leads', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leadId, providerId, action: 'assign' })
+        body: JSON.stringify({ leadId, action: 'deassign' })
       });
-      const response2 = await fetch('/api/leads', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leadId, providerId, action: 'assign_provider' })
-      });
-      if (response.ok && response2.ok) {
-        toast({ title: 'Provider Assigned', description: 'Lead has been assigned to the provider successfully' });
-        loadLeads();
+
+      if (response.ok) {
+        toast({ 
+          title: 'Lead De-assigned', 
+          description: 'Lead has been de-assigned successfully' 
+        });
+        // Don't refresh - optimistic updates already handled the UI
+      } else {
+        // Revert optimistic update on failure - restore original lead data
+        if (originalLead) {
+          setLeads(prevLeads => 
+            prevLeads.map(lead => 
+              lead.id === leadId ? originalLead : lead
+            )
+          );
+        }
+        toast({ 
+          title: 'De-assignment Failed', 
+          description: 'Failed to de-assign lead. Please try again.',
+          variant: 'destructive'
+        });
       }
-    } catch {}
+    } catch (error) {
+      console.error('De-assignment error:', error);
+      // Revert optimistic update on error
+      const originalLead = leads.find(lead => lead.id === leadId);
+      if (originalLead) {
+        setLeads(prevLeads => 
+          prevLeads.map(lead => 
+            lead.id === leadId ? originalLead : lead
+          )
+        );
+      }
+      toast({ 
+        title: 'De-assignment Failed', 
+        description: 'Failed to de-assign lead. Please try again.',
+        variant: 'destructive'
+      });
+    }
   };
 
   useEffect(() => { loadLeads(); loadProviders(); }, []);
@@ -189,14 +343,33 @@ export default function LeadsManagement() {
             Manage customer inquiries and assign providers ({leads.length} total leads)
           </p>
         </div>
-        <Button 
-          variant="outline" 
-          className="text-white border-white/20 hover:bg-white/10"
-          onClick={loadLeads}
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh ({leads.length})
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Button 
+            onClick={saveAssignments}
+            disabled={saving || Object.keys(pendingAssignments).length === 0}
+            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Save ({Object.keys(pendingAssignments).length})
+              </>
+            )}
+          </Button>
+          <Button 
+            variant="outline" 
+            className="text-white border-white/20 hover:bg-white/10"
+            onClick={loadLeads}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh ({leads.length})
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -347,7 +520,10 @@ export default function LeadsManagement() {
 
                 <div className="ml-6 flex flex-col space-y-2">
                   {lead.status === 'new' || lead.status === 'contacted' ? (
-                    <Select onValueChange={(providerId) => assignProvider(lead.id, providerId)}>
+                    <Select 
+                      value={pendingAssignments[lead.id] || ''} 
+                      onValueChange={(providerId) => setPendingAssignment(lead.id, providerId)}
+                    >
                       <SelectTrigger className="w-[200px] bg-white/10 border-white/20 text-white">
                         <SelectValue placeholder="Assign Provider" />
                       </SelectTrigger>
@@ -359,14 +535,36 @@ export default function LeadsManagement() {
                         ))}
                       </SelectContent>
                     </Select>
+                  ) : lead.status === 'assigned' ? (
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center space-x-2 text-green-400">
+                        <UserCheck className="h-4 w-4" />
+                        <span className="text-sm">
+                          Assigned to {lead.providerName || lead.providerId || 'Unknown Provider'}
+                        </span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => deassignLead(lead.id)}
+                        className="w-[200px] bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"
+                      >
+                        De-assign
+                      </Button>
+                    </div>
                   ) : (
                     <div className="flex items-center space-x-2 text-green-400">
                       <UserCheck className="h-4 w-4" />
                       <span className="text-sm">
-                        {lead.status === 'assigned' ? 'Assigned' : 
-                         lead.status === 'completed' ? 'Completed' : 
+                        {lead.status === 'completed' ? 'Completed' : 
                          lead.status === 'in_progress' ? 'In Progress' : 'Processed'}
                       </span>
+                    </div>
+                  )}
+                  {pendingAssignments[lead.id] && (
+                    <div className="text-xs text-yellow-400 flex items-center space-x-1">
+                      <Clock className="h-3 w-3" />
+                      <span>Pending assignment</span>
                     </div>
                   )}
                 </div>

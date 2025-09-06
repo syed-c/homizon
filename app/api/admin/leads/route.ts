@@ -8,8 +8,47 @@ export async function GET(request: NextRequest) {
   try {
     console.log('Admin leads API: GET request received');
 
-    // Get leads from shared data source
-    const leadsData = getMockLeads();
+    // Try to get leads from Supabase first
+    let leadsData: any[] = [];
+    try {
+      const { listLeadsFromSupabase } = await import('@/lib/supabase');
+      const { data } = await listLeadsFromSupabase();
+      console.log('Raw Supabase data:', data);
+      
+      if (Array.isArray(data)) {
+        leadsData = data.map(l => ({
+          id: l.id,
+          name: l.name,
+          phone: l.phone,
+          email: l.email || '',
+          serviceCategory: l.servicecategory,
+          subServices: l.subservices || [],
+          area: l.area,
+          subArea: l.subarea || '',
+          address: l.address || '',
+          description: l.description || '',
+          urgency: (l.urgency || 'normal') as any,
+          status: (l.status || 'new') as any,
+          createdAt: l.createdat || new Date().toISOString(),
+          updatedAt: l.updatedat || l.createdat || new Date().toISOString(),
+          source: l.source || 'supabase',
+          whatsapp: !!l.whatsapp,
+          assignedProviders: l.providerid ? [l.providerid] : [],
+          providerId: l.providerid || undefined,
+          providerName: l.providername || undefined,
+          responses: 0,
+        }));
+        console.log(`Fetched ${leadsData.length} leads from Supabase`);
+        console.log('Sample leads from Supabase:', leadsData.slice(0, 2).map(l => ({ id: l.id, providerId: l.providerId, providerName: l.providerName })));
+      } else {
+        console.log('No data from Supabase, using mock data');
+        leadsData = getMockLeads();
+      }
+    } catch (supabaseError) {
+      console.log('Supabase fetch failed, using mock data:', supabaseError);
+      // Fallback to mock data
+      leadsData = getMockLeads();
+    }
     
     // Sort by creation date (newest first) for admin view
     const sortedLeads = leadsData.sort((a, b) => 
@@ -55,7 +94,43 @@ export async function PUT(request: NextRequest) {
     const { leadId, providerId, action } = await request.json();
     console.log('Processing lead action:', { leadId, providerId, action });
 
-    // Get current leads data
+    // Try to update in Supabase first
+    try {
+      const { assignLeadToProvider, deassignLeadFromProvider } = await import('@/lib/supabase');
+      
+      if (action === 'assign') {
+        const result = await assignLeadToProvider(leadId, providerId);
+        
+        if (result.success) {
+          console.log('Lead assigned in Supabase successfully:', leadId, 'to provider:', providerId);
+          
+          // Trigger notifications when lead is assigned
+          triggerLeadAssignmentNotifications({ id: leadId, providerId }, providerId);
+          
+          return NextResponse.json({ 
+            success: true, 
+            message: 'Lead assigned successfully',
+            timestamp: new Date().toISOString()
+          });
+        }
+      } else if (action === 'deassign') {
+        const result = await deassignLeadFromProvider(leadId);
+        
+        if (result.success) {
+          console.log('Lead de-assigned in Supabase successfully:', leadId);
+          
+          return NextResponse.json({ 
+            success: true, 
+            message: 'Lead de-assigned successfully',
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
+    } catch (supabaseError) {
+      console.log('Supabase update failed, using mock data:', supabaseError);
+    }
+
+    // Fallback to mock data update
     const leadsData = getMockLeads();
     
     // Update specific lead
@@ -68,6 +143,14 @@ export async function PUT(request: NextRequest) {
           updatedLead.providerId = providerId;
           updatedLead.status = 'assigned';
           updatedLead.assignedProviders = [providerId];
+          
+          console.log('Lead assignment details:', {
+            leadId,
+            providerId,
+            oldStatus: lead.status,
+            newStatus: updatedLead.status,
+            assignedProviders: updatedLead.assignedProviders
+          });
           
           // Trigger notifications when lead is assigned
           triggerLeadAssignmentNotifications(updatedLead, providerId);

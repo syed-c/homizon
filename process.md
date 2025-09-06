@@ -134,9 +134,68 @@ This document tracks all changes, fixes, and deployment-related actions performe
     - Detailed lead cards with customer information, service details, and action buttons
     - Status update functionality for lead management
 
+### 2025-09-06
+
+- **Lead Assignment System Complete Overhaul**
+  - **Problem:** Lead assignment was not persisting in Supabase database due to Row Level Security (RLS) policies blocking updates from anonymous users.
+  - **Solution:** Implemented service role key integration to bypass RLS for administrative operations.
+  - **Files Modified:**
+    - `lib/supabase.ts`: Added `SUPABASE_SERVICE_ROLE_KEY` support for `updateLeadInSupabase` and `listLeadsFromSupabase` functions
+    - `app/api/admin/leads/route.ts`: Enhanced with optimistic UI updates, proper error handling, and Supabase integration
+    - `app/api/providers/[providerId]/leads/route.ts`: Fixed data source consistency and cache-busting
+  - **Key Technical Changes:**
+    - `updateLeadInSupabase` now uses service role key when available, falling back to anon key
+    - `assignLeadToProvider` function now fetches and stores provider name along with provider ID
+    - `listLeadsFromSupabase` includes cache-busting headers to prevent stale data
+    - Provider leads API uses same Supabase data source as admin API for consistency
+  - **UI/UX Improvements:**
+    - Optimistic UI updates for immediate feedback on lead assignment/de-assignment
+    - Admin dashboard shows "Assigned to {provider.name}" with De-assign button
+    - Provider dashboard correctly displays assigned leads
+    - All assignments persist after page refresh
+
+- **Provider Dashboard Lead Display Fix**
+  - **Problem:** Provider dashboard showed 0 leads despite successful assignment in admin dashboard.
+  - **Root Cause:** Provider leads API was falling back to mock data instead of using Supabase data due to caching issues.
+  - **Solution:** 
+    - Removed fallback to mock data in provider leads API
+    - Added cache-busting headers to `listLeadsFromSupabase` function
+    - Ensured both admin and provider APIs use identical data mapping logic
+  - **Result:** Provider dashboard now correctly shows assigned leads with all details
+
+- **Database Schema and API Consistency**
+  - **Issue:** Inconsistent data mapping between different API endpoints caused display issues.
+  - **Fix:** Standardized data mapping across all endpoints:
+    - `providerid` → `providerId`
+    - `providername` → `providerName` 
+    - `servicecategory` → `serviceCategory`
+    - `createdat` → `createdAt`
+    - `updatedat` → `updatedAt`
+  - **Files Updated:**
+    - `app/api/admin/leads/route.ts`
+    - `app/api/providers/[providerId]/leads/route.ts`
+    - `lib/supabase.ts`
+
+- **Service Role Key Integration**
+  - **Purpose:** Bypass Supabase RLS policies for administrative operations while maintaining security.
+  - **Implementation:** 
+    - Environment variable `SUPABASE_SERVICE_ROLE_KEY` added to both local and Vercel environments
+    - Functions prioritize service role key over anonymous key for write operations
+    - Maintains fallback to anonymous key for backward compatibility
+  - **Security:** Service role key only used for server-side operations, never exposed to client
+
+- **Cache Management and Data Freshness**
+  - **Problem:** Stale cached data was preventing real-time updates from being visible.
+  - **Solution:** Implemented comprehensive cache-busting strategy:
+    - Added `Cache-Control: no-cache, no-store, must-revalidate` headers
+    - Used `cache: 'no-store'` in fetch requests
+    - Ensured all APIs fetch fresh data from Supabase on each request
+
 ### Notes / Next steps
 
 - Future changes will be appended here with date, intent, files touched, and impact.
 - If Vercel build logs surface new issues, fixes will be documented in this log with exact error snippets and resolutions.
+- The lead assignment system is now fully functional with complete admin-to-provider workflow.
+- All provider dashboards correctly display their assigned leads in real-time.
 
 

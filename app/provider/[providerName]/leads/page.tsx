@@ -64,10 +64,17 @@ export default function ProviderLeads() {
 
   const loadLeads = async (providerId: string) => {
     try {
-      const { data } = await getProviderLeadsFromSupabase(providerId);
-      setLeads(data || []);
+      const response = await fetch(`/api/providers/${providerId}/leads`);
+      if (response.ok) {
+        const data = await response.json();
+        setLeads(data || []);
+      } else {
+        console.error('Failed to fetch leads:', response.status);
+        setLeads([]);
+      }
     } catch (error) {
       console.error('Error loading leads:', error);
+      setLeads([]);
     } finally {
       setLoading(false);
     }

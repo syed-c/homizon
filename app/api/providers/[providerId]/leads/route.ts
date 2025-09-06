@@ -9,31 +9,45 @@ export async function GET(
     const providerId = params.providerId;
     console.log('Getting leads for provider:', providerId);
 
-    // Get all leads from shared data
-    const allLeads = getMockLeads();
-    
-    // Filter leads for this provider
-    // Include leads that are:
-    // 1. Assigned to this provider
-    // 2. General leads that haven't been assigned yet (for the provider to see available leads)
-    const providerLeads = allLeads.filter(lead => {
-      // Show leads assigned to this provider
-      if (lead.providerId === providerId) {
-        return true;
-      }
-      
-      // Show unassigned leads that match provider's services/areas
-      // For now, show all unassigned leads (in production, filter by provider's services/areas)
-      if (lead.status === 'new' && !lead.providerId) {
-        return true;
-      }
-      
-      return false;
-    });
 
-    console.log(`Found ${providerLeads.length} leads for provider ${providerId}`);
+    // Get leads from Supabase
+    const { listLeadsFromSupabase } = await import('@/lib/supabase');
+    const { data } = await listLeadsFromSupabase();
     
-    return NextResponse.json(providerLeads);
+    if (Array.isArray(data)) {
+      const allLeads = data.map(l => ({
+        id: l.id,
+        name: l.name,
+        phone: l.phone,
+        email: l.email || '',
+        serviceCategory: l.servicecategory,
+        subServices: l.subservices || [],
+        area: l.area,
+        subArea: l.subarea || '',
+        address: l.address || '',
+        description: l.description || '',
+        urgency: (l.urgency || 'normal') as any,
+        status: (l.status || 'new') as any,
+        createdAt: l.createdat || new Date().toISOString(),
+        updatedAt: l.updatedat || l.createdat || new Date().toISOString(),
+        source: l.source || 'supabase',
+        whatsapp: !!l.whatsapp,
+        assignedProviders: l.providerid ? [l.providerid] : [],
+        providerId: l.providerid || undefined,
+        providerName: l.providername || undefined,
+        responses: 0,
+      }));
+      
+      // Filter leads for this provider
+      const providerLeads = allLeads.filter(lead => {
+        return lead.providerId === providerId;
+      });
+      
+      return NextResponse.json(providerLeads);
+    }
+    
+    return NextResponse.json({ debug: true, error: 'No data from Supabase' });
+    
   } catch (error) {
     console.error('Error fetching provider leads:', error);
     return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 });

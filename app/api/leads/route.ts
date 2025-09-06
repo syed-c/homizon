@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMockLeads, addMockLead, updateMockLead } from './shared-data';
 
+// Route handlers for leads API
+
 // In-memory storage for leads (in production, this would be a database)
 let mockLeads: any[] = [
   {
@@ -105,7 +107,7 @@ let mockLeads: any[] = [
   }
 ];
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     console.log('Creating new lead:', body)
@@ -157,9 +159,10 @@ export async function POST(request: Request) {
   }
 }
 
-// ADDED: Handle PUT requests for lead updates and assignments
-export async function PUT(request: Request) {
+// Handle PUT requests for lead updates and assignments
+export async function PUT(request: NextRequest) {
   try {
+    console.log('PUT /api/leads - Route handler called');
     const body = await request.json()
     console.log('Updating lead:', body)
 

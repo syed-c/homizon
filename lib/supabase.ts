@@ -1,5 +1,6 @@
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string | undefined;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string | undefined;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined;
 
 export type LeadInsert = {
   id?: string;
@@ -45,10 +46,22 @@ export async function saveLeadToSupabase(lead: LeadInsert) {
 }
 
 export async function listLeadsFromSupabase() {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { data: [] };
+  if (!SUPABASE_URL) return { data: [] };
+  
+  // Use service role key if available, otherwise fall back to anon key
+  const apiKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+  if (!apiKey) return { data: [] };
+  
   const endpoint = `${SUPABASE_URL}/rest/v1/leads?select=*`;
   const res = await fetch(endpoint, {
-    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+    headers: { 
+      apikey: apiKey, 
+      Authorization: `Bearer ${apiKey}`,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    },
+    cache: 'no-store'
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
@@ -56,6 +69,73 @@ export async function listLeadsFromSupabase() {
   }
   const data = await res.json();
   return { data };
+}
+
+export async function updateLeadInSupabase(leadId: string, updates: any) {
+  if (!SUPABASE_URL) {
+    console.warn('Supabase not configured - SUPABASE_URL missing');
+    return { success: false, error: 'Supabase not configured' };
+  }
+  
+  // Use service role key if available, otherwise fall back to anon key
+  const apiKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+  if (!apiKey) {
+    console.warn('Supabase not configured - No API key available');
+    return { success: false, error: 'Supabase not configured' };
+  }
+  
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/leads?id=eq.${leadId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': apiKey,
+        'Authorization': `Bearer ${apiKey}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(updates)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Supabase update lead error:', response.status, errorText);
+      return { success: false, error: `HTTP ${response.status}: ${errorText}` };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating lead in Supabase:', error);
+    return { success: false, error };
+  }
+}
+
+export async function assignLeadToProvider(leadId: string, providerId: string) {
+  // First, get the provider's name
+  let providerName = null;
+  try {
+    const result = await getProviderByIdFromSupabase(providerId);
+    if (result && result.data && result.data.name) {
+      providerName = result.data.name;
+    }
+  } catch (error) {
+    console.error('Error fetching provider name:', error);
+  }
+
+  return updateLeadInSupabase(leadId, {
+    providerid: providerId,
+    providername: providerName,
+    status: 'assigned',
+    updatedat: new Date().toISOString()
+  });
+}
+
+export async function deassignLeadFromProvider(leadId: string) {
+  return updateLeadInSupabase(leadId, {
+    providerid: null,
+    providername: null,
+    status: 'new',
+    updatedat: new Date().toISOString()
+  });
 }
 
 // Provider types and helpers
