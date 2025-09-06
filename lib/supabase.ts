@@ -408,4 +408,189 @@ export async function uploadImageToSupabaseStorage(file: File, pathPrefix: strin
   return { url: publicUrl };
 }
 
+// Pages Content Management
+export type PageContentInsert = {
+  id?: string;
+  page_slug: string;
+  content: any; // JSONB content
+  meta_title: string;
+  meta_description: string;
+  updated_at?: string;
+};
+
+export async function getPageContentFromSupabase(pageSlug: string) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { data: null };
+  
+  // Handle empty slug for home page (empty string in database)
+  const queryParam = (pageSlug === '' || pageSlug === null || pageSlug === '/') ? 'page_slug=eq.' : `page_slug=eq.${encodeURIComponent(pageSlug)}`;
+  const endpoint = `${SUPABASE_URL}/rest/v1/pages_content?select=*&${queryParam}`;
+  
+  // Use service role key if available, otherwise fall back to anon key
+  const apiKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+  
+  const res = await fetch(endpoint, {
+    headers: { apikey: apiKey, Authorization: `Bearer ${apiKey}` },
+    cache: 'no-store'
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Supabase page content fetch failed: HTTP ${res.status} ${text}`);
+  }
+  const data = await res.json();
+  return { data: Array.isArray(data) && data.length ? data[0] : null };
+}
+
+export async function savePageContentToSupabase(pageContent: PageContentInsert) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { skipped: true };
+  
+  try {
+    console.log('Saving to Supabase:', pageContent);
+    const endpoint = `${SUPABASE_URL}/rest/v1/pages_content`;
+    
+    // Use service role key if available, otherwise fall back to anon key
+    const apiKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+    console.log('Using API key type:', SUPABASE_SERVICE_ROLE_KEY ? 'Service Role' : 'Anonymous');
+    
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: apiKey,
+        Authorization: `Bearer ${apiKey}`,
+        Prefer: 'return=representation'
+      },
+      body: JSON.stringify({
+        ...pageContent,
+        updated_at: new Date().toISOString()
+      })
+    });
+    
+    console.log('Supabase response status:', res.status);
+    
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.error('Supabase error response:', text);
+      throw new Error(`Supabase page content insert failed: HTTP ${res.status} ${text}`);
+    }
+    
+    const data = await res.json();
+    console.log('Supabase response data:', data);
+    return { data: Array.isArray(data) ? data[0] : data };
+  } catch (error) {
+    console.error('Error in savePageContentToSupabase:', error);
+    throw error;
+  }
+}
+
+export async function updatePageContentInSupabase(pageSlug: string, updates: Partial<PageContentInsert>) {
+  console.log('updatePageContentInSupabase called with:', { pageSlug, updates });
+  console.log('Environment variables:', {
+    SUPABASE_URL: SUPABASE_URL ? 'Set' : 'Missing',
+    SUPABASE_ANON_KEY: SUPABASE_ANON_KEY ? 'Set' : 'Missing',
+    SUPABASE_SERVICE_ROLE_KEY: SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Missing'
+  });
+  
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.log('Missing Supabase environment variables, skipping operation');
+    return { skipped: true };
+  }
+  
+  try {
+    console.log('Updating page content in Supabase:', pageSlug, updates);
+    
+    // First check if the record exists
+    console.log('Checking if record exists...');
+    const existingRecord = await getPageContentFromSupabase(pageSlug);
+    console.log('Existing record:', existingRecord);
+    
+    if (!existingRecord.data) {
+      // Record doesn't exist, create it instead
+      console.log('Record does not exist, creating new one');
+      return await savePageContentToSupabase({
+        page_slug: (pageSlug === '' || pageSlug === '/') ? '' : pageSlug,
+        content: updates.content,
+        meta_title: updates.meta_title || '',
+        meta_description: updates.meta_description || ''
+      });
+    }
+    
+    // Handle empty slug for home page (empty string in database)
+    const queryParam = (pageSlug === '' || pageSlug === null || pageSlug === '/') ? 'page_slug=eq.' : `page_slug=eq.${encodeURIComponent(pageSlug)}`;
+    const endpoint = `${SUPABASE_URL}/rest/v1/pages_content?${queryParam}`;
+    
+    console.log('Update endpoint:', endpoint);
+    console.log('Update data:', updates);
+    
+    const requestBody = {
+      ...updates,
+      updated_at: new Date().toISOString()
+    };
+    
+    console.log('Request body:', requestBody);
+    
+    // Use service role key if available, otherwise fall back to anon key
+    const apiKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+    console.log('Using API key type for update:', SUPABASE_SERVICE_ROLE_KEY ? 'Service Role' : 'Anonymous');
+    
+    const res = await fetch(endpoint, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: apiKey,
+        Authorization: `Bearer ${apiKey}`,
+        Prefer: 'return=representation'
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    console.log('Update response status:', res.status);
+    console.log('Update response headers:', Object.fromEntries(res.headers.entries()));
+    
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.error('Update error response:', text);
+      throw new Error(`Supabase page content update failed: HTTP ${res.status} ${text}`);
+    }
+    
+    const data = await res.json();
+    console.log('Update response data:', data);
+    return { data: Array.isArray(data) ? data[0] : data };
+  } catch (error) {
+    console.error('Error in updatePageContentInSupabase:', error);
+    console.error('Error stack:', error.stack);
+    throw error;
+  }
+}
+
+export async function listAllPagesContentFromSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { data: [] };
+  
+  try {
+    const endpoint = `${SUPABASE_URL}/rest/v1/pages_content?select=*&order=updated_at.desc`;
+    
+    // Use service role key if available, otherwise fall back to anon key
+    const apiKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+    
+    const res = await fetch(endpoint, {
+      headers: { 
+        apikey: apiKey, 
+        Authorization: `Bearer ${apiKey}`,
+        'Cache-Control': 'no-cache'
+      },
+      cache: 'no-store'
+    });
+    
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Supabase pages content fetch failed: HTTP ${res.status} ${text}`);
+    }
+    
+    const data = await res.json();
+    return { data: data || [] };
+  } catch (error) {
+    console.error('Error in listAllPagesContentFromSupabase:', error);
+    return { data: [] };
+  }
+}
+
 

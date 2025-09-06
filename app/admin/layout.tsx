@@ -120,6 +120,17 @@ export default function AdminLayout({
                     <span>Pages & Content</span>
                   </Link>
                   <Link 
+                    href="/admin/pages-editor" 
+                    className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm ${
+                      pathname === '/admin/pages-editor' 
+                        ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white' 
+                        : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>Content Editor</span>
+                  </Link>
+                  <Link 
                     href="/admin/faqs" 
                     className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm ${
                       pathname === '/admin/faqs' 

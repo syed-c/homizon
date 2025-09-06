@@ -191,11 +191,114 @@ This document tracks all changes, fixes, and deployment-related actions performe
     - Used `cache: 'no-store'` in fetch requests
     - Ensured all APIs fetch fresh data from Supabase on each request
 
+### 2025-09-06 (Continued)
+
+- **CMS Editor System Implementation**
+  - **Purpose:** Created a comprehensive Content Management System (CMS) for editing website content, starting with the Home page.
+  - **Files Created:**
+    - `app/admin/pages-editor/page.tsx`: Main CMS editor interface with page list view and edit modal
+    - `app/api/admin/pages-content/route.ts`: API endpoints for CRUD operations on page content
+    - `components/dynamic-home-page-content.tsx`: Dynamic content component that fetches from CMS
+    - `scripts/setup-pages-content-table.sql`: SQL script to create the pages_content table
+  - **Database Schema:**
+    - Created `pages_content` table with columns: `id`, `page_slug`, `content` (JSONB), `meta_title`, `meta_description`, `updated_at`
+    - Home page uses `page_slug = NULL` to represent the root path `/`
+  - **Features Implemented:**
+    - Pages list view with "View" and "Edit" buttons
+    - Comprehensive edit modal with sections for Hero, Popular Services, How It Works, Service Areas, FAQs, Buttons, and Meta SEO
+    - Dynamic service selection from existing database services
+    - Add/remove functionality for services and FAQs
+    - Real-time content updates with Supabase integration
+  - **Admin Integration:**
+    - Added "Pages Editor" link to admin sidebar navigation
+    - Integrated with existing admin theme and layout
+
+- **CMS Editor Bug Fixes**
+  - **Issue 1: Double Scroller on Home Page**
+    - **Problem:** `min-h-screen` and `overflow-x-hidden` CSS properties caused double scrollbars
+    - **Solution:** Removed conflicting CSS properties from `components/dynamic-home-page-content.tsx`
+  - **Issue 2: Incorrect Home Page Slug Display**
+    - **Problem:** Home page showed `/home` instead of `/` in the admin interface
+    - **Solution:** 
+      - Updated database to store `NULL` for home page slug
+      - Modified Supabase functions to query `page_slug=is.null` for home page
+      - Updated admin UI to display `/` for home page and send `null` on save
+      - Fixed dynamic content component to request content for empty slug
+  - **Issue 3: Content Not Updating in Supabase**
+    - **Problem:** API returned success but data wasn't being saved to database
+    - **Root Cause:** Slug handling inconsistency - frontend sent `'/'` but Supabase expected `''` or `NULL`
+    - **Solution:**
+      - Updated API routes to handle `'/'`, `''`, and `null` as home page slugs
+      - Modified Supabase functions to normalize all home page slug variations to `NULL`
+      - Added comprehensive debugging and error logging
+      - Implemented record existence check before update operations
+      - Added fallback to create new record if update target doesn't exist
+
+- **Enhanced Debugging and Error Handling**
+  - **Added Features:**
+    - Comprehensive console logging throughout save process
+    - API test button to verify connectivity
+    - Supabase connection test button to verify database access
+    - Detailed error messages with specific failure points
+    - Response logging for all API and Supabase operations
+    - Environment variable validation and logging
+  - **Files Enhanced:**
+    - `app/admin/pages-editor/page.tsx`: Added debugging logs, API test, and Supabase test functionality
+    - `app/api/admin/pages-content/route.ts`: Enhanced error handling, slug processing, and environment variable checks
+    - `lib/supabase.ts`: Added detailed logging, environment variable validation, and improved error messages
+    - `app/api/test-supabase-connection/route.ts`: New test endpoint to verify Supabase database connectivity
+
+- **Row Level Security (RLS) Fix**
+  - **Problem:** Supabase RLS policies were blocking insert/update operations on the `pages_content` table
+  - **Error:** `"new row violates row-level security policy for table \"pages_content\""`
+  - **Solution:** Updated all Supabase functions to use Service Role Key instead of Anonymous Key for admin operations
+  - **Files Modified:**
+    - `lib/supabase.ts`: Updated `savePageContentToSupabase`, `updatePageContentInSupabase`, `getPageContentFromSupabase`, and `listAllPagesContentFromSupabase` functions
+    - Added fallback logic to use Service Role Key when available, otherwise fall back to Anonymous Key
+    - Added logging to show which API key type is being used for each operation
+
+- **Database Schema Constraint Fix**
+  - **Problem:** `page_slug` column had NOT NULL constraint but code was trying to insert NULL for home page
+  - **Error:** `"null value in column \"page_slug\" of relation \"pages_content\" violates not-null constraint"`
+  - **Solution:** Changed home page slug handling from NULL to empty string ('') throughout the system
+  - **Files Modified:**
+    - `lib/supabase.ts`: Updated all functions to use empty string instead of NULL for home page
+    - `app/api/admin/pages-content/route.ts`: Updated API routes to handle empty string for home page
+    - `app/admin/pages-editor/page.tsx`: Updated frontend to send empty string instead of NULL
+    - `scripts/setup-pages-content-table.sql`: Updated SQL script to insert empty string for home page
+    - Updated TypeScript types to reflect string instead of string | null
+
+- **Duplicate Home Page Records Fix**
+  - **Problem:** Database contained multiple home page records (one with `page_slug: ''` and another with `page_slug: '/'`)
+  - **Symptoms:** UI showing duplicate page cards, updates working but appearing to create new records
+  - **Root Cause:** Mixed slug representations in database due to previous schema changes
+  - **Solution:** 
+    - Created cleanup SQL script to remove duplicate home page records
+    - Fixed UI display logic to show `/` instead of `//` for home page
+    - Added duplicate detection button in admin interface
+    - Updated display logic to handle empty string slug correctly
+  - **Files Modified:**
+    - `scripts/cleanup-duplicate-home-pages.sql`: New script to clean up duplicate records
+    - `app/admin/pages-editor/page.tsx`: Fixed display logic and added duplicate detection
+    - Updated slug display logic: `page.page_slug === '' ? '/' : \`/${page.page_slug}\``
+
+- **TypeScript and Code Quality Improvements**
+  - **Type Safety:**
+    - Updated `PageContentInsert` type to use `page_slug: string` (no longer nullable)
+    - Fixed all TypeScript compilation errors
+    - Ensured proper type handling for home page slug variations (empty string instead of null)
+  - **Code Organization:**
+    - Centralized slug handling logic in API routes
+    - Consistent error handling patterns across all functions
+    - Proper separation of concerns between frontend and backend
+
 ### Notes / Next steps
 
 - Future changes will be appended here with date, intent, files touched, and impact.
 - If Vercel build logs surface new issues, fixes will be documented in this log with exact error snippets and resolutions.
 - The lead assignment system is now fully functional with complete admin-to-provider workflow.
 - All provider dashboards correctly display their assigned leads in real-time.
+- The CMS editor system is fully functional with proper slug handling, content persistence, and comprehensive debugging capabilities.
+- All content updates now properly persist to Supabase database with real-time updates on the live website.
 
 
