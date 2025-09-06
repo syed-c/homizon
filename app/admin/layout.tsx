@@ -108,17 +108,7 @@ export default function AdminLayout({
               </button>
               {expanded.content && (
                 <div className="ml-6 space-y-1">
-                  <Link 
-                    href="/admin/pages" 
-                    className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm ${
-                      pathname === '/admin/pages' 
-                        ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white' 
-                        : 'text-white/70 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <FileText className="h-4 w-4" />
-                    <span>Pages & Content</span>
-                  </Link>
+                  {/* Pages & Content link removed */}
                   <Link 
                     href="/admin/pages-editor" 
                     className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm ${
@@ -130,28 +120,8 @@ export default function AdminLayout({
                     <Settings className="h-4 w-4" />
                     <span>Content Editor</span>
                   </Link>
-                  <Link 
-                    href="/admin/faqs" 
-                    className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm ${
-                      pathname === '/admin/faqs' 
-                        ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white' 
-                        : 'text-white/70 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <HelpCircle className="h-4 w-4" />
-                    <span>FAQ Management</span>
-                  </Link>
-                  <Link 
-                    href="/admin/banners" 
-                    className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm ${
-                      pathname === '/admin/banners' 
-                        ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white' 
-                        : 'text-white/70 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <Image className="h-4 w-4" />
-                    <span>Banners & Media</span>
-                  </Link>
+                  {/* FAQ Management link removed */}
+                  {/* Banners & Media link removed */}
                 </div>
               )}
             </div>

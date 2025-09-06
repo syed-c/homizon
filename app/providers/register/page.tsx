@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { services, areas } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { uploadImageToSupabaseStorage, createProviderInSupabase, type ProviderInsert } from '@/lib/supabase';
+import { MultiSelect, OptionType } from '@/components/ui/multi-select';
 
 interface ProviderFormData {
   personalInfo: {
@@ -302,24 +303,48 @@ export default function ProviderRegisterPage() {
                 <div className="space-y-8">
                   <div>
                     <h3 className="text-xl font-semibold text-white mb-4">Select Services You Offer</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {services.map(service => (
-                        <div key={service.id} className="flex items-center space-x-3">
-                          <Checkbox id={service.id} checked={formData.services.includes(service.id)} onCheckedChange={() => handleServiceToggle(service.id)} />
-                          <label htmlFor={service.id} className="text-white/80 cursor-pointer flex-1">{service.name}<span className="text-white/50 text-sm ml-2">(Avg. {service.averagePrice})</span></label>
-                        </div>
-                      ))}
+                    <div className="w-full">
+                      <MultiSelect
+                        options={services.map(service => ({
+                          value: service.id,
+                          label: service.name,
+                          keywords: [service.averagePrice]
+                        }))}
+                        selected={formData.services}
+                        onChange={(selectedServices) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            services: selectedServices
+                          }));
+                        }}
+                        placeholder="Search and select services..."
+                        className="bg-white/10 border-white/20 text-white"
+                        badgeClassName="bg-primary/20 text-white"
+                        emptyMessage="No services found. Try a different search term."
+                      />
                     </div>
                   </div>
                   <div>
                     <h3 className="text-xl font-semibold text-white mb-4">Select Service Areas</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {areas.map(area => (
-                        <div key={area.id} className="flex items-center space-x-3">
-                          <Checkbox id={area.id} checked={formData.areas.includes(area.id)} onCheckedChange={() => handleAreaToggle(area.id)} />
-                          <label htmlFor={area.id} className="text-white/80 cursor-pointer flex-1">{area.name}<span className="text-white/50 text-sm block">{area.description}</span></label>
-                        </div>
-                      ))}
+                    <div className="w-full">
+                      <MultiSelect
+                        options={areas.map(area => ({
+                          value: area.id,
+                          label: area.name,
+                          keywords: [area.description]
+                        }))}
+                        selected={formData.areas}
+                        onChange={(selectedAreas) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            areas: selectedAreas
+                          }));
+                        }}
+                        placeholder="Search and select service areas..."
+                        className="bg-white/10 border-white/20 text-white"
+                        badgeClassName="bg-primary/20 text-white"
+                        emptyMessage="No areas found. Try a different search term."
+                      />
                     </div>
                   </div>
                 </div>
