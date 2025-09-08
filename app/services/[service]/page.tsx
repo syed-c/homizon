@@ -75,8 +75,8 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
     };
   }
 
-  // Handle individual service metadata (service is guaranteed to exist here)
-  if ((!serviceRow || serviceRow.status !== 'active') && !service) {
+  // Handle individual service metadata (service must be active in Supabase)
+  if (!serviceRow || serviceRow.status !== 'active' || !service) {
     return {
       title: 'Service Not Found',
       description: 'The requested service could not be found.'
@@ -90,28 +90,28 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
   const averageRating = providers.reduce((sum, p) => sum + p.rating, 0) / providers.length || 0;
 
   return {
-    title: `${service.name} Dubai | ${providers.length} Verified Professionals | ${siteName}`,
-    description: `Find trusted ${service.name.toLowerCase()} professionals in Dubai. ${providers.length} verified providers with ${averageRating.toFixed(1)} average rating. Book instantly with same-day service available.`,
+    title: `${service?.name} Dubai | ${providers.length} Verified Professionals | ${siteName}`,
+    description: `Find trusted ${service?.name.toLowerCase()} professionals in Dubai. ${providers.length} verified providers with ${averageRating.toFixed(1)} average rating. Book instantly with same-day service available.`,
     keywords: [
-      service.name,
+      service?.name as string,
       'Dubai',
       'service provider',
       'professional',
       'verified',
       'booking',
       'home services',
-      service.category
+      service?.category as string
     ],
     openGraph: {
-      title: `${service.name} Dubai | ${siteName}`,
-      description: `Find trusted ${service.name.toLowerCase()} professionals in Dubai. ${providers.length} verified providers available.`,
+      title: `${service?.name} Dubai | ${siteName}`,
+      description: `Find trusted ${service?.name.toLowerCase()} professionals in Dubai. ${providers.length} verified providers available.`,
       type: 'website',
       siteName: siteName
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${service.name} Dubai | ${siteName}`,
-      description: `Find trusted ${service.name.toLowerCase()} professionals in Dubai. ${providers.length} verified providers available.`
+      title: `${service?.name} Dubai | ${siteName}`,
+      description: `Find trusted ${service?.name.toLowerCase()} professionals in Dubai. ${providers.length} verified providers available.`
     }
   };
 }
@@ -124,13 +124,21 @@ export default async function ServicePage({ params }: ServicePageProps) {
     const res = await getServiceBySlugFromSupabase(serviceSlug);
     serviceRow = res.data;
   } catch {}
-  const isActive = serviceRow ? serviceRow.status === 'active' : true;
+
+  // If Supabase does not have this service as active, treat as not found (even if present in static data)
+  if (!serviceRow || serviceRow.status !== 'active') {
+    const categoryTmp = serviceCategories.find(cat => cat.slug === serviceSlug);
+    if (!categoryTmp) {
+      notFound();
+    }
+  }
+
   const service = getServiceBySlug(serviceSlug);
-  
+
   // If not found, check if it's a category
   const category = serviceCategories.find(cat => cat.slug === serviceSlug);
   
-  if ((!isActive || !service) && !category) {
+  if ((!service || !serviceRow || serviceRow.status !== 'active') && !category) {
     notFound();
   }
 

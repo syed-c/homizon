@@ -76,4 +76,43 @@ export async function POST(req: Request) {
   }
 }
 
+export async function DELETE(req: Request) {
+  try {
+    if (!SUPABASE_URL || !SERVICE_KEY) {
+      return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
+    }
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    const slug = searchParams.get('slug') || undefined;
+    if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
+
+    const delRes = await fetch(`${SUPABASE_URL}/rest/v1/services?id=eq.${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: {
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        Prefer: 'return=representation'
+      }
+    });
+    if (!delRes.ok) {
+      const text = await delRes.text().catch(() => '');
+      return NextResponse.json({ error: 'Supabase delete failed', details: text }, { status: delRes.status });
+    }
+
+    // Remove page content
+    if (slug) {
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/pages_content?page_slug=eq.${encodeURIComponent(`service-page/${slug}`)}`, {
+          method: 'DELETE',
+          headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, Prefer: 'return=minimal' }
+        });
+      } catch {}
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
+  }
+}
+
 // Legacy in-memory endpoints removed. This route only handles secure POST creates now.

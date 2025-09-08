@@ -369,35 +369,13 @@ export async function updateServiceStatusInSupabase(serviceId: string, status: '
 }
 
 export async function deleteServiceFromSupabase(serviceId: string, slug?: string) {
-  if (!SUPABASE_URL || (!SUPABASE_ANON_KEY && !SUPABASE_SERVICE_ROLE_KEY)) return { skipped: true };
-  // delete service row
-  const endpoint = `${SUPABASE_URL}/rest/v1/services?id=eq.${encodeURIComponent(serviceId)}`;
-  const apiKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
-  const res = await fetch(endpoint, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: apiKey as string,
-      Authorization: `Bearer ${apiKey}`,
-      Prefer: 'return=representation'
-    }
-  });
+  // Route delete through our server API to enforce DB delete and page cleanup
+  const url = `/api/admin/services?id=${encodeURIComponent(serviceId)}${slug ? `&slug=${encodeURIComponent(slug)}` : ''}`;
+  const res = await fetch(url, { method: 'DELETE' });
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Supabase delete service failed: HTTP ${res.status} ${text}`);
+    const json = await res.json().catch(() => ({}));
+    throw new Error(`Supabase delete service failed: HTTP ${res.status} ${JSON.stringify(json)}`);
   }
-  // delete related pages_content entry
-  try {
-    const pcEndpoint = `${SUPABASE_URL}/rest/v1/pages_content?page_slug=eq.${encodeURIComponent(`service-page/${slug || ''}`)}`;
-    await fetch(pcEndpoint, {
-      method: 'DELETE',
-      headers: {
-        apikey: apiKey as string,
-        Authorization: `Bearer ${apiKey}`,
-        Prefer: 'return=minimal'
-      }
-    });
-  } catch {}
   return { success: true };
 }
 

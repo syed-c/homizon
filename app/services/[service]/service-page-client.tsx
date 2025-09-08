@@ -24,7 +24,7 @@ import {
   Provider,
   getProvidersByCategory
 } from '@/lib/data';
-import { listProvidersFromSupabase } from '@/lib/supabase';
+import { listProvidersFromSupabase, listServicesFromSupabase } from '@/lib/supabase';
 import { useSettings } from '@/lib/settings-context';
 import { getPageContentFromSupabase } from '@/lib/supabase';
 
@@ -960,6 +960,7 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
   const { settings } = useSettings();
   const [cmsHero, setCmsHero] = useState<{ h1?: string; description?: string } | null>(null);
   const [providerCounts, setProviderCounts] = useState<Record<string, number>>({});
+  const [servicesDb, setServicesDb] = useState<any[]>([]);
 
   console.log("Service category page loaded:", category.name);
 
@@ -979,31 +980,56 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
     loadCms();
   }, [category.slug]);
 
-  // Load real providers and compute counts per service
+  // Load provider counts for services from Supabase only
   useEffect(() => {
     const loadProviderCounts = async () => {
       try {
         const res = await listProvidersFromSupabase();
         const providers: any[] = res.data || [];
         const counts: Record<string, number> = {};
-        category.services.forEach(svc => {
+        servicesDb.forEach(svc => {
           counts[svc.slug] = providers.filter(p => Array.isArray(p.services) && p.services.includes(svc.slug)).length;
         });
         setProviderCounts(counts);
       } catch (e) {
-        // fallback to sample data if Supabase not configured
-        const sampleCounts: Record<string, number> = {};
-        category.services.forEach(svc => {
-          const count = getProvidersByCategory(category.slug).filter(p => p.services.includes(svc.slug)).length;
-          sampleCounts[svc.slug] = count;
-        });
-        setProviderCounts(sampleCounts);
+        // if providers fetch fails, show zeros
+        const zeroCounts: Record<string, number> = {};
+        servicesDb.forEach(svc => { zeroCounts[svc.slug] = 0; });
+        setProviderCounts(zeroCounts);
       }
     };
     loadProviderCounts();
-  }, [category.slug]);
+  }, [servicesDb]);
 
-  const filteredServices = category.services.filter(service => {
+  // Load services for this category from Supabase
+  useEffect(() => {
+    const loadCategoryServices = async () => {
+      try {
+        const res = await listServicesFromSupabase();
+        const allowedSlugs = new Set<string>(category.services.map(s => s.slug));
+        const db = (res.data || []).filter((s: any) => s.status === 'active' && allowedSlugs.has(s.slug));
+        const normalized = db.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          description: `${row.name} services in Dubai`,
+          category: category.slug,
+          icon: category.icon || 'Settings',
+          averagePrice: 'AED 0',
+          estimatedTime: '—',
+          isPopular: false,
+          keywords: [row.name]
+        }));
+        setServicesDb(normalized);
+      } catch {
+        setServicesDb([]);
+      }
+    };
+    loadCategoryServices();
+  }, [category.id, category.slug, category.icon]);
+
+  // Only show services that exist in Supabase; if none, show empty list
+  const filteredServices = servicesDb.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          service.keywords.some(keyword => keyword.toLowerCase().includes(searchQuery.toLowerCase()));
