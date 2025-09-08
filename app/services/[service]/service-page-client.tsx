@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { 
   MapPin, Star, Clock, Phone, ArrowRight, Calendar, 
   Shield, Award, Users, CheckCircle, Filter, Search,
-  ChevronRight, Zap, MessageSquare, Heart, Share2,
+  ChevronRight, Zap, Heart, Share2,
   ThermometerSun, Droplets, Snowflake, Settings, Wind,
   Sparkles, Bug, Wrench, Hammer, Monitor, Paintbrush,
   Info, CheckCircle2, Eye, Truck, Shirt
@@ -24,7 +24,9 @@ import {
   Provider,
   getProvidersByCategory
 } from '@/lib/data';
+import { listProvidersFromSupabase } from '@/lib/supabase';
 import { useSettings } from '@/lib/settings-context';
+import { getPageContentFromSupabase } from '@/lib/supabase';
 
 interface ServicePageClientProps {
   service?: Service;
@@ -54,6 +56,10 @@ export default function ServicePageClient({ service, category }: ServicePageClie
   const [filterBy, setFilterBy] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [customContent, setCustomContent] = useState<any>(null);
+  const [cmsContent, setCmsContent] = useState<any>(null);
+  const [dbProviders, setDbProviders] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
   const { settings } = useSettings();
 
   // If it's a category, render the category page
@@ -85,10 +91,38 @@ export default function ServicePageClient({ service, category }: ServicePageClie
     fetchCustomContent();
   }, [service.slug]);
 
-  // Get all providers who offer this service
-  const providers = sampleProviders.filter(provider => 
+  // Load CMS content for this service detail page
+  useEffect(() => {
+    const loadCms = async () => {
+      try {
+        const res = await getPageContentFromSupabase(`service-page/${service.slug}`);
+        const content = (res as any)?.data?.content;
+        if (content) setCmsContent(content);
+      } catch {}
+    };
+    loadCms();
+  }, [service.slug]);
+
+  // Load providers from Supabase and filter by service slug
+  useEffect(() => {
+    const loadProviders = async () => {
+      try {
+        const res = await listProvidersFromSupabase();
+        const all = res.data || [];
+        const filtered = all.filter((p: any) => Array.isArray(p.services) && p.services.includes(service.slug));
+        setDbProviders(filtered);
+      } catch {
+        setDbProviders([]);
+      }
+    };
+    loadProviders();
+  }, [service.slug]);
+
+  // Choose providers (Supabase preferred, fallback to sample)
+  const providersFallback = sampleProviders.filter(provider => 
     provider.isApproved && provider.services.includes(service.slug)
   );
+  const providers = dbProviders.length > 0 ? dbProviders : providersFallback;
 
   const IconComponent = iconMap[service.icon] || Wrench;
 
@@ -132,7 +166,7 @@ export default function ServicePageClient({ service, category }: ServicePageClie
             <ChevronRight className="h-4 w-4 text-white/40 flex-shrink-0" />
             <Link href="/services" className="text-white/60 hover:text-white whitespace-nowrap">Services</Link>
             <ChevronRight className="h-4 w-4 text-white/40 flex-shrink-0" />
-            <Link href={`/services?category=${service.category}`} className="text-white/60 hover:text-white whitespace-nowrap">
+            <Link href={`/services/${service.category}`} className="text-white/60 hover:text-white whitespace-nowrap">
               {service.category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
             </Link>
             <ChevronRight className="h-4 w-4 text-white/40 flex-shrink-0" />
@@ -168,7 +202,7 @@ export default function ServicePageClient({ service, category }: ServicePageClie
               transition={{ duration: 1, delay: 0.2 }}
             >
               <span className="bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-                {service.name}
+                {cmsContent?.hero?.h1 ? cmsContent.hero.h1.replace(' in Dubai','') : service.name}
               </span>
               <br />
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
@@ -182,7 +216,7 @@ export default function ServicePageClient({ service, category }: ServicePageClie
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.3 }}
             >
-              {service.description}. Connect with {providers.length} verified professionals 
+              {cmsContent?.hero?.description || service.description}. Connect with {providers.length} verified professionals 
               with an average rating of {averageRating.toFixed(1)} stars across Dubai.
             </motion.p>
 
@@ -236,9 +270,11 @@ export default function ServicePageClient({ service, category }: ServicePageClie
         </div>
       </section>
 
+      {/* (About + Why Choose) will use the existing styled sections below */}
+
       {/* Filters and Search */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-        {/* Add your filters and search components here */}
+        {/* basic search/sort placeholder */}
       </div>
 
       {/* Providers List */}
@@ -259,7 +295,7 @@ export default function ServicePageClient({ service, category }: ServicePageClie
         </motion.div>
 
         <div className="space-y-4 mb-16">
-          {filteredProviders.map((provider, index) => (
+          {filteredProviders.slice((page-1)*pageSize, page*pageSize).map((provider, index) => (
             <div key={provider.id} className="w-full">
               <ProviderLineItem 
                 provider={provider} 
@@ -268,51 +304,69 @@ export default function ServicePageClient({ service, category }: ServicePageClie
               />
             </div>
           ))}
+          {filteredProviders.length > pageSize && (
+            <div className="flex items-center justify-center gap-3">
+              <Button variant="outline" disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))} className="text-white border-white/20">Prev</Button>
+              <span className="text-white/60 text-sm">Page {page} of {Math.ceil(filteredProviders.length/pageSize)}</span>
+              <Button variant="outline" disabled={page>=Math.ceil(filteredProviders.length/pageSize)} onClick={()=>setPage(p=>p+1)} className="text-white border-white/20">Next</Button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Service Areas */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
-        <motion.div 
-          className="text-center mb-8"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-        >
-          <h2 className="text-2xl font-bold text-white mb-4">Available Areas</h2>
-          <p className="text-white/60">Find {service.name.toLowerCase()} services in your area</p>
-        </motion.div>
-        
-        <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-3">
-          {areas.map((area, index) => (
-            <motion.div
-              key={area.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.05 }}
-              viewport={{ once: true }}
-            >
-              <Link href={`/${service.slug}/${area.slug}`}>
-                <div className="bg-white/5 backdrop-blur-sm border border-white/10 hover:border-primary-500/50 transition-all duration-300 cursor-pointer group rounded-lg p-3 text-center">
-                  <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-accent-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <MapPin className="h-4 w-4 text-white" />
+      {/* Removed Available Areas section as requested */}
+
+      {/* About Us Section (from CMS) */}
+      {cmsContent?.about && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="bg-gradient-to-r from-primary-900/30 to-accent-900/30 backdrop-blur-sm rounded-2xl p-8 border border-white/10"
+          >
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
+                <Info className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">
+                  {cmsContent.about.h2 || `About ${service.name} in Dubai`}
+                </h2>
+                {cmsContent.about.subheading && (
+                  <p className="text-white/60 text-sm">{cmsContent.about.subheading}</p>
+                )}
+              </div>
+            </div>
+
+            {cmsContent.about.paragraph && (
+              <p className="text-white/80 leading-relaxed">{cmsContent.about.paragraph}</p>
+            )}
+
+            {Array.isArray(cmsContent.about.points) && cmsContent.about.points.length > 0 && (
+              <div className="grid gap-4 md:grid-cols-2 mt-6">
+                {cmsContent.about.points.map((pt: any, idx: number) => (
+                  <div key={idx} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div className="flex items-start space-x-3">
+                      <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5" />
+                      <div>
+                        {pt.h3 && <h3 className="text-white font-semibold mb-1">{pt.h3}</h3>}
+                        {pt.paragraph && <p className="text-white/70 text-sm">{pt.paragraph}</p>}
+                      </div>
+                    </div>
                   </div>
-                  <h3 className="font-medium text-white group-hover:text-primary-400 transition-colors text-sm">
-                    {area.name}
-                  </h3>
-                  <div className="text-accent-400 text-xs mt-1">
-                    Book Now →
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
+                ))}
+              </div>
+            )}
+          </motion.div>
         </div>
-      </div>
+      )}
+
+      {/* Why Choose content can be included inside About section via CMS; standalone section removed for consistency */}
 
       {/* Custom Content Section */}
-      {customContent && (customContent.customHeading || customContent.customContent) && (
+      {!cmsContent && customContent && (customContent.customHeading || customContent.customContent) && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -359,7 +413,7 @@ export default function ServicePageClient({ service, category }: ServicePageClie
       )}
 
       {/* Auto-Generated SEO Content Section */}
-      {!customContent?.customContent && (
+      {!cmsContent && !customContent?.customContent && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -663,7 +717,7 @@ function ProviderLineItem({ provider, service, index }: {
           {/* Profile Image - Smaller on mobile */}
           <div className="relative flex-shrink-0">
             <img 
-              src={provider.profileImage || 'https://images.pexels.com/photos/4050291/pexels-photo-4050291.jpeg?auto=compress&cs=tinysrgb&h=80&w=80'} 
+              src={(provider as any).profileImage || (provider as any).profileimage || 'https://images.pexels.com/photos/4050291/pexels-photo-4050291.jpeg?auto=compress&cs=tinysrgb&h=80&w=80'} 
               alt={provider.name}
               className="w-12 h-12 rounded-full object-cover border-2 border-primary-500/50"
             />
@@ -731,10 +785,6 @@ function ProviderLineItem({ provider, service, index }: {
             </Link>
             
             <Button variant="outline" size="sm" className="text-white border-white/20 hover:bg-white/10 rounded-lg p-2">
-              <MessageSquare className="h-3 w-3" />
-            </Button>
-            
-            <Button variant="outline" size="sm" className="text-white border-white/20 hover:bg-white/10 rounded-lg p-2">
               <Phone className="h-3 w-3" />
             </Button>
           </div>
@@ -748,7 +798,7 @@ function ProviderLineItem({ provider, service, index }: {
             {/* Profile Image */}
             <div className="relative">
               <img 
-                src={provider.profileImage || 'https://images.pexels.com/photos/4050291/pexels-photo-4050291.jpeg?auto=compress&cs=tinysrgb&h=80&w=80'} 
+                src={(provider as any).profileImage || (provider as any).profileimage || 'https://images.pexels.com/photos/4050291/pexels-photo-4050291.jpeg?auto=compress&cs=tinysrgb&h=80&w=80'} 
                 alt={provider.name}
                 className="w-16 h-16 rounded-full object-cover border-2 border-primary-500/50"
               />
@@ -813,10 +863,6 @@ function ProviderLineItem({ provider, service, index }: {
             </Link>
             
             <Button variant="outline" size="icon" className="text-white border-white/20 hover:bg-white/10 rounded-xl">
-              <MessageSquare className="h-4 w-4" />
-            </Button>
-            
-            <Button variant="outline" size="icon" className="text-white border-white/20 hover:bg-white/10 rounded-xl">
               <Phone className="h-4 w-4" />
             </Button>
           </div>
@@ -830,8 +876,50 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('popular');
   const { settings } = useSettings();
+  const [cmsHero, setCmsHero] = useState<{ h1?: string; description?: string } | null>(null);
+  const [providerCounts, setProviderCounts] = useState<Record<string, number>>({});
 
   console.log("Service category page loaded:", category.name);
+
+  // Load CMS hero content for category
+  useEffect(() => {
+    const loadCms = async () => {
+      try {
+        const res = await getPageContentFromSupabase(`services/${category.slug}`);
+        const content = (res as any)?.data?.content;
+        if (content?.hero) {
+          setCmsHero({ h1: content.hero.h1, description: content.hero.description });
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    loadCms();
+  }, [category.slug]);
+
+  // Load real providers and compute counts per service
+  useEffect(() => {
+    const loadProviderCounts = async () => {
+      try {
+        const res = await listProvidersFromSupabase();
+        const providers: any[] = res.data || [];
+        const counts: Record<string, number> = {};
+        category.services.forEach(svc => {
+          counts[svc.slug] = providers.filter(p => Array.isArray(p.services) && p.services.includes(svc.slug)).length;
+        });
+        setProviderCounts(counts);
+      } catch (e) {
+        // fallback to sample data if Supabase not configured
+        const sampleCounts: Record<string, number> = {};
+        category.services.forEach(svc => {
+          const count = getProvidersByCategory(category.slug).filter(p => p.services.includes(svc.slug)).length;
+          sampleCounts[svc.slug] = count;
+        });
+        setProviderCounts(sampleCounts);
+      }
+    };
+    loadProviderCounts();
+  }, [category.slug]);
 
   const filteredServices = category.services.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -850,7 +938,7 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
     }
   });
 
-  const providersCount = getProvidersByCategory(category.slug).length;
+  const providersCount = Object.values(providerCounts).reduce((sum, n) => sum + (n || 0), 0);
 
   const getIcon = (iconName: string) => {
     return iconMap[iconName] || Settings;
@@ -901,11 +989,11 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
               transition={{ duration: 1, delay: 0.2 }}
             >
               <span className="bg-gradient-to-r from-white to-neon-blue bg-clip-text text-transparent">
-                {category.name}
+                {cmsHero?.h1 ? cmsHero.h1.replace(' in Dubai', '') : category.name}
               </span>
               <br />
               <span className="bg-gradient-to-r from-neon-blue to-neon-green bg-clip-text text-transparent">
-                in Dubai
+                {cmsHero?.h1?.includes('in Dubai') ? 'in Dubai' : 'in Dubai'}
               </span>
             </motion.h1>
             
@@ -915,7 +1003,7 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.3 }}
             >
-              {category.description} Find trusted professionals across Dubai with verified reviews and instant booking.
+              {cmsHero?.description || `${category.description} Find trusted professionals across Dubai with verified reviews and instant booking.`}
             </motion.p>
 
             {/* Quick Stats */}
@@ -1073,7 +1161,7 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
                           <div className="text-right">
                             <div className="flex items-center space-x-1 mb-1">
                               <Users className="h-4 w-4 text-neon-green" />
-                              <span className="text-white font-medium">{providersCount}</span>
+                              <span className="text-white font-medium">{providerCounts[service.slug] ?? 0}</span>
                             </div>
                             <div className="text-white/60 text-xs">
                               providers available

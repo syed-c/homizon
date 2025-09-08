@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FileText, Plus, Eye, Edit, RotateCcw, Search, 
-  Globe, Calendar, BarChart3, Settings, Save, X
+  Globe, Calendar, BarChart3, Settings, Save, X, Trash
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,6 +68,33 @@ interface HomePageContent {
   }>;
 }
 
+interface ServicesPageContent {
+  hero: {
+    h1: string;
+    description: string;
+  };
+  why_choose: {
+    h2: string;
+    paragraph: string;
+    features: Array<{
+      h3: string;
+      paragraph: string;
+    }>;
+  };
+  cta: {
+    h2: string;
+    paragraph: string;
+  };
+}
+
+interface ServiceDetailPageContent {
+  hero: { h1: string; description: string };
+  about: { h2: string; paragraph: string };
+  why: { h2: string; paragraph: string };
+  faqs: { h2: string; paragraph: string; items: Array<{ question: string; answer: string }>; };
+  cta: { h2: string; paragraph: string };
+}
+
 const defaultHomePageContent: HomePageContent = {
   hero: {
     h1: "Dubai's Premier Home Services Platform",
@@ -112,6 +139,27 @@ const defaultHomePageContent: HomePageContent = {
   ]
 };
 
+const defaultServicesPageContent: ServicesPageContent = {
+  hero: {
+    h1: "Service Directory",
+    description: "Browse our comprehensive directory of home services in Dubai. Find the perfect service provider for your needs with detailed information, pricing, and availability."
+  },
+  why_choose: {
+    h2: "Why Choose Our Directory?",
+    paragraph: "Experience the difference with our curated selection of top-rated service providers in Dubai.",
+    features: [
+      { h3: "Verified Professionals", paragraph: "All providers are background-checked and verified for your peace of mind." },
+      { h3: "Quality Guaranteed", paragraph: "Browse ratings and reviews from real customers to make informed decisions." },
+      { h3: "Quick Connection", paragraph: "Connect directly with providers and get quotes within minutes." },
+      { h3: "Wide Selection", paragraph: "Choose from hundreds of providers across all service categories." }
+    ]
+  },
+  cta: {
+    h2: "Ready to Get Started?",
+    paragraph: "Join thousands of satisfied customers who have found their perfect service provider through our platform."
+  }
+};
+
 export default function PagesEditor() {
   const [pages, setPages] = useState<PageContent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,7 +167,8 @@ export default function PagesEditor() {
   const [editingPage, setEditingPage] = useState<PageContent | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [pageContent, setPageContent] = useState<HomePageContent>(defaultHomePageContent);
+  const [pageContent, setPageContent] = useState<HomePageContent | ServicesPageContent | ServiceDetailPageContent>(defaultHomePageContent);
+  const [pageType, setPageType] = useState<'home' | 'services' | 'category' | 'serviceDetail'>('home');
   const [metaData, setMetaData] = useState({
     slug: '',
     meta_title: "HOMIZON - Dubai's Premier Home Services Platform",
@@ -140,8 +189,8 @@ export default function PagesEditor() {
       if (data.data) {
         setPages(data.data);
       } else {
-        // Initialize with default home page if no data exists
-        const defaultPage: PageContent = {
+        // Initialize with default pages if no data exists
+        const defaultHomePage: PageContent = {
           id: 'home-page',
           page_slug: '',
           content: defaultHomePageContent,
@@ -149,7 +198,17 @@ export default function PagesEditor() {
           meta_description: metaData.meta_description,
           updated_at: new Date().toISOString()
         };
-        setPages([defaultPage]);
+        
+        const defaultServicesPage: PageContent = {
+          id: 'services-page',
+          page_slug: 'services',
+          content: defaultServicesPageContent,
+          meta_title: "Service Directory - HOMIZON",
+          meta_description: "Browse our comprehensive directory of home services in Dubai. Find the perfect service provider for your needs with detailed information, pricing, and availability.",
+          updated_at: new Date().toISOString()
+        };
+        
+        setPages([defaultHomePage, defaultServicesPage]);
       }
     } catch (error) {
       console.error('Error loading pages:', error);
@@ -165,7 +224,107 @@ export default function PagesEditor() {
 
   const handleEditPage = (page: PageContent) => {
     setEditingPage(page);
-    setPageContent(page.content || defaultHomePageContent);
+    
+    // Determine page type based on slug
+    if (page.page_slug === 'services') {
+      setPageType('services');
+      const incoming = (page.content || {}) as any;
+      const merged: ServicesPageContent = {
+        hero: {
+          h1: incoming.hero?.h1 ?? defaultServicesPageContent.hero.h1,
+          description: incoming.hero?.description ?? defaultServicesPageContent.hero.description,
+        },
+        why_choose: {
+          h2: incoming.why_choose?.h2 ?? defaultServicesPageContent.why_choose.h2,
+          paragraph: incoming.why_choose?.paragraph ?? defaultServicesPageContent.why_choose.paragraph,
+          features: Array.isArray(incoming.why_choose?.features) && incoming.why_choose.features.length > 0
+            ? incoming.why_choose.features
+            : defaultServicesPageContent.why_choose.features,
+        },
+        cta: {
+          h2: incoming.cta?.h2 ?? defaultServicesPageContent.cta.h2,
+          paragraph: incoming.cta?.paragraph ?? defaultServicesPageContent.cta.paragraph,
+        }
+      };
+      setPageContent(merged);
+    } else if (page.page_slug && page.page_slug.startsWith('service-page/')) {
+      setPageType('serviceDetail');
+      const incoming = (page.content || {}) as any;
+      const merged: ServiceDetailPageContent = {
+        hero: {
+          h1: incoming.hero?.h1 || 'Service in Dubai',
+          description: incoming.hero?.description || 'Professional services by verified providers.'
+        },
+        about: {
+          h2: incoming.about?.h2 || 'About This Service in Dubai',
+          paragraph: incoming.about?.paragraph || ''
+        },
+        why: {
+          h2: incoming.why?.h2 || 'Why Choose This Service in Dubai?',
+          paragraph: incoming.why?.paragraph || ''
+        },
+        faqs: {
+          h2: incoming.faqs?.h2 || 'Frequently Asked Questions',
+          paragraph: incoming.faqs?.paragraph || '',
+          items: Array.isArray(incoming.faqs?.items) ? incoming.faqs.items : []
+        },
+        cta: {
+          h2: incoming.cta?.h2 || "Need This Service? We're Here to Help!",
+          paragraph: incoming.cta?.paragraph || ''
+        }
+      };
+      setPageContent(merged);
+    } else if (page.page_slug && page.page_slug.startsWith('services/')) {
+      // Services category page -> only allow editing Hero section
+      setPageType('category');
+      const incoming = (page.content || {}) as any;
+      const merged = {
+        hero: {
+          h1: incoming?.hero?.h1 || 'Category',
+          description: incoming?.hero?.description || 'Browse providers in this category.',
+        },
+      } as any;
+      setPageContent(merged);
+    } else {
+      setPageType('home');
+      const incoming = (page.content || {}) as any;
+      const merged: HomePageContent = {
+        hero: {
+          h1: incoming.hero?.h1 ?? defaultHomePageContent.hero.h1,
+          description: incoming.hero?.description ?? defaultHomePageContent.hero.description,
+        },
+        popularServices: {
+          h2: incoming.popularServices?.h2 ?? defaultHomePageContent.popularServices.h2,
+          paragraph: incoming.popularServices?.paragraph ?? defaultHomePageContent.popularServices.paragraph,
+          services: Array.isArray(incoming.popularServices?.services) && incoming.popularServices.services.length > 0
+            ? incoming.popularServices.services
+            : defaultHomePageContent.popularServices.services,
+        },
+        howItWorks: {
+          h2: incoming.howItWorks?.h2 ?? defaultHomePageContent.howItWorks.h2,
+          paragraph: incoming.howItWorks?.paragraph ?? defaultHomePageContent.howItWorks.paragraph,
+          steps: Array.isArray(incoming.howItWorks?.steps) && incoming.howItWorks.steps.length > 0
+            ? incoming.howItWorks.steps
+            : defaultHomePageContent.howItWorks.steps,
+        },
+        serviceAreas: {
+          h2: incoming.serviceAreas?.h2 ?? defaultHomePageContent.serviceAreas.h2,
+          paragraph: incoming.serviceAreas?.paragraph ?? defaultHomePageContent.serviceAreas.paragraph,
+        },
+        faqs: {
+          h2: incoming.faqs?.h2 ?? defaultHomePageContent.faqs.h2,
+          paragraph: incoming.faqs?.paragraph ?? defaultHomePageContent.faqs.paragraph,
+          items: Array.isArray(incoming.faqs?.items) && incoming.faqs.items.length > 0
+            ? incoming.faqs.items
+            : defaultHomePageContent.faqs.items,
+        },
+        buttons: Array.isArray(incoming.buttons) && incoming.buttons.length > 0
+          ? incoming.buttons
+          : defaultHomePageContent.buttons,
+      };
+      setPageContent(merged);
+    }
+    
     setMetaData({
       slug: page.page_slug || '',
       meta_title: page.meta_title,
@@ -231,8 +390,8 @@ export default function PagesEditor() {
     setPageContent(prev => ({
       ...prev,
       popularServices: {
-        ...prev.popularServices,
-        services: [...prev.popularServices.services, {
+        ...(prev as HomePageContent).popularServices,
+        services: [...(prev as HomePageContent).popularServices.services, {
           id: '',
           name: '',
           description: '',
@@ -246,8 +405,8 @@ export default function PagesEditor() {
     setPageContent(prev => ({
       ...prev,
       popularServices: {
-        ...prev.popularServices,
-        services: prev.popularServices.services.filter((_, i) => i !== index)
+        ...(prev as HomePageContent).popularServices,
+        services: (prev as HomePageContent).popularServices.services.filter((_, i) => i !== index)
       }
     }));
   };
@@ -256,8 +415,8 @@ export default function PagesEditor() {
     setPageContent(prev => ({
       ...prev,
       popularServices: {
-        ...prev.popularServices,
-        services: prev.popularServices.services.map((service, i) => 
+        ...(prev as HomePageContent).popularServices,
+        services: (prev as HomePageContent).popularServices.services.map((service, i) => 
           i === index ? { ...service, [field]: value } : service
         )
       }
@@ -268,8 +427,8 @@ export default function PagesEditor() {
     setPageContent(prev => ({
       ...prev,
       faqs: {
-        ...prev.faqs,
-        items: [...prev.faqs.items, { question: '', answer: '' }]
+        ...(prev as HomePageContent).faqs,
+        items: [...(prev as HomePageContent).faqs.items, { question: '', answer: '' }]
       }
     }));
   };
@@ -278,8 +437,8 @@ export default function PagesEditor() {
     setPageContent(prev => ({
       ...prev,
       faqs: {
-        ...prev.faqs,
-        items: prev.faqs.items.filter((_, i) => i !== index)
+        ...(prev as HomePageContent).faqs,
+        items: (prev as HomePageContent).faqs.items.filter((_, i) => i !== index)
       }
     }));
   };
@@ -287,14 +446,14 @@ export default function PagesEditor() {
   const addButton = () => {
     setPageContent(prev => ({
       ...prev,
-      buttons: [...prev.buttons, { text: '', url: '' }]
+      buttons: [...(prev as HomePageContent).buttons, { text: '', url: '' }]
     }));
   };
 
   const removeButton = (index: number) => {
     setPageContent(prev => ({
       ...prev,
-      buttons: prev.buttons.filter((_, i) => i !== index)
+      buttons: (prev as HomePageContent).buttons.filter((_, i) => i !== index)
     }));
   };
 
@@ -302,6 +461,38 @@ export default function PagesEditor() {
     page.page_slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
     page.meta_title.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Ensure category pages appear in list (virtual entries if not yet saved)
+  const categoryVirtualPages: PageContent[] = serviceCategories.map(cat => ({
+    id: `services-${cat.slug}`,
+    page_slug: `services/${cat.slug}`,
+    content: { hero: { h1: `${cat.name} in Dubai`, description: `${cat.description} Find trusted professionals across Dubai with verified reviews and instant booking.` } },
+    meta_title: `${cat.name} in Dubai | HOMIZON`,
+    meta_description: `${cat.description} Find trusted professionals across Dubai with verified reviews and instant booking.`,
+    updated_at: new Date().toISOString()
+  }));
+
+  // Virtual entries for each individual service detail page (editable via serviceDetail editor)
+  const serviceDetailVirtualPages: PageContent[] = services.map(svc => ({
+    id: `service-page-${svc.slug}`,
+    page_slug: `service-page/${svc.slug}`,
+    content: {
+      hero: { h1: `${svc.name} in Dubai`, description: `${svc.description}. Professional, verified providers.` },
+      about: { h2: `About ${svc.name} in Dubai`, paragraph: '' },
+      why: { h2: `Why Choose ${svc.name} in Dubai?`, paragraph: '' },
+      faqs: { h2: 'Frequently Asked Questions', paragraph: '', items: [] },
+      cta: { h2: `Need ${svc.name}? We're Here to Help!`, paragraph: '' }
+    },
+    meta_title: `${svc.name} in Dubai | HOMIZON`,
+    meta_description: `${svc.description}`,
+    updated_at: new Date().toISOString()
+  }));
+
+  const mergedPages = [
+    ...categoryVirtualPages.filter(v => !pages.some(p => p.page_slug === v.page_slug)),
+    ...serviceDetailVirtualPages.filter(v => !pages.some(p => p.page_slug === v.page_slug)),
+    ...pages
+  ];
 
   if (loading) {
     return (
@@ -319,105 +510,7 @@ export default function PagesEditor() {
           <h1 className="text-3xl font-bold text-white">Pages Editor</h1>
           <p className="text-white/60 mt-1">Create, edit, and manage all website content</p>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button
-            variant="outline"
-            onClick={loadPages}
-            className="text-white border-white/20 hover:bg-white/10"
-          >
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button
-            variant="outline"
-            onClick={async () => {
-              try {
-                const response = await fetch('/api/admin/pages-content');
-                const data = await response.json();
-                console.log('API Test - All pages:', data);
-                toast({
-                  title: 'API Test',
-                  description: `Found ${data.data?.length || 0} pages`,
-                });
-              } catch (error) {
-                console.error('API Test Error:', error);
-                toast({
-                  title: 'API Test Error',
-                  description: 'Check console for details',
-                  variant: 'destructive'
-                });
-              }
-            }}
-            className="text-white border-white/20 hover:bg-white/10"
-          >
-            Test API
-          </Button>
-          <Button
-            variant="outline"
-            onClick={async () => {
-              try {
-                const response = await fetch('/api/test-supabase-connection');
-                const data = await response.json();
-                console.log('Supabase Connection Test:', data);
-                toast({
-                  title: data.success ? 'Supabase Connected' : 'Supabase Error',
-                  description: data.message || data.error,
-                  variant: data.success ? 'default' : 'destructive'
-                });
-              } catch (error) {
-                console.error('Supabase Test Error:', error);
-                toast({
-                  title: 'Supabase Test Error',
-                  description: 'Check console for details',
-                  variant: 'destructive'
-                });
-              }
-            }}
-            className="text-white border-white/20 hover:bg-white/10"
-          >
-            Test Supabase
-          </Button>
-          <Button
-            variant="outline"
-            onClick={async () => {
-              try {
-                const response = await fetch('/api/admin/pages-content');
-                const data = await response.json();
-                console.log('All pages before cleanup:', data);
-                
-                // Find duplicate home pages
-                const homePages = data.data?.filter((page: any) => 
-                  page.page_slug === '' || page.page_slug === '/' || page.page_slug === null
-                ) || [];
-                
-                console.log('Found home pages:', homePages);
-                
-                if (homePages.length > 1) {
-                  toast({
-                    title: 'Duplicate Home Pages Found',
-                    description: `Found ${homePages.length} home page records. Please run the cleanup SQL script.`,
-                    variant: 'destructive'
-                  });
-                } else {
-                  toast({
-                    title: 'No Duplicates',
-                    description: 'Only one home page record found.',
-                  });
-                }
-              } catch (error) {
-                console.error('Cleanup Check Error:', error);
-                toast({
-                  title: 'Cleanup Check Error',
-                  description: 'Check console for details',
-                  variant: 'destructive'
-                });
-              }
-            }}
-            className="text-white border-white/20 hover:bg-white/10"
-          >
-            Check Duplicates
-          </Button>
-        </div>
+        <div className="flex items-center space-x-3" />
       </div>
 
       {/* Search */}
@@ -433,7 +526,9 @@ export default function PagesEditor() {
 
       {/* Pages Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredPages.map((page) => (
+        {mergedPages
+          .filter(page => page.page_slug.toLowerCase().includes(searchTerm.toLowerCase()) || page.meta_title.toLowerCase().includes(searchTerm.toLowerCase()))
+          .map((page) => (
           <motion.div
             key={page.id}
             initial={{ opacity: 0, y: 20 }}
@@ -511,29 +606,59 @@ export default function PagesEditor() {
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-neutral-900 border-white/20">
           <DialogHeader>
-            <DialogTitle className="text-white text-xl">Edit Page Content</DialogTitle>
+            <DialogTitle className="text-white text-xl">
+              {pageType === 'home' && 'Edit Home Page Content'}
+              {pageType === 'services' && 'Edit Services Page Content'}
+              {pageType === 'category' && 'Edit Category Page Content'}
+              {pageType === 'serviceDetail' && 'Edit Service Page Content'}
+            </DialogTitle>
           </DialogHeader>
           
           <Tabs defaultValue="hero" className="w-full">
-            <TabsList className="grid w-full grid-cols-6 bg-white/10">
-              <TabsTrigger value="hero">Hero</TabsTrigger>
-              <TabsTrigger value="services">Services</TabsTrigger>
-              <TabsTrigger value="how-it-works">How It Works</TabsTrigger>
-              <TabsTrigger value="areas">Areas</TabsTrigger>
-              <TabsTrigger value="faqs">FAQs</TabsTrigger>
-              <TabsTrigger value="meta">Meta SEO</TabsTrigger>
-            </TabsList>
+            {pageType === 'home' && (
+              <TabsList className="grid w-full grid-cols-6 bg-white/10">
+                <TabsTrigger value="hero">Hero</TabsTrigger>
+                <TabsTrigger value="services">Services</TabsTrigger>
+                <TabsTrigger value="how-it-works">How It Works</TabsTrigger>
+                <TabsTrigger value="areas">Areas</TabsTrigger>
+                <TabsTrigger value="faqs">FAQs</TabsTrigger>
+                <TabsTrigger value="meta">Meta SEO</TabsTrigger>
+              </TabsList>
+            )}
+            {pageType === 'services' && (
+              <TabsList className="grid w-full grid-cols-4 bg-white/10">
+                <TabsTrigger value="hero">Hero</TabsTrigger>
+                <TabsTrigger value="why-choose">Why Choose Us</TabsTrigger>
+                <TabsTrigger value="cta">CTA</TabsTrigger>
+                <TabsTrigger value="meta">Meta SEO</TabsTrigger>
+              </TabsList>
+            )}
+            {pageType === 'category' && (
+              <TabsList className="grid w-full grid-cols-2 bg-white/10">
+                <TabsTrigger value="hero">Hero</TabsTrigger>
+                <TabsTrigger value="meta">Meta SEO</TabsTrigger>
+              </TabsList>
+            )}
+            {pageType === 'serviceDetail' && (
+              <TabsList className="grid w-full grid-cols-6 bg-white/10">
+                <TabsTrigger value="hero">Hero</TabsTrigger>
+                <TabsTrigger value="about">About</TabsTrigger>
+                <TabsTrigger value="faqs">FAQs</TabsTrigger>
+                <TabsTrigger value="cta">CTA</TabsTrigger>
+                <TabsTrigger value="meta">Meta SEO</TabsTrigger>
+              </TabsList>
+            )}
 
-            {/* Hero Section */}
+            {/* Hero Section - Common for both page types (for services categories we use hero.h1/description) */}
             <TabsContent value="hero" className="space-y-4">
               <div className="space-y-4">
                 <div>
                   <Label className="text-white">H1 Title</Label>
                   <Input
-                    value={pageContent.hero.h1}
+                    value={(pageContent as any).hero?.h1 || ''}
                     onChange={(e) => setPageContent(prev => ({
                       ...prev,
-                      hero: { ...prev.hero, h1: e.target.value }
+                      hero: { ...(prev as any).hero, h1: e.target.value }
                     }))}
                     className="bg-white/5 border-white/20 text-white"
                   />
@@ -541,10 +666,10 @@ export default function PagesEditor() {
                 <div>
                   <Label className="text-white">Hero Description</Label>
                   <Textarea
-                    value={pageContent.hero.description}
+                    value={(pageContent as any).hero?.description || ''}
                     onChange={(e) => setPageContent(prev => ({
                       ...prev,
-                      hero: { ...prev.hero, description: e.target.value }
+                      hero: { ...(prev as any).hero, description: e.target.value }
                     }))}
                     rows={4}
                     className="bg-white/5 border-white/20 text-white"
@@ -552,17 +677,187 @@ export default function PagesEditor() {
                 </div>
               </div>
             </TabsContent>
+            
+            {/* Why Choose Us Section - Services page only */}
+            {pageType === 'services' && (
+              <TabsContent value="why-choose" className="space-y-4">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-white">Section H2</Label>
+                    <Input
+                      value={(pageContent as ServicesPageContent).why_choose.h2}
+                      onChange={(e) => setPageContent(prev => ({
+                        ...prev,
+                        why_choose: { 
+                          ...(prev as ServicesPageContent).why_choose, 
+                          h2: e.target.value 
+                        }
+                      }))}
+                      className="bg-white/5 border-white/20 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-white">Section Paragraph</Label>
+                    <Textarea
+                      value={(pageContent as ServicesPageContent).why_choose.paragraph}
+                      onChange={(e) => setPageContent(prev => ({
+                        ...prev,
+                        why_choose: { 
+                          ...(prev as ServicesPageContent).why_choose, 
+                          paragraph: e.target.value 
+                        }
+                      }))}
+                      rows={3}
+                      className="bg-white/5 border-white/20 text-white"
+                    />
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-white text-lg">Features</Label>
+                    </div>
+                    
+                    {(pageContent as ServicesPageContent).why_choose.features.map((feature, index) => (
+                      <Card key={index} className="bg-white/5 border-white/20">
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-white text-base">Feature {index + 1}</CardTitle>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                const newFeatures = [...(pageContent as ServicesPageContent).why_choose.features];
+                                newFeatures.splice(index, 1);
+                                setPageContent(prev => ({
+                                  ...prev,
+                                  why_choose: {
+                                    ...(prev as ServicesPageContent).why_choose,
+                                    features: newFeatures
+                                  }
+                                }));
+                              }}
+                              className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div>
+                            <Label className="text-white">H3 Title</Label>
+                            <Input
+                              value={feature.h3}
+                              onChange={(e) => {
+                                const newFeatures = [...(pageContent as ServicesPageContent).why_choose.features];
+                                newFeatures[index] = { ...newFeatures[index], h3: e.target.value };
+                                setPageContent(prev => ({
+                                  ...prev,
+                                  why_choose: {
+                                    ...(prev as ServicesPageContent).why_choose,
+                                    features: newFeatures
+                                  }
+                                }));
+                              }}
+                              className="bg-white/5 border-white/20 text-white"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-white">Paragraph</Label>
+                            <Textarea
+                              value={feature.paragraph}
+                              onChange={(e) => {
+                                const newFeatures = [...(pageContent as ServicesPageContent).why_choose.features];
+                                newFeatures[index] = { ...newFeatures[index], paragraph: e.target.value };
+                                setPageContent(prev => ({
+                                  ...prev,
+                                  why_choose: {
+                                    ...(prev as ServicesPageContent).why_choose,
+                                    features: newFeatures
+                                  }
+                                }));
+                              }}
+                              rows={2}
+                              className="bg-white/5 border-white/20 text-white"
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    
+                    {(pageContent as ServicesPageContent).why_choose.features.length < 4 && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setPageContent(prev => ({
+                            ...prev,
+                            why_choose: {
+                              ...(prev as ServicesPageContent).why_choose,
+                              features: [
+                                ...(prev as ServicesPageContent).why_choose.features,
+                                { h3: '', paragraph: '' }
+                              ]
+                            }
+                          }));
+                        }}
+                        className="w-full text-white border-white/20 hover:bg-white/10"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Feature
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+            )}
+            
+            {/* CTA Section - Services page only */}
+            {pageType === 'services' && (
+              <TabsContent value="cta" className="space-y-4">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-white">CTA H2</Label>
+                    <Input
+                      value={(pageContent as ServicesPageContent).cta.h2}
+                      onChange={(e) => setPageContent(prev => ({
+                        ...prev,
+                        cta: { 
+                          ...(prev as ServicesPageContent).cta, 
+                          h2: e.target.value 
+                        }
+                      }))}
+                      className="bg-white/5 border-white/20 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-white">CTA Paragraph</Label>
+                    <Textarea
+                      value={(pageContent as ServicesPageContent).cta.paragraph}
+                      onChange={(e) => setPageContent(prev => ({
+                        ...prev,
+                        cta: { 
+                          ...(prev as ServicesPageContent).cta, 
+                          paragraph: e.target.value 
+                        }
+                      }))}
+                      rows={3}
+                      className="bg-white/5 border-white/20 text-white"
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+            )}
 
-            {/* Popular Services Section */}
+            {/* Popular Services Section (Home only) */}
+            {pageType === 'home' && (
             <TabsContent value="services" className="space-y-4">
               <div className="space-y-4">
                 <div>
                   <Label className="text-white">Section H2</Label>
                   <Input
-                    value={pageContent.popularServices.h2}
+                    value={(pageContent as HomePageContent).popularServices.h2}
                     onChange={(e) => setPageContent(prev => ({
                       ...prev,
-                      popularServices: { ...prev.popularServices, h2: e.target.value }
+                      popularServices: { ...(prev as HomePageContent).popularServices, h2: e.target.value }
                     }))}
                     className="bg-white/5 border-white/20 text-white"
                   />
@@ -570,10 +865,10 @@ export default function PagesEditor() {
                 <div>
                   <Label className="text-white">Section Paragraph</Label>
                   <Textarea
-                    value={pageContent.popularServices.paragraph}
+                    value={(pageContent as HomePageContent).popularServices.paragraph}
                     onChange={(e) => setPageContent(prev => ({
                       ...prev,
-                      popularServices: { ...prev.popularServices, paragraph: e.target.value }
+                      popularServices: { ...(prev as HomePageContent).popularServices, paragraph: e.target.value }
                     }))}
                     rows={3}
                     className="bg-white/5 border-white/20 text-white"
@@ -590,7 +885,7 @@ export default function PagesEditor() {
                   </div>
                   
                   <div className="space-y-3">
-                    {pageContent.popularServices.services.map((service, index) => (
+                    {(pageContent as HomePageContent).popularServices.services.map((service, index) => (
                       <div key={index} className="p-4 bg-white/5 rounded-lg border border-white/10">
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-white font-medium">Service {index + 1}</span>
@@ -628,17 +923,204 @@ export default function PagesEditor() {
                 </div>
               </div>
             </TabsContent>
+            )}
 
-            {/* How It Works Section */}
+            {/* Service Detail Sections */}
+            {pageType === 'serviceDetail' && (
+              <>
+                <TabsContent value="about" className="space-y-4">
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-white">About H2</Label>
+                      <Input
+                        value={(pageContent as ServiceDetailPageContent).about.h2}
+                        onChange={(e) => setPageContent(prev => ({
+                          ...prev,
+                          about: { ...(prev as ServiceDetailPageContent).about, h2: e.target.value }
+                        }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white">About Paragraph</Label>
+                      <Textarea
+                        value={(pageContent as ServiceDetailPageContent).about.paragraph}
+                        onChange={(e) => setPageContent(prev => ({
+                          ...prev,
+                          about: { ...(prev as ServiceDetailPageContent).about, paragraph: e.target.value }
+                        }))}
+                        rows={4}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="why" className="space-y-4">
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-white">Why Choose H2</Label>
+                      <Input
+                        value={(pageContent as ServiceDetailPageContent).why.h2}
+                        onChange={(e) => setPageContent(prev => ({
+                          ...prev,
+                          why: { ...(prev as ServiceDetailPageContent).why, h2: e.target.value }
+                        }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white">Why Choose Paragraph</Label>
+                      <Textarea
+                        value={(pageContent as ServiceDetailPageContent).why.paragraph}
+                        onChange={(e) => setPageContent(prev => ({
+                          ...prev,
+                          why: { ...(prev as ServiceDetailPageContent).why, paragraph: e.target.value }
+                        }))}
+                        rows={4}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="faqs" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-white">FAQs H2</Label>
+                      <Input
+                        value={(pageContent as ServiceDetailPageContent).faqs.h2}
+                        onChange={(e) => setPageContent(prev => ({
+                          ...prev,
+                          faqs: { ...(prev as ServiceDetailPageContent).faqs, h2: e.target.value }
+                        }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white">FAQs Paragraph</Label>
+                      <Textarea
+                        value={(pageContent as ServiceDetailPageContent).faqs.paragraph}
+                        onChange={(e) => setPageContent(prev => ({
+                          ...prev,
+                          faqs: { ...(prev as ServiceDetailPageContent).faqs, paragraph: e.target.value }
+                        }))}
+                        rows={3}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-white">FAQ Items</Label>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-white border-white/20"
+                        onClick={() => setPageContent(prev => ({
+                          ...prev,
+                          faqs: {
+                            ...(prev as ServiceDetailPageContent).faqs,
+                            items: [ ...(prev as ServiceDetailPageContent).faqs.items, { question: '', answer: '' } ]
+                          }
+                        }))}
+                      >
+                        <Plus className="h-4 w-4 mr-2" /> Add FAQ
+                      </Button>
+                    </div>
+
+                    {(pageContent as ServiceDetailPageContent).faqs.items.map((item, i) => (
+                      <div key={i} className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-3">
+                        <div>
+                          <Label className="text-white text-sm">Question</Label>
+                          <Input
+                            value={item.question}
+                            onChange={(e) => setPageContent(prev => ({
+                              ...prev,
+                              faqs: {
+                                ...(prev as ServiceDetailPageContent).faqs,
+                                items: (prev as ServiceDetailPageContent).faqs.items.map((x, idx) => idx === i ? { ...x, question: e.target.value } : x)
+                              }
+                            }))}
+                            className="bg-white/5 border-white/20 text-white"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-white text-sm">Answer</Label>
+                          <Textarea
+                            value={item.answer}
+                            onChange={(e) => setPageContent(prev => ({
+                              ...prev,
+                              faqs: {
+                                ...(prev as ServiceDetailPageContent).faqs,
+                                items: (prev as ServiceDetailPageContent).faqs.items.map((x, idx) => idx === i ? { ...x, answer: e.target.value } : x)
+                              }
+                            }))}
+                            rows={2}
+                            className="bg-white/5 border-white/20 text-white"
+                          />
+                        </div>
+                        <div className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-400 border-red-400/20 hover:bg-red-400/10"
+                            onClick={() => setPageContent(prev => ({
+                              ...prev,
+                              faqs: {
+                                ...(prev as ServiceDetailPageContent).faqs,
+                                items: (prev as ServiceDetailPageContent).faqs.items.filter((_, idx) => idx !== i)
+                              }
+                            }))}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="cta" className="space-y-4">
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-white">CTA H2</Label>
+                      <Input
+                        value={(pageContent as ServiceDetailPageContent).cta.h2}
+                        onChange={(e) => setPageContent(prev => ({
+                          ...prev,
+                          cta: { ...(prev as ServiceDetailPageContent).cta, h2: e.target.value }
+                        }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white">CTA Paragraph</Label>
+                      <Textarea
+                        value={(pageContent as ServiceDetailPageContent).cta.paragraph}
+                        onChange={(e) => setPageContent(prev => ({
+                          ...prev,
+                          cta: { ...(prev as ServiceDetailPageContent).cta, paragraph: e.target.value }
+                        }))}
+                        rows={3}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+              </>
+            )}
+
+            {/* How It Works Section (Home only) */}
+            {pageType === 'home' && (
             <TabsContent value="how-it-works" className="space-y-4">
               <div className="space-y-4">
                 <div>
                   <Label className="text-white">Section H2</Label>
                   <Input
-                    value={pageContent.howItWorks.h2}
+                    value={(pageContent as HomePageContent).howItWorks.h2}
                     onChange={(e) => setPageContent(prev => ({
                       ...prev,
-                      howItWorks: { ...prev.howItWorks, h2: e.target.value }
+                      howItWorks: { ...(prev as HomePageContent).howItWorks, h2: e.target.value }
                     }))}
                     className="bg-white/5 border-white/20 text-white"
                   />
@@ -646,10 +1128,10 @@ export default function PagesEditor() {
                 <div>
                   <Label className="text-white">Section Paragraph</Label>
                   <Textarea
-                    value={pageContent.howItWorks.paragraph}
+                    value={(pageContent as HomePageContent).howItWorks.paragraph}
                     onChange={(e) => setPageContent(prev => ({
                       ...prev,
-                      howItWorks: { ...prev.howItWorks, paragraph: e.target.value }
+                      howItWorks: { ...(prev as HomePageContent).howItWorks, paragraph: e.target.value }
                     }))}
                     rows={3}
                     className="bg-white/5 border-white/20 text-white"
@@ -659,7 +1141,7 @@ export default function PagesEditor() {
                 <div>
                   <Label className="text-white">Steps</Label>
                   <div className="space-y-3">
-                    {pageContent.howItWorks.steps.map((step, index) => (
+                    {(pageContent as HomePageContent).howItWorks.steps.map((step, index) => (
                       <div key={index} className="p-4 bg-white/5 rounded-lg border border-white/10">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
@@ -669,8 +1151,8 @@ export default function PagesEditor() {
                               onChange={(e) => setPageContent(prev => ({
                                 ...prev,
                                 howItWorks: {
-                                  ...prev.howItWorks,
-                                  steps: prev.howItWorks.steps.map((s, i) => 
+                                  ...(prev as HomePageContent).howItWorks,
+                                  steps: (prev as HomePageContent).howItWorks.steps.map((s, i) => 
                                     i === index ? { ...s, h3: e.target.value } : s
                                   )
                                 }
@@ -685,8 +1167,8 @@ export default function PagesEditor() {
                               onChange={(e) => setPageContent(prev => ({
                                 ...prev,
                                 howItWorks: {
-                                  ...prev.howItWorks,
-                                  steps: prev.howItWorks.steps.map((s, i) => 
+                                  ...(prev as HomePageContent).howItWorks,
+                                  steps: (prev as HomePageContent).howItWorks.steps.map((s, i) => 
                                     i === index ? { ...s, paragraph: e.target.value } : s
                                   )
                                 }
@@ -702,17 +1184,19 @@ export default function PagesEditor() {
                 </div>
               </div>
             </TabsContent>
+            )}
 
-            {/* Service Areas Section */}
+            {/* Service Areas Section (Home only) */}
+            {pageType === 'home' && (
             <TabsContent value="areas" className="space-y-4">
               <div className="space-y-4">
                 <div>
                   <Label className="text-white">Section H2</Label>
                   <Input
-                    value={pageContent.serviceAreas.h2}
+                    value={(pageContent as HomePageContent).serviceAreas.h2}
                     onChange={(e) => setPageContent(prev => ({
                       ...prev,
-                      serviceAreas: { ...prev.serviceAreas, h2: e.target.value }
+                      serviceAreas: { ...(prev as HomePageContent).serviceAreas, h2: e.target.value }
                     }))}
                     className="bg-white/5 border-white/20 text-white"
                   />
@@ -720,10 +1204,10 @@ export default function PagesEditor() {
                 <div>
                   <Label className="text-white">Section Paragraph</Label>
                   <Textarea
-                    value={pageContent.serviceAreas.paragraph}
+                    value={(pageContent as HomePageContent).serviceAreas.paragraph}
                     onChange={(e) => setPageContent(prev => ({
                       ...prev,
-                      serviceAreas: { ...prev.serviceAreas, paragraph: e.target.value }
+                      serviceAreas: { ...(prev as HomePageContent).serviceAreas, paragraph: e.target.value }
                     }))}
                     rows={4}
                     className="bg-white/5 border-white/20 text-white"
@@ -731,17 +1215,19 @@ export default function PagesEditor() {
                 </div>
               </div>
             </TabsContent>
+            )}
 
-            {/* FAQs Section */}
+            {/* FAQs Section (Home only) */}
+            {pageType === 'home' && (
             <TabsContent value="faqs" className="space-y-4">
               <div className="space-y-4">
                 <div>
                   <Label className="text-white">Section H2</Label>
                   <Input
-                    value={pageContent.faqs.h2}
+                    value={(pageContent as HomePageContent).faqs.h2}
                     onChange={(e) => setPageContent(prev => ({
                       ...prev,
-                      faqs: { ...prev.faqs, h2: e.target.value }
+                      faqs: { ...(prev as HomePageContent).faqs, h2: e.target.value }
                     }))}
                     className="bg-white/5 border-white/20 text-white"
                   />
@@ -749,10 +1235,10 @@ export default function PagesEditor() {
                 <div>
                   <Label className="text-white">Section Paragraph</Label>
                   <Textarea
-                    value={pageContent.faqs.paragraph}
+                    value={(pageContent as HomePageContent).faqs.paragraph}
                     onChange={(e) => setPageContent(prev => ({
                       ...prev,
-                      faqs: { ...prev.faqs, paragraph: e.target.value }
+                      faqs: { ...(prev as HomePageContent).faqs, paragraph: e.target.value }
                     }))}
                     rows={3}
                     className="bg-white/5 border-white/20 text-white"
@@ -769,7 +1255,7 @@ export default function PagesEditor() {
                   </div>
                   
                   <div className="space-y-3">
-                    {pageContent.faqs.items.map((faq, index) => (
+                    {(pageContent as HomePageContent).faqs.items.map((faq, index) => (
                       <div key={index} className="p-4 bg-white/5 rounded-lg border border-white/10">
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-white font-medium">FAQ {index + 1}</span>
@@ -791,8 +1277,8 @@ export default function PagesEditor() {
                               onChange={(e) => setPageContent(prev => ({
                                 ...prev,
                                 faqs: {
-                                  ...prev.faqs,
-                                  items: prev.faqs.items.map((item, i) => 
+                                  ...(prev as HomePageContent).faqs,
+                                  items: (prev as HomePageContent).faqs.items.map((item, i) => 
                                     i === index ? { ...item, question: e.target.value } : item
                                   )
                                 }
@@ -807,8 +1293,8 @@ export default function PagesEditor() {
                               onChange={(e) => setPageContent(prev => ({
                                 ...prev,
                                 faqs: {
-                                  ...prev.faqs,
-                                  items: prev.faqs.items.map((item, i) => 
+                                  ...(prev as HomePageContent).faqs,
+                                  items: (prev as HomePageContent).faqs.items.map((item, i) => 
                                     i === index ? { ...item, answer: e.target.value } : item
                                   )
                                 }
@@ -824,17 +1310,25 @@ export default function PagesEditor() {
                 </div>
               </div>
             </TabsContent>
+            )}
 
             {/* Meta SEO Section */}
             <TabsContent value="meta" className="space-y-4">
               <div className="space-y-4">
                 <div>
-                  <Label className="text-white">Page Slug</Label>
-                  <Input
-                    value={metaData.slug}
-                    onChange={(e) => setMetaData(prev => ({ ...prev, slug: e.target.value }))}
-                    className="bg-white/5 border-white/20 text-white"
-                  />
+                  <Label className="text-white">Page URL Slug</Label>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-white/60">/</span>
+                    <Input
+                      value={metaData.slug}
+                      onChange={(e) => setMetaData(prev => ({ ...prev, slug: e.target.value }))}
+                      placeholder="e.g., services, services/ac-repair-cleaning (leave empty for home page)"
+                      className="bg-white/5 border-white/20 text-white"
+                    />
+                  </div>
+                  <p className="text-xs text-white/60 mt-1">
+                    {pageType === 'home' ? 'Leave empty for home page (/)' : `Current: /${metaData.slug || (editingPage?.page_slug || '')}`}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-white">Meta Title</Label>
@@ -843,6 +1337,7 @@ export default function PagesEditor() {
                     onChange={(e) => setMetaData(prev => ({ ...prev, meta_title: e.target.value }))}
                     className="bg-white/5 border-white/20 text-white"
                   />
+                  <p className="text-xs text-white/60 mt-1">Recommended: 50-60 characters</p>
                 </div>
                 <div>
                   <Label className="text-white">Meta Description</Label>
@@ -852,6 +1347,7 @@ export default function PagesEditor() {
                     rows={4}
                     className="bg-white/5 border-white/20 text-white"
                   />
+                  <p className="text-xs text-white/60 mt-1">Recommended: 150-160 characters</p>
                 </div>
               </div>
             </TabsContent>

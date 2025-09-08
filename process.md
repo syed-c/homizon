@@ -192,6 +192,27 @@ This document tracks all changes, fixes, and deployment-related actions performe
     - Ensured all APIs fetch fresh data from Supabase on each request
 
 ### 2025-09-06 (Continued)
+- **Services Page CMS Integration**
+  - Added CMS support for `/services` hero, why_choose and CTA sections. Content now loads from `pages_content` (slug: `services`).
+  - Implemented dynamic provider counts from Supabase for categories and individual services.
+  - Made category tiles clickable to route to `/services/:category_slug`.
+
+- **Category Pages CMS (services/:category_slug)**
+  - Enabled editing of category page hero content (H1 and description) via `/admin/pages-editor`.
+  - Virtual entries are shown for each service category; saving persists to `pages_content` with slug `services/{category_slug}` and content `{ hero: { h1, description } }`.
+  - Category pages fetch CMS content and fall back to defaults if not set.
+
+- **Home and Editor Robustness Fixes**
+  - Home page dynamic component now merges CMS payloads with defaults to prevent `undefined` access (e.g., missing `popularServices.h2`).
+  - Pages editor normalizes incoming content for both Home and Services before rendering, preventing crashes like `Cannot read properties of undefined (reading 'h2')`.
+
+- **Editor behavior for Services Category pages**
+  - Adjusted `app/admin/pages-editor/page.tsx` to detect `services/:slug` pages and set `pageType="category"`.
+  - Category editor now shows Hero and Meta SEO tabs; Why Choose and CTA remain hidden.
+  - Dialog title now reflects page type: Home, Services, or Category.
+
+- **Pages Editor housekeeping**
+  - Removed header debug/action buttons (Add Services Page, Refresh, Test API, Test Supabase, Check Duplicates) from `app/admin/pages-editor/page.tsx`.
 
 - **CMS Editor System Implementation**
   - **Purpose:** Created a comprehensive Content Management System (CMS) for editing website content, starting with the Home page.

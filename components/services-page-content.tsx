@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Search, Filter, Star, Clock, Shield, Award, Users, Phone, 
@@ -12,14 +12,74 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import Link from 'next/link';
-import { serviceCategories, services, areas, getProvidersByCategory } from '@/lib/data';
+import { serviceCategories, services, areas } from '@/lib/data';
+import { getPageContentFromSupabase, listProvidersFromSupabase } from '@/lib/supabase';
+
+interface ServicesPageContent {
+  hero: {
+    h1: string;
+    description: string;
+  };
+  why_choose: {
+    h2: string;
+    paragraph: string;
+    features: Array<{
+      h3: string;
+      paragraph: string;
+    }>;
+  };
+  cta: {
+    h2: string;
+    paragraph: string;
+  };
+}
 
 export default function ServicesPageContent() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('popular');
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageContent, setPageContent] = useState<ServicesPageContent | null>(null);
+  const [providers, setProviders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const itemsPerPage = 9; // Number of services to display per page
+
+  useEffect(() => {
+    const fetchPageContent = async () => {
+      try {
+        setLoading(true);
+        const result = await getPageContentFromSupabase('services');
+        // getPageContentFromSupabase returns { data: row }
+        const content = (result as any)?.data?.content;
+        if (content) {
+          setPageContent(content as ServicesPageContent);
+        }
+      } catch (error) {
+        console.error('Error fetching services page content:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPageContent();
+  }, []);
+
+  // Load providers from Supabase for live counts
+  useEffect(() => {
+    const fetchProviders = async () => {
+      try {
+        const res = await listProvidersFromSupabase();
+        setProviders(res.data || []);
+      } catch (e) {
+        console.error('Failed to load providers for counts:', e);
+        setProviders([]);
+      }
+    };
+    fetchProviders();
+  }, []);
 
   console.log("Services directory page loaded");
   console.log("Selected category:", selectedCategory);
@@ -42,6 +102,17 @@ export default function ServicesPageContent() {
       default: return 0;
     }
   });
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(sortedServices.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = sortedServices.slice(indexOfFirstItem, indexOfLastItem);
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
@@ -59,6 +130,37 @@ export default function ServicesPageContent() {
     }
   };
 
+  const countProvidersForService = (serviceSlug: string) => {
+    try {
+      return providers.filter((p: any) => Array.isArray(p.services) && p.services.includes(serviceSlug)).length;
+    } catch {
+      return 0;
+    }
+  };
+
+  const countProvidersForCategory = (categorySlug: string) => {
+    try {
+      const categoryServiceSlugs = serviceCategories
+        .find(c => c.slug === categorySlug)?.services
+        ?.map((s: any) => s.slug) || [];
+      if (categorySlug === 'all') return providers.length || 0;
+      return providers.filter((p: any) => {
+        if (!Array.isArray(p.services)) return false;
+        return p.services.some((s: string) => categoryServiceSlugs.includes(s));
+      }).length;
+    } catch {
+      return 0;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-charcoal-900 to-black text-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-neon-blue"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-charcoal-900 to-black text-white">
       {/* Hero Section */}
@@ -72,11 +174,11 @@ export default function ServicesPageContent() {
           <div className="text-center mb-12">
             <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight" data-macaly="services-hero-title">
               <span className="bg-gradient-to-r from-white to-neon-blue bg-clip-text text-transparent">
-                Service Directory
+                {pageContent?.hero?.h1 || "Service Directory"}
               </span>
             </h1>
             <p className="text-xl md:text-2xl text-white/70 mb-12 max-w-4xl mx-auto leading-relaxed" data-macaly="services-hero-description">
-              Browse our comprehensive directory of verified service providers. Compare profiles, read reviews, and connect directly with professionals.
+              {pageContent?.hero?.description || "Browse our comprehensive directory of verified service providers. Compare profiles, read reviews, and connect directly with professionals."}
             </p>
           </div>
 
@@ -143,59 +245,65 @@ export default function ServicesPageContent() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
-                selectedCategory === 'all'
-                  ? 'border-neon-blue bg-neon-blue/10 shadow-neon'
-                  : 'border-white/10 bg-gradient-card hover:border-neon-blue/50'
-              }`}
-              onClick={() => setSelectedCategory('all')}
-            >
-              <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-r from-neon-blue to-neon-green rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <Star className="h-8 w-8 text-black" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl-grid-cols-4 xl:grid-cols-4 gap-6 mb-12">
+            <Link href="/services" className="block">
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
+                  selectedCategory === 'all'
+                    ? 'border-neon-blue bg-neon-blue/10 shadow-neon'
+                    : 'border-white/10 bg-gradient-card hover:border-neon-blue/50'
+                }`}
+                onClick={() => setSelectedCategory('all')}
+              >
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gradient-to-r from-neon-blue to-neon-green rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Star className="h-8 w-8 text-black" />
+                  </div>
+                  <h3 className="font-bold text-white text-lg mb-2">All Services</h3>
+                  <p className="text-white/60 text-sm">Browse our complete directory</p>
+                  <div className="mt-4 text-neon-blue font-semibold">
+                    {services.length} services available
+                  </div>
+                  <div className="mt-1 text-neon-green font-medium">
+                    {countProvidersForCategory('all')} providers
+                  </div>
                 </div>
-                <h3 className="font-bold text-white text-lg mb-2">All Services</h3>
-                <p className="text-white/60 text-sm">Browse our complete directory</p>
-                <div className="mt-4 text-neon-blue font-semibold">
-                  {services.length} services available
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </Link>
 
             {serviceCategories.map((category, index) => {
               const Icon = getIcon(category.icon);
-              const providersCount = getProvidersByCategory(category.slug).length;
+              const providersCount = countProvidersForCategory(category.slug);
               
               return (
-                <motion.div
-                  key={category.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  whileHover={{ scale: 1.02 }}
-                  className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
-                    selectedCategory === category.slug
-                      ? 'border-neon-green bg-neon-green/10 shadow-neon-green'
-                      : 'border-white/10 bg-gradient-card hover:border-neon-green/50'
-                  }`}
-                  onClick={() => setSelectedCategory(category.slug)}
-                >
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-gradient-to-r from-neon-blue to-neon-green rounded-xl flex items-center justify-center mx-auto mb-4">
-                      <Icon className="h-8 w-8 text-black" />
+                <Link key={category.id} href={`/services/${category.slug}`} className="block">
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                    whileHover={{ scale: 1.02 }}
+                    className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
+                      selectedCategory === category.slug
+                        ? 'border-neon-green bg-neon-green/10 shadow-neon-green'
+                        : 'border-white/10 bg-gradient-card hover:border-neon-green/50'
+                    }`}
+                    onClick={() => setSelectedCategory(category.slug)}
+                  >
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-gradient-to-r from-neon-blue to-neon-green rounded-xl flex items-center justify-center mx-auto mb-4">
+                        <Icon className="h-8 w-8 text-black" />
+                      </div>
+                      <h3 className="font-bold text-white text-lg mb-2">{category.name}</h3>
+                      <p className="text-white/60 text-sm mb-4">{category.description}</p>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-neon-blue font-medium">{category.services.length} services</span>
+                        <span className="text-neon-green font-medium">{countProvidersForCategory(category.slug)} providers</span>
+                      </div>
                     </div>
-                    <h3 className="font-bold text-white text-lg mb-2">{category.name}</h3>
-                    <p className="text-white/60 text-sm mb-4">{category.description}</p>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-neon-blue font-medium">{category.services.length} services</span>
-                      <span className="text-neon-green font-medium">{providersCount} providers</span>
-                    </div>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                </Link>
               );
             })}
           </div>
@@ -218,9 +326,9 @@ export default function ServicesPageContent() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedServices.map((service, index) => {
+            {currentItems.map((service, index) => {
               const Icon = getIcon(service.icon);
-              const providersCount = getProvidersByCategory(service.category).length;
+              const providersCount = countProvidersForService(service.slug);
               
               return (
                 <motion.div
@@ -340,6 +448,41 @@ export default function ServicesPageContent() {
               </Button>
             </div>
           )}
+          
+          {/* Pagination */}
+          {sortedServices.length > 0 && totalPages > 1 && (
+            <div className="mt-12 flex justify-center">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <PaginationItem key={page}>
+                      <PaginationLink 
+                        isActive={currentPage === page}
+                        onClick={() => handlePageChange(page)}
+                        className={currentPage === page ? 'bg-neon-blue text-black' : 'text-white hover:bg-neon-blue/20'}
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </section>
 
         {/* Why Choose Us */}
@@ -347,37 +490,33 @@ export default function ServicesPageContent() {
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold mb-4 text-white" data-macaly="why-choose-title">
               <span className="bg-gradient-to-r from-white to-neon-green bg-clip-text text-transparent">
-                Why Choose Our Directory?
+                {pageContent?.why_choose?.h2 || "Why Choose Our Directory?"}
               </span>
             </h2>
             <p className="text-white/60 text-lg max-w-2xl mx-auto" data-macaly="why-choose-description">
-              Experience the difference with Dubai's most comprehensive service provider directory
+              {pageContent?.why_choose?.paragraph || "Experience the difference with Dubai's most comprehensive service provider directory"}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
+            {(pageContent?.why_choose?.features || [
               {
-                icon: Shield,
-                title: 'Verified Professionals',
-                description: 'All service providers are background-checked and verified for your safety'
+                h3: 'Verified Professionals',
+                paragraph: 'All service providers are background-checked and verified for your safety'
               },
               {
-                icon: Award,
-                title: 'Quality Guaranteed',
-                description: 'Browse ratings and reviews from real customers to make informed decisions'
+                h3: 'Quality Guaranteed',
+                paragraph: 'Browse ratings and reviews from real customers to make informed decisions'
               },
               {
-                icon: Clock,
-                title: 'Quick Connection',
-                description: 'Connect directly with providers and get responses within hours'
+                h3: 'Quick Connection',
+                paragraph: 'Connect directly with providers and get responses within hours'
               },
               {
-                icon: Users,
-                title: 'Wide Selection',
-                description: 'Choose from hundreds of providers across all major service categories'
+                h3: 'Wide Selection',
+                paragraph: 'Choose from hundreds of providers across all major service categories'
               }
-            ].map((feature, index) => (
+            ]).map((feature, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 30 }}
@@ -387,10 +526,14 @@ export default function ServicesPageContent() {
                 className="text-center"
               >
                 <div className="w-16 h-16 bg-gradient-to-r from-neon-blue to-neon-green rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <feature.icon className="h-8 w-8 text-black" />
+                  {/* Use a default icon since we don't have icons in the CMS content */}
+                  {index === 0 ? <Shield className="h-8 w-8 text-black" /> :
+                   index === 1 ? <Award className="h-8 w-8 text-black" /> :
+                   index === 2 ? <Clock className="h-8 w-8 text-black" /> :
+                   <Users className="h-8 w-8 text-black" />}
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-3">{feature.title}</h3>
-                <p className="text-white/70 leading-relaxed">{feature.description}</p>
+                <h3 className="text-xl font-semibold text-white mb-3">{feature.h3}</h3>
+                <p className="text-white/70 leading-relaxed">{feature.paragraph}</p>
               </motion.div>
             ))}
           </div>
@@ -399,9 +542,11 @@ export default function ServicesPageContent() {
         {/* CTA Section */}
         <section className="py-20 text-center">
           <div className="bg-gradient-to-r from-neon-blue/20 to-neon-green/20 rounded-3xl p-12 border border-neon-blue/30">
-            <h2 className="text-4xl font-bold text-white mb-4" data-macaly="cta-title">Ready to Get Started?</h2>
+            <h2 className="text-4xl font-bold text-white mb-4" data-macaly="cta-title">
+              {pageContent?.cta?.h2 || "Ready to Get Started?"}
+            </h2>
             <p className="text-white/70 text-lg mb-8 max-w-2xl mx-auto" data-macaly="cta-description">
-              Join thousands of satisfied customers who trust our directory to find the best service providers in Dubai
+              {pageContent?.cta?.paragraph || "Join thousands of satisfied customers who trust our directory to find the best service providers in Dubai"}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/providers">

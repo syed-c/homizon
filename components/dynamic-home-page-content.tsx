@@ -187,7 +187,42 @@ export default function DynamicHomePageContent() {
       
       if (data && data.data && data.data.length > 0 && data.data[0].content) {
         console.log('Content updated successfully:', data.data[0].content);
-        setContent(data.data[0].content);
+        const apiContent = data.data[0].content || {};
+        const merged: HomePageContent = {
+          hero: {
+            h1: apiContent.hero?.h1 ?? defaultContent.hero.h1,
+            description: apiContent.hero?.description ?? defaultContent.hero.description,
+          },
+          popularServices: {
+            h2: apiContent.popularServices?.h2 ?? defaultContent.popularServices.h2,
+            paragraph: apiContent.popularServices?.paragraph ?? defaultContent.popularServices.paragraph,
+            services: Array.isArray(apiContent.popularServices?.services) && apiContent.popularServices.services.length > 0
+              ? apiContent.popularServices.services
+              : defaultContent.popularServices.services,
+          },
+          howItWorks: {
+            h2: apiContent.howItWorks?.h2 ?? defaultContent.howItWorks.h2,
+            paragraph: apiContent.howItWorks?.paragraph ?? defaultContent.howItWorks.paragraph,
+            steps: Array.isArray(apiContent.howItWorks?.steps) && apiContent.howItWorks.steps.length > 0
+              ? apiContent.howItWorks.steps
+              : defaultContent.howItWorks.steps,
+          },
+          serviceAreas: {
+            h2: apiContent.serviceAreas?.h2 ?? defaultContent.serviceAreas.h2,
+            paragraph: apiContent.serviceAreas?.paragraph ?? defaultContent.serviceAreas.paragraph,
+          },
+          faqs: {
+            h2: apiContent.faqs?.h2 ?? defaultContent.faqs.h2,
+            paragraph: apiContent.faqs?.paragraph ?? defaultContent.faqs.paragraph,
+            items: Array.isArray(apiContent.faqs?.items) && apiContent.faqs.items.length > 0
+              ? apiContent.faqs.items
+              : defaultContent.faqs.items,
+          },
+          buttons: Array.isArray(apiContent.buttons) && apiContent.buttons.length > 0
+            ? apiContent.buttons
+            : defaultContent.buttons,
+        };
+        setContent(merged);
       } else {
         console.error('No content found in API response:', data);
       }
