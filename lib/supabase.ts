@@ -303,6 +303,119 @@ export async function listProvidersFromSupabase() {
   }
 }
 
+// Services (CMS) -------------------------------------------------------------
+export type ServiceRow = {
+  id: string;
+  name: string;
+  slug: string;
+  status: 'active' | 'inactive' | 'deleted';
+  created_at?: string;
+  updated_at?: string;
+  category_id?: string | null;
+};
+
+export async function listServicesFromSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.warn('Supabase not configured; returning empty services list');
+    return { data: [] as ServiceRow[] };
+  }
+  const endpoint = `${SUPABASE_URL}/rest/v1/services?select=*`;
+  const res = await fetch(endpoint, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    cache: 'no-store'
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Supabase services fetch failed: HTTP ${res.status} ${text}`);
+  }
+  const data = await res.json();
+  return { data: (data || []) as ServiceRow[] };
+}
+
+export async function createServiceInSupabase(name: string, slug: string, categoryId?: string | null) {
+  // Route creation through our server API so the service role key stays server-side
+  const res = await fetch('/api/admin/services', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, slug, category_id: categoryId || null })
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(`Supabase create service failed: HTTP ${res.status} ${JSON.stringify(json)}`);
+  }
+  return { data: json.data as ServiceRow };
+}
+
+export async function updateServiceStatusInSupabase(serviceId: string, status: 'active' | 'inactive' | 'deleted') {
+  if (!SUPABASE_URL || (!SUPABASE_ANON_KEY && !SUPABASE_SERVICE_ROLE_KEY)) return { skipped: true };
+  const endpoint = `${SUPABASE_URL}/rest/v1/services?id=eq.${encodeURIComponent(serviceId)}`;
+  const apiKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+  const res = await fetch(endpoint, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: apiKey as string,
+      Authorization: `Bearer ${apiKey}`,
+      Prefer: 'return=representation'
+    },
+    body: JSON.stringify({ status, updated_at: new Date().toISOString() })
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Supabase update service failed: HTTP ${res.status} ${text}`);
+  }
+  const data = await res.json();
+  return { data: Array.isArray(data) ? data[0] : data };
+}
+
+export async function deleteServiceFromSupabase(serviceId: string, slug?: string) {
+  if (!SUPABASE_URL || (!SUPABASE_ANON_KEY && !SUPABASE_SERVICE_ROLE_KEY)) return { skipped: true };
+  // delete service row
+  const endpoint = `${SUPABASE_URL}/rest/v1/services?id=eq.${encodeURIComponent(serviceId)}`;
+  const apiKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+  const res = await fetch(endpoint, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: apiKey as string,
+      Authorization: `Bearer ${apiKey}`,
+      Prefer: 'return=representation'
+    }
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Supabase delete service failed: HTTP ${res.status} ${text}`);
+  }
+  // delete related pages_content entry
+  try {
+    const pcEndpoint = `${SUPABASE_URL}/rest/v1/pages_content?page_slug=eq.${encodeURIComponent(`service-page/${slug || ''}`)}`;
+    await fetch(pcEndpoint, {
+      method: 'DELETE',
+      headers: {
+        apikey: apiKey as string,
+        Authorization: `Bearer ${apiKey}`,
+        Prefer: 'return=minimal'
+      }
+    });
+  } catch {}
+  return { success: true };
+}
+
+export async function getServiceBySlugFromSupabase(slug: string) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { data: null };
+  const endpoint = `${SUPABASE_URL}/rest/v1/services?select=*&slug=eq.${encodeURIComponent(slug)}`;
+  const res = await fetch(endpoint, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    cache: 'no-store'
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Supabase service by slug failed: HTTP ${res.status} ${text}`);
+  }
+  const data = await res.json();
+  return { data: Array.isArray(data) && data.length ? (data[0] as ServiceRow) : null };
+}
+
 export async function getProviderByIdFromSupabase(providerId: string) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { data: null };
   const endpoint = `${SUPABASE_URL}/rest/v1/providers?select=*&id=eq.${encodeURIComponent(providerId)}`;

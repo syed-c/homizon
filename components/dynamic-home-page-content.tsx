@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { listServicesFromSupabase } from '@/lib/supabase';
 import { useSettings } from '@/lib/settings-context';
 
 // Icon mapping for string icons to actual components
@@ -138,6 +139,7 @@ export default function DynamicHomePageContent() {
   const [searchService, setSearchService] = useState('');
   const [searchLocation, setSearchLocation] = useState('');
   const [content, setContent] = useState<HomePageContent>(defaultContent);
+  const [popularFromDb, setPopularFromDb] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { settings } = useSettings();
@@ -148,6 +150,23 @@ export default function DynamicHomePageContent() {
   useEffect(() => {
     loadPageContent();
   }, []); // Only load content on initial mount
+
+  useEffect(() => {
+    const loadPopular = async () => {
+      try {
+        const res = await listServicesFromSupabase();
+        const active = (res.data || []).filter((s: any) => s.status === 'active').slice(0, 6);
+        const normalized = active.map((row: any) => ({
+          id: row.slug,
+          name: row.name,
+          description: `${row.name} services`,
+          icon: 'Settings'
+        }));
+        setPopularFromDb(normalized);
+      } catch {}
+    };
+    loadPopular();
+  }, []);
 
   const refreshContent = async () => {
     try {
@@ -405,7 +424,7 @@ export default function DynamicHomePageContent() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {content.popularServices.services.map((service, index) => {
+            {(popularFromDb.length > 0 ? popularFromDb : content.popularServices.services).map((service, index) => {
               const IconComponent = iconMap[service.icon] || Settings;
               return (
                 <div key={service.id} className="group">

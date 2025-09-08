@@ -542,7 +542,7 @@ export default function ServicePageClient({ service, category }: ServicePageClie
             ))}
           </div>
 
-          {/* Call to Action */}
+          {/* Call to Action (CTA from CMS if available) */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -552,11 +552,11 @@ export default function ServicePageClient({ service, category }: ServicePageClie
           >
             <div className="bg-gradient-to-r from-primary-900/50 to-accent-900/50 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
               <h3 className="text-2xl font-bold text-white mb-4">
-                Need {service.name}? We're Here to Help!
+                {cmsContent?.cta?.h2 || `Need ${service.name}? We're Here to Help!`}
               </h3>
               <p className="text-white/70 mb-6 max-w-2xl mx-auto">
-                Get connected with verified {service.name.toLowerCase()} professionals in Dubai. 
-                Compare quotes, read reviews, and book your service instantly.
+                {cmsContent?.cta?.paragraph || `Get connected with verified ${service.name.toLowerCase()} professionals in Dubai. 
+                Compare quotes, read reviews, and book your service instantly.`}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href={`/book?service=${service.slug}`}>
@@ -622,7 +622,7 @@ export default function ServicePageClient({ service, category }: ServicePageClie
             ))}
           </div>
 
-          {/* Call to Action */}
+          {/* Call to Action (CTA from CMS if available) */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -632,11 +632,11 @@ export default function ServicePageClient({ service, category }: ServicePageClie
           >
             <div className="bg-gradient-to-r from-primary-900/50 to-accent-900/50 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
               <h3 className="text-2xl font-bold text-white mb-4">
-                Need {service.name}? We're Here to Help!
+                {cmsContent?.cta?.h2 || `Need ${service.name}? We're Here to Help!`}
               </h3>
               <p className="text-white/70 mb-6 max-w-2xl mx-auto">
-                Get connected with verified {service.name.toLowerCase()} professionals in Dubai. 
-                Compare quotes, read reviews, and book your service instantly.
+                {cmsContent?.cta?.paragraph || `Get connected with verified ${service.name.toLowerCase()} professionals in Dubai. 
+                Compare quotes, read reviews, and book your service instantly.`}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href={`/book?service=${service.slug}`}>

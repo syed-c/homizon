@@ -338,4 +338,18 @@ This document tracks all changes, fixes, and deployment-related actions performe
     - `components/booking-modal.tsx` (validation already enforced)
   - Impact: FAQs added via Pages Editor now display on corresponding service detail pages; consistent layout across services.
 
+- Admin Services Management groundwork
+  - Connected `/admin/services` to Supabase helpers; added Add Service modal, activate/deactivate, and delete actions.
+  - Created services API helpers in `lib/supabase.ts`: `listServicesFromSupabase`, `createServiceInSupabase` (seeds `pages_content`), `updateServiceStatusInSupabase`, `deleteServiceFromSupabase` (removes `pages_content`).
+  - Removed Edit button on service cards; kept View + Activate/Deactivate + Delete.
+  - Files updated:
+    - `app/admin/services/page.tsx`
+    - `lib/supabase.ts`
+  - Next: add SQL migrations for `services`/`service_content` tables and refactor public pages to fetch from Supabase.
+
+- Migration utilities
+  - Added SQL to create `services` and `service_content` in `scripts/setup-pages-content-table.sql`.
+  - Added `scripts/migrate-services-to-supabase.js` to upsert static `lib/data` services into Supabase.
+  - Home popular services and services directory now read active services from Supabase, with safe fallback.
+
 

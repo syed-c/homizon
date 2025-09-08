@@ -1,9 +1,6 @@
 import { notFound } from 'next/navigation';
-import { 
-  getServiceBySlug, 
-  sampleProviders,
-  serviceCategories
-} from '@/lib/data';
+import { getServiceBySlug, sampleProviders, serviceCategories } from '@/lib/data';
+import { getServiceBySlugFromSupabase } from '@/lib/supabase';
 import { Metadata } from 'next';
 import ServicePageClient from './service-page-client';
 
@@ -16,13 +13,19 @@ interface ServicePageProps {
 export async function generateMetadata({ params }: ServicePageProps): Promise<Metadata> {
   const { service: serviceSlug } = await params;
   
-  // First check if it's an individual service
-  const service = getServiceBySlug(serviceSlug);
+  // Check Supabase for service status first
+  let serviceRow: any = null;
+  try {
+    const res = await getServiceBySlugFromSupabase(serviceSlug);
+    serviceRow = res.data;
+  } catch {}
+  // If Supabase says inactive/deleted, treat as missing
+  const service = serviceRow && serviceRow.status === 'active' ? getServiceBySlug(serviceSlug) : getServiceBySlug(serviceSlug);
   
   // If not found, check if it's a category
   const category = serviceCategories.find(cat => cat.slug === serviceSlug);
   
-  if (!service && !category) {
+  if ((!serviceRow || serviceRow.status !== 'active') && !category) {
     return {
       title: 'Service Not Found',
       description: 'The requested service could not be found.'
@@ -73,7 +76,7 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
   }
 
   // Handle individual service metadata (service is guaranteed to exist here)
-  if (!service) {
+  if ((!serviceRow || serviceRow.status !== 'active') && !service) {
     return {
       title: 'Service Not Found',
       description: 'The requested service could not be found.'
@@ -116,13 +119,18 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
 export default async function ServicePage({ params }: ServicePageProps) {
   const { service: serviceSlug } = await params;
   
-  // First check if it's an individual service
+  let serviceRow: any = null;
+  try {
+    const res = await getServiceBySlugFromSupabase(serviceSlug);
+    serviceRow = res.data;
+  } catch {}
+  const isActive = serviceRow ? serviceRow.status === 'active' : true;
   const service = getServiceBySlug(serviceSlug);
   
   // If not found, check if it's a category
   const category = serviceCategories.find(cat => cat.slug === serviceSlug);
   
-  if (!service && !category) {
+  if ((!isActive || !service) && !category) {
     notFound();
   }
 

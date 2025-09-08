@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { services, serviceCategories } from '@/lib/data';
+import { listServicesFromSupabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 interface PageContent {
@@ -175,9 +176,23 @@ export default function PagesEditor() {
     meta_description: "Connect with verified home service providers across Dubai. Get instant quotes for AC repair, cleaning, plumbing, electrical work, pest control & handyman services."
   });
   const { toast } = useToast();
+  const [servicesDb, setServicesDb] = useState<{ slug: string; name: string }[]>([]);
 
   useEffect(() => {
     loadPages();
+  }, []);
+
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        const res = await listServicesFromSupabase();
+        const db = (res.data || []).filter((s: any) => s.status === 'active');
+        setServicesDb(db.map((s: any) => ({ slug: s.slug, name: s.name })));
+      } catch {
+        setServicesDb([]);
+      }
+    };
+    loadServices();
   }, []);
 
   const loadPages = async () => {
@@ -472,8 +487,11 @@ export default function PagesEditor() {
     updated_at: new Date().toISOString()
   }));
 
-  // Virtual entries for each individual service detail page (editable via serviceDetail editor)
-  const serviceDetailVirtualPages: PageContent[] = services.map(svc => ({
+  // Build service slugs strictly from Supabase (no fallback)
+  const activeServiceSlugs = servicesDb.map(s => s.slug);
+
+  // Virtual entries for each individual service detail page (only for active services in Supabase)
+  const serviceDetailVirtualPages: PageContent[] = servicesDb.map((svc: any) => ({
     id: `service-page-${svc.slug}`,
     page_slug: `service-page/${svc.slug}`,
     content: {
@@ -484,14 +502,28 @@ export default function PagesEditor() {
       cta: { h2: `Need ${svc.name}? We're Here to Help!`, paragraph: '' }
     },
     meta_title: `${svc.name} in Dubai | HOMIZON`,
-    meta_description: `${svc.description}`,
+    meta_description: `${svc.description || ''}`,
     updated_at: new Date().toISOString()
   }));
 
+  // Filter out CMS pages for services that are not present in Supabase
+  const filteredCmsPages = pages.filter(p => {
+    if (!p.page_slug?.startsWith('service-page/')) return true;
+    const slug = p.page_slug.replace('service-page/', '');
+    return activeServiceSlugs.includes(slug);
+  });
+
   const mergedPages = [
-    ...categoryVirtualPages.filter(v => !pages.some(p => p.page_slug === v.page_slug)),
-    ...serviceDetailVirtualPages.filter(v => !pages.some(p => p.page_slug === v.page_slug)),
-    ...pages
+    // Do not include category virtual pages; only show service pages that exist in Supabase
+    ...serviceDetailVirtualPages.filter(v => !filteredCmsPages.some(p => p.page_slug === v.page_slug)),
+    ...filteredCmsPages.filter(p => {
+      // additionally hide any services/{slug} pages not in Supabase
+      if (p.page_slug?.startsWith('services/')) {
+        const slug = p.page_slug.replace('services/', '');
+        return activeServiceSlugs.includes(slug);
+      }
+      return true;
+    })
   ];
 
   if (loading) {

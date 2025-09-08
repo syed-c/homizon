@@ -14,8 +14,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import Link from 'next/link';
-import { serviceCategories, services, areas } from '@/lib/data';
-import { getPageContentFromSupabase, listProvidersFromSupabase } from '@/lib/supabase';
+import { serviceCategories, areas } from '@/lib/data';
+import { getPageContentFromSupabase, listProvidersFromSupabase, listServicesFromSupabase } from '@/lib/supabase';
 
 interface ServicesPageContent {
   hero: {
@@ -45,6 +45,7 @@ export default function ServicesPageContent() {
   const [pageContent, setPageContent] = useState<ServicesPageContent | null>(null);
   const [providers, setProviders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [servicesData, setServicesData] = useState<any[]>([]);
   const itemsPerPage = 9; // Number of services to display per page
 
   useEffect(() => {
@@ -81,11 +82,44 @@ export default function ServicesPageContent() {
     fetchProviders();
   }, []);
 
+  // Load services dynamically from Supabase
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        const res = await listServicesFromSupabase();
+        const db = (res.data || []).filter((s: any) => s.status === 'active');
+        // Merge with defaults expected by UI
+        const normalized = db.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          description: `${row.name} services in Dubai`,
+          category: 'general',
+          icon: 'Settings',
+          averagePrice: 'AED 0',
+          estimatedTime: '—',
+          isPopular: false,
+          keywords: [row.name]
+        }));
+        setServicesData(normalized);
+      } catch (e) {
+        console.error('Failed to load services from Supabase; falling back to static list:', e);
+        try {
+          const { services } = await import('@/lib/data');
+          setServicesData(services);
+        } catch {
+          setServicesData([]);
+        }
+      }
+    };
+    loadServices();
+  }, []);
+
   console.log("Services directory page loaded");
   console.log("Selected category:", selectedCategory);
   console.log("Search query:", searchQuery);
 
-  const filteredServices = services.filter(service => {
+  const filteredServices = servicesData.filter(service => {
     const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory;
     const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -263,7 +297,7 @@ export default function ServicesPageContent() {
                   <h3 className="font-bold text-white text-lg mb-2">All Services</h3>
                   <p className="text-white/60 text-sm">Browse our complete directory</p>
                   <div className="mt-4 text-neon-blue font-semibold">
-                    {services.length} services available
+                    {servicesData.length} services available
                   </div>
                   <div className="mt-1 text-neon-green font-medium">
                     {countProvidersForCategory('all')} providers

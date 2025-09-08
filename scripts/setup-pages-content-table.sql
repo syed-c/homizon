@@ -125,3 +125,24 @@ CREATE POLICY "Allow authenticated users to manage content" ON pages_content
 -- Create policy to allow service role to manage content
 CREATE POLICY "Allow service role to manage content" ON pages_content
   FOR ALL USING (auth.role() = 'service_role');
+
+-- Services core tables
+CREATE TABLE IF NOT EXISTS services (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive','deleted')),
+  category_id UUID NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_services_slug ON services(slug);
+
+CREATE TABLE IF NOT EXISTS service_content (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  service_id UUID NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+  content JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Settings, Search, Filter, Plus, Edit, Trash2, Save, Eye,
+  Settings, Search, Filter, Plus, Trash2, Save, Eye,
   Wind, Droplets, Sparkles, Bug, Wrench, Zap, Hammer, Shirt,
   Truck, Shield, TrendingUp, Users, DollarSign, Clock, Star,
   CheckCircle, X, MoreHorizontal, Package
@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { services, Service, serviceCategories } from '@/lib/data';
+import { listServicesFromSupabase, updateServiceStatusInSupabase, deleteServiceFromSupabase, createServiceInSupabase } from '@/lib/supabase';
 
 interface ServiceData extends Service {
   providerCount: number;
@@ -37,9 +38,11 @@ export default function ServicesManagement() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [servicesData, setServicesData] = useState<ServiceData[]>([]);
-  const [editingService, setEditingService] = useState<ServiceData | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newServiceName, setNewServiceName] = useState('');
+  const [newServiceSlug, setNewServiceSlug] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [newServiceCategoryId, setNewServiceCategoryId] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   // Initialize services data
@@ -47,84 +50,117 @@ export default function ServicesManagement() {
     initializeServicesData();
   }, []);
 
-  const initializeServicesData = () => {
+  const initializeServicesData = async () => {
     setLoading(true);
-    console.log('Initializing services data...');
-
-    // Convert services to ServiceData with additional management properties
-    const enhancedServices: ServiceData[] = services.map(service => ({
-      ...service,
-      providerCount: Math.floor(Math.random() * 20) + 5,
-      totalBookings: Math.floor(Math.random() * 1000) + 200,
-      averageRating: Math.round((Math.random() * 2 + 3) * 10) / 10, // 3.0 - 5.0
-      revenue: Math.floor(Math.random() * 50000) + 10000,
-      isActive: Math.random() > 0.05, // 95% active
-      lastUpdated: new Date().toISOString().split('T')[0]
-    }));
-
-    setServicesData(enhancedServices);
-    setLoading(false);
-    console.log('Services data initialized:', enhancedServices.length);
-  };
-
-  const handleSaveService = async (service: ServiceData) => {
-    setIsSaving(true);
     try {
-      console.log('Saving service data:', service);
-      
-      // Update the services data
-      setServicesData(prev => 
-        prev.map(s => 
-          s.id === service.id 
-            ? { ...service, lastUpdated: new Date().toISOString().split('T')[0] }
-            : s
-        )
-      );
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      alert('Service updated successfully and changes are now live on the website!');
-      
-      setIsEditModalOpen(false);
-      setEditingService(null);
-    } catch (error) {
-      console.error('Error saving service:', error);
-      alert('Failed to save service changes. Please try again.');
+      const res = await listServicesFromSupabase();
+      const db = res.data || [];
+      // merge with local metadata for demo fields
+      const enhanced: ServiceData[] = db.map((row: any) => {
+        const base = services.find(s => s.slug === row.slug);
+        return {
+          ...(base || {
+            id: row.id,
+            name: row.name,
+            slug: row.slug,
+            description: `${row.name} services`,
+            category: 'general',
+            icon: 'Settings',
+            averagePrice: 'AED 0',
+            estimatedTime: '—',
+            isPopular: false,
+          }),
+          providerCount: Math.floor(Math.random() * 20) + 5,
+          totalBookings: Math.floor(Math.random() * 1000) + 200,
+          averageRating: Math.round((Math.random() * 2 + 3) * 10) / 10,
+          revenue: Math.floor(Math.random() * 50000) + 10000,
+          isActive: row.status === 'active',
+          lastUpdated: row.updated_at || new Date().toISOString().split('T')[0]
+        } as ServiceData;
+      });
+      setServicesData(enhanced);
+    } catch (e) {
+      console.warn('Falling back to local services:', e);
+      const enhancedServices: ServiceData[] = services.map(service => ({
+        ...service,
+        providerCount: Math.floor(Math.random() * 20) + 5,
+        totalBookings: Math.floor(Math.random() * 1000) + 200,
+        averageRating: Math.round((Math.random() * 2 + 3) * 10) / 10,
+        revenue: Math.floor(Math.random() * 50000) + 10000,
+        isActive: true,
+        lastUpdated: new Date().toISOString().split('T')[0]
+      }));
+      setServicesData(enhancedServices);
     } finally {
-      setIsSaving(false);
+      setLoading(false);
     }
   };
 
-  const handleEditService = (service: ServiceData) => {
-    setEditingService({ ...service });
-    setIsEditModalOpen(true);
-  };
-
-  const handleToggleServiceStatus = async (serviceId: string) => {
+  const handleToggleServiceStatus = async (serviceId: string, slug: string, active: boolean) => {
     try {
-      setServicesData(prev => 
-        prev.map(service => 
-          service.id === serviceId 
-            ? { ...service, isActive: !service.isActive, lastUpdated: new Date().toISOString().split('T')[0] }
-            : service
-        )
-      );
-      
-      alert('Service status updated successfully!');
-    } catch (error) {
-      console.error('Error updating service status:', error);
+      setServicesData(prev => prev.map(s => s.id === serviceId ? { ...s, isActive: !active } : s));
+      await updateServiceStatusInSupabase(serviceId, active ? 'inactive' : 'active');
+    } catch (e) {
+      console.error(e);
+      setServicesData(prev => prev.map(s => s.id === serviceId ? { ...s, isActive: active } : s));
+      alert('Failed to update status');
     }
   };
 
-  const handleDeleteService = async (serviceId: string) => {
+  // Edit service modal removed; content edits are done via Pages Editor.
+
+  const handleDeleteService = async (serviceId: string, slug: string) => {
     if (confirm('Are you sure you want to delete this service? This action cannot be undone.')) {
       try {
         setServicesData(prev => prev.filter(service => service.id !== serviceId));
+        await deleteServiceFromSupabase(serviceId, slug);
         alert('Service deleted successfully!');
       } catch (error) {
         console.error('Error deleting service:', error);
       }
+    }
+  };
+
+  const openAddModal = () => {
+    setNewServiceName('');
+    setNewServiceSlug('');
+    setNewServiceCategoryId('');
+    setIsAddModalOpen(true);
+  };
+
+  const handleCreateService = async () => {
+    if (!newServiceName || !newServiceSlug) return;
+    setIsSaving(true);
+    try {
+      const res = await createServiceInSupabase(newServiceName, newServiceSlug, newServiceCategoryId || null);
+      const row: any = res.data;
+      setServicesData(prev => [{
+        ...(services.find(s => s.slug === row.slug) || {
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          description: `${row.name} services`,
+          category: 'general',
+          icon: 'Settings',
+          averagePrice: 'AED 0',
+          estimatedTime: '—',
+          isPopular: false,
+          keywords: [row.name]
+        }),
+        providerCount: 0,
+        totalBookings: 0,
+        averageRating: 0,
+        revenue: 0,
+        isActive: true,
+        lastUpdated: new Date().toISOString().split('T')[0]
+      }, ...prev]);
+      setIsAddModalOpen(false);
+      alert('Service created and editor entry seeded.');
+    } catch (e) {
+      console.error(e);
+      alert('Failed to create service');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -203,7 +239,7 @@ export default function ServicesManagement() {
                 <Eye className="h-4 w-4 mr-2" />
                 View Public Services
               </Button>
-              <Button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white">
+              <Button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white" onClick={openAddModal}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add New Service
               </Button>
@@ -357,17 +393,8 @@ export default function ServicesManagement() {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="text-white border-white/20 hover:bg-white/10"
-                            onClick={() => handleEditService(service)}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
                             className={service.isActive ? 'text-red-400 border-red-400/20 hover:bg-red-400/10' : 'text-green-400 border-green-400/20 hover:bg-green-400/10'}
-                            onClick={() => handleToggleServiceStatus(service.id)}
+                            onClick={() => handleToggleServiceStatus(service.id, service.slug, service.isActive)}
                           >
                             {service.isActive ? <X className="h-4 w-4 mr-1" /> : <CheckCircle className="h-4 w-4 mr-1" />}
                             {service.isActive ? 'Deactivate' : 'Activate'}
@@ -376,7 +403,7 @@ export default function ServicesManagement() {
                             variant="outline" 
                             size="icon" 
                             className="text-white/60 border-white/20 hover:bg-white/10"
-                            onClick={() => handleDeleteService(service.id)}
+                            onClick={() => handleDeleteService(service.id, service.slug)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -401,84 +428,42 @@ export default function ServicesManagement() {
             </CardContent>
           </Card>
 
-          {/* Edit Service Modal */}
-          <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-            <DialogContent className="max-w-2xl bg-neutral-900 border-white/10 text-white">
+          {/* Add Service Modal */}
+          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+            <DialogContent className="max-w-md bg-neutral-900 border-white/10 text-white">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-bold">Edit Service</DialogTitle>
+                <DialogTitle className="text-2xl font-bold">Add New Service</DialogTitle>
                 <DialogDescription className="text-white/60">
-                  Update service information. Changes will be reflected across the entire platform.
+                  Create a new service. An editor entry will be created automatically.
                 </DialogDescription>
               </DialogHeader>
-              
-              {editingService && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="serviceName" className="text-white">Service Name</Label>
-                      <Input
-                        id="serviceName"
-                        value={editingService.name}
-                        onChange={(e) => setEditingService({ ...editingService, name: e.target.value })}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="averagePrice" className="text-white">Average Price</Label>
-                      <Input
-                        id="averagePrice"
-                        value={editingService.averagePrice}
-                        onChange={(e) => setEditingService({ ...editingService, averagePrice: e.target.value })}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="description" className="text-white">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={editingService.description}
-                      onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white"
-                      placeholder="Service description for listings and SEO..."
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="estimatedTime" className="text-white">Estimated Time</Label>
-                      <Input
-                        id="estimatedTime"
-                        value={editingService.estimatedTime}
-                        onChange={(e) => setEditingService({ ...editingService, estimatedTime: e.target.value })}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={editingService.isPopular}
-                        onCheckedChange={(checked) => setEditingService({ ...editingService, isPopular: checked })}
-                      />
-                      <Label className="text-white">Mark as Popular Service</Label>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-end space-x-3 pt-4 border-t border-white/10">
-                    <Button variant="outline" className="text-white border-white/20" onClick={() => setIsEditModalOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button 
-                      onClick={() => editingService && handleSaveService(editingService)} 
-                      disabled={isSaving}
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
-                    >
-                      {isSaving ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                  </div>
+              <div className="space-y-6">
+                <div>
+                  <Label className="text-white">Service Name</Label>
+                  <Input className="bg-white/10 border-white/20 text-white" value={newServiceName} onChange={(e)=>{setNewServiceName(e.target.value); setNewServiceSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''));}} />
                 </div>
-              )}
+                <div>
+                  <Label className="text-white">Service Slug</Label>
+                  <Input className="bg-white/10 border-white/20 text-white" value={newServiceSlug} onChange={(e)=>setNewServiceSlug(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-white">Category</Label>
+                  <Select value={newServiceCategoryId} onValueChange={setNewServiceCategoryId}>
+                    <SelectTrigger className="bg-white/10 border-white/20 text-white h-10 mt-1">
+                      <SelectValue placeholder="Select category (optional)" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-neutral-900 border-white/20">
+                      {serviceCategories.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id} className="text-white">{cat.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex justify-end space-x-3 pt-2">
+                  <Button variant="outline" className="text-white border-white/20" onClick={()=>setIsAddModalOpen(false)}>Cancel</Button>
+                  <Button disabled={isSaving || !newServiceName || !newServiceSlug} onClick={handleCreateService} className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white">{isSaving ? 'Saving...' : 'Create Service'}</Button>
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
         </>
