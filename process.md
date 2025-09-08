@@ -322,4 +322,20 @@ This document tracks all changes, fixes, and deployment-related actions performe
 - The CMS editor system is fully functional with proper slug handling, content persistence, and comprehensive debugging capabilities.
 - All content updates now properly persist to Supabase database with real-time updates on the live website.
 
+### 2025-09-08
+
+- Service detail page content alignment and CMS FAQ integration
+  - Unified About/Why sections and removed duplicate standalone Why block on service pages.
+  - Providers list cards: removed message button; avatars now use `profileImage`/`profileimage` from Supabase.
+  - Booking and provider registration forms: enforced step-blocking validation (cannot proceed without required fields).
+  - CMS FAQs on service detail pages:
+    - Service pages now first render FAQs from CMS (`pages_content` slug `service-page/{slug}` → `faqs.items`).
+    - Fallback to admin custom FAQs from `/api/admin/pages?id=service-{slug}` if CMS is empty.
+    - Final fallback to auto-generated FAQs if both are empty.
+  - Files updated:
+    - `app/services/[service]/service-page-client.tsx`
+    - `app/providers/register/page.tsx`
+    - `components/booking-modal.tsx` (validation already enforced)
+  - Impact: FAQs added via Pages Editor now display on corresponding service detail pages; consistent layout across services.
+
 

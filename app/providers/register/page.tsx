@@ -70,6 +70,8 @@ export default function ProviderRegisterPage() {
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const [profilePreview, setProfilePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const emailValid = /[^\s@]+@[^\s@]+\.[^\s@]+/.test(formData.personalInfo.email || '');
+  const phoneValid = /^(\+|00)?[0-9\s-]{7,15}$/.test(formData.personalInfo.phone || '');
 
   const [newCertification, setNewCertification] = useState('');
   const [newLanguage, setNewLanguage] = useState('');
@@ -91,7 +93,33 @@ export default function ProviderRegisterPage() {
     }
   };
 
-  const handleNextStep = () => { if (currentStep < steps.length) setCurrentStep(currentStep + 1); };
+  const canProceedFromStep = (stepNum: number) => {
+    if (stepNum === 1) {
+      return (
+        formData.personalInfo.name.trim().length > 1 &&
+        emailValid &&
+        phoneValid &&
+        formData.personalInfo.password.trim().length >= 6 &&
+        Number(formData.personalInfo.experience) > 0
+      );
+    }
+    if (stepNum === 2) {
+      return formData.services.length > 0 && formData.areas.length > 0;
+    }
+    if (stepNum === 3) {
+      return formData.description.trim().length >= 20;
+    }
+    if (stepNum === 4) {
+      return true;
+    }
+    return true;
+  };
+
+  const handleNextStep = () => { 
+    if (currentStep < steps.length && canProceedFromStep(currentStep)) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
   const handlePrevStep = () => { if (currentStep > 1) setCurrentStep(currentStep - 1); };
 
   const handleServiceToggle = (serviceId: string) => {
@@ -255,17 +283,17 @@ export default function ProviderRegisterPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-white/80 text-sm font-medium mb-2">Email Address *</label>
-                      <Input type="email" placeholder="your.email@example.com" value={formData.personalInfo.email} onChange={(e) => setFormData(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, email: e.target.value } }))} className="bg-white/10 border-white/20 text-white placeholder-white/50" />
+                      <Input type="email" placeholder="your.email@example.com" value={formData.personalInfo.email} onChange={(e) => setFormData(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, email: e.target.value } }))} className={`bg-white/10 border ${emailValid ? 'border-white/20' : 'border-red-500'} text-white placeholder-white/50`} required />
                     </div>
                     <div>
                       <label className="block text-white/80 text-sm font-medium mb-2">Phone Number *</label>
-                      <Input placeholder="+971 50 XXX XXXX" value={formData.personalInfo.phone} onChange={(e) => setFormData(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, phone: e.target.value } }))} className="bg-white/10 border-white/20 text-white placeholder-white/50" />
+                      <Input placeholder="+971 50 XXX XXXX" value={formData.personalInfo.phone} onChange={(e) => setFormData(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, phone: e.target.value } }))} className={`bg-white/10 border ${phoneValid ? 'border-white/20' : 'border-red-500'} text-white placeholder-white/50`} required />
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-white/80 text-sm font-medium mb-2">Password *</label>
-                    <Input type="password" placeholder="Create a secure password" value={formData.personalInfo.password} onChange={(e) => setFormData(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, password: e.target.value } }))} className="bg-white/10 border-white/20 text-white placeholder-white/50" />
+                    <Input type="password" placeholder="Create a secure password" value={formData.personalInfo.password} onChange={(e) => setFormData(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, password: e.target.value } }))} className={`bg-white/10 border ${formData.personalInfo.password.length >= 6 ? 'border-white/20' : 'border-red-500'} text-white placeholder-white/50`} required />
                     <p className="text-white/60 text-xs mt-1">Password will be used to access your provider dashboard</p>
                   </div>
 
@@ -275,6 +303,7 @@ export default function ProviderRegisterPage() {
                       <SelectTrigger className="bg-white/10 border-white/20 text-white"><SelectValue placeholder="Select years of experience" /></SelectTrigger>
                       <SelectContent className="bg-neutral-900 border-white/20">{[1,2,3,4,5,6,7,8,9,10,15,20].map(year => (<SelectItem key={year} value={year.toString()} className="text-white">{year}+ years</SelectItem>))}</SelectContent>
                     </Select>
+                    {Number(formData.personalInfo.experience) <= 0 && (<p className="text-red-400 text-xs mt-1">Please select your years of experience.</p>)}
                   </div>
 
                   <div>
@@ -354,7 +383,8 @@ export default function ProviderRegisterPage() {
                 <div className="space-y-6">
                   <div>
                     <label className="block text-white/80 text-sm font-medium mb-2">Professional Description *</label>
-                    <Textarea placeholder="Describe your experience, specializations, and what makes you stand out..." value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} className="bg-white/10 border-white/20 text-white placeholder-white/50 h-32" />
+                    <Textarea placeholder="Describe your experience, specializations, and what makes you stand out..." value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} className={`bg-white/10 border ${formData.description.trim().length >= 20 ? 'border-white/20' : 'border-red-500'} text-white placeholder-white/50 h-32`} />
+                    {formData.description.trim().length < 20 && (<p className="text-red-400 text-xs mt-1">Please provide at least 20 characters.</p>)}
                   </div>
                   <div>
                     <label className="block text-white/80 text-sm font-medium mb-2">Certifications & Licenses</label>
@@ -457,7 +487,7 @@ export default function ProviderRegisterPage() {
         <motion.div className="flex justify-between mt-8" initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}>
           <Button variant="outline" onClick={handlePrevStep} disabled={currentStep === 1} className="text-white border-white/20 hover:bg-white/10">Previous</Button>
           {currentStep < steps.length ? (
-            <Button onClick={handleNextStep} className="bg-gradient-to-r from-primary-500 to-accent-500 hover:from-primary-600 hover:to-accent-600 text-white">Next Step<ArrowRight className="ml-2 h-4 w-4" /></Button>
+            <Button onClick={handleNextStep} disabled={!canProceedFromStep(currentStep)} className="bg-gradient-to-r from-primary-500 to-accent-500 hover:from-primary-600 hover:to-accent-600 text-white">Next Step<ArrowRight className="ml-2 h-4 w-4" /></Button>
           ) : (
             <form onSubmit={handleSubmit}>
               <Button type="submit" disabled={submitting} className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white">{submitting ? 'Submitting...' : 'Submit Application'}<CheckCircle className="ml-2 h-4 w-4" /></Button>

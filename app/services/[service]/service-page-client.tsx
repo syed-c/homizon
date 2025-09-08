@@ -495,8 +495,90 @@ export default function ServicePageClient({ service, category }: ServicePageClie
         </div>
       )}
 
-      {/* FAQ Section */}
-      {customContent && customContent.customFAQs && customContent.customFAQs.length > 0 && (
+      {/* FAQ Section (CMS) */}
+      {cmsContent?.faqs?.items?.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl font-bold text-white mb-4">
+              {cmsContent.faqs.h2 || 'Frequently Asked Questions'}
+            </h2>
+            {cmsContent.faqs.paragraph && (
+              <p className="text-white/60 text-lg">
+                {cmsContent.faqs.paragraph}
+              </p>
+            )}
+          </motion.div>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
+            {cmsContent.faqs.items.map((faq: any, index: number) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="bg-white/5 backdrop-blur-sm border border-white/10 hover:border-primary-500/30 transition-all duration-300 rounded-xl p-6"
+              >
+                <div className="flex items-start space-x-4">
+                  <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold text-sm">Q</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-white mb-3">
+                      {faq.question}
+                    </h3>
+                    <p className="text-white/70 leading-relaxed">
+                      {faq.answer}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Call to Action */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mt-12"
+          >
+            <div className="bg-gradient-to-r from-primary-900/50 to-accent-900/50 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
+              <h3 className="text-2xl font-bold text-white mb-4">
+                Need {service.name}? We're Here to Help!
+              </h3>
+              <p className="text-white/70 mb-6 max-w-2xl mx-auto">
+                Get connected with verified {service.name.toLowerCase()} professionals in Dubai. 
+                Compare quotes, read reviews, and book your service instantly.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href={`/book?service=${service.slug}`}>
+                  <Button className="bg-gradient-to-r from-primary-500 to-accent-500 hover:from-primary-600 hover:to-accent-600 text-white px-8 py-3 rounded-full font-semibold">
+                    Book {service.name} Now
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+                <Link href={`tel:${settings.contact_phone}`}>
+                  <Button variant="outline" className="text-white border-white/20 hover:bg-white/10 px-8 py-3 rounded-full font-semibold">
+                    <Phone className="mr-2 h-5 w-5" />
+                    Call {settings.contact_phone}
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* FAQ Section (Admin Custom Content) */}
+      {(!cmsContent?.faqs?.items?.length) && customContent && customContent.customFAQs && customContent.customFAQs.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -576,7 +658,7 @@ export default function ServicePageClient({ service, category }: ServicePageClie
       )}
 
       {/* Auto-Generated FAQ Section */}
-      {!customContent?.customFAQs?.length && (
+      {!cmsContent?.faqs?.items?.length && !customContent?.customFAQs?.length && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
