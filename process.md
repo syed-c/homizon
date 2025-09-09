@@ -463,3 +463,13 @@ This document tracks all changes, fixes, and deployment-related actions performe
 - Area-only pages filter providers strictly by area.
   - `app/areas/[area]/area-page-client.tsx`: robust area match (supports array or CSV in provider.areas, slug/name normalization).
 
+### 2025-09-09 (Auto-create service editor entries)
+
+- Restored service detail virtual entries in `/admin/pages-editor` so adding a service in Supabase auto-shows an editable card.
+  - `app/admin/pages-editor/page.tsx`: generates `services/{slug}` virtual entries for all active services and shows CMS records only for active services. Legacy `service-page/{slug}` entries remain hidden.
+
+### 2025-09-09 (Editor UX for legacy service-page slugs)
+
+- Ensured legacy `service-page/{slug}` cards open and save as `services/{slug}` and View buttons link to `/services/{slug}`.
+  - Updated URL display and View logic in `app/admin/pages-editor/page.tsx`.
+

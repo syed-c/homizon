@@ -359,6 +359,37 @@ export default function PagesEditor() {
         }
       };
       setPageContent(merged);
+      // Normalize legacy slug to services/{slug}
+      const legacySlug = page.page_slug.replace('service-page/', '');
+      setMetaData(prev => ({ ...prev, slug: `services/${legacySlug}` }));
+    } else if (page.page_slug && page.page_slug.startsWith('services/')) {
+      // Treat services/{slug} as service detail page type
+      setPageType('serviceDetail');
+      const incoming = (page.content || {}) as any;
+      const merged: ServiceDetailPageContent = {
+        hero: {
+          h1: incoming.hero?.h1 || 'Service in Dubai',
+          description: incoming.hero?.description || 'Professional services by verified providers.'
+        },
+        about: {
+          h2: incoming.about?.h2 || 'About This Service in Dubai',
+          paragraph: incoming.about?.paragraph || ''
+        },
+        why: {
+          h2: incoming.why?.h2 || 'Why Choose This Service in Dubai?',
+          paragraph: incoming.why?.paragraph || ''
+        },
+        faqs: {
+          h2: incoming.faqs?.h2 || 'Frequently Asked Questions',
+          paragraph: incoming.faqs?.paragraph || '',
+          items: Array.isArray(incoming.faqs?.items) ? incoming.faqs.items : []
+        },
+        cta: {
+          h2: incoming.cta?.h2 || "Need This Service? We're Here to Help!",
+          paragraph: incoming.cta?.paragraph || ''
+        }
+      };
+      setPageContent(merged);
     } else if (page.page_slug && page.page_slug.startsWith('services/')) {
       // Services category page -> only allow editing Hero section
       setPageType('category');
@@ -561,8 +592,20 @@ export default function PagesEditor() {
   const activeServiceSlugs = servicesDb.map(s => s.slug);
 
   // Virtual entries for each individual service detail page (only for active services in Supabase)
-  // Hide service detail virtual pages entirely (not used on website)
-  const serviceDetailVirtualPages: PageContent[] = [];
+  // Virtual entries for each individual service detail page (only for active services in Supabase)
+  const serviceDetailVirtualPages: PageContent[] = servicesDb.map((svc: any) => ({
+    id: `services-${svc.slug}`,
+    page_slug: `services/${svc.slug}`,
+    content: {
+      hero: { h1: `${svc.name} in Dubai`, description: `Professional ${svc.name.toLowerCase()} by verified providers.` },
+      about: { h2: `About ${svc.name} in Dubai`, paragraph: '' },
+      faqs: { h2: 'Frequently Asked Questions', paragraph: '', items: [] },
+      cta: { h2: `Need ${svc.name}? We're Here to Help!`, paragraph: '' }
+    },
+    meta_title: `${svc.name} in Dubai | HOMIZON`,
+    meta_description: `${svc.name} services in Dubai`,
+    updated_at: new Date().toISOString()
+  }));
 
   // Ensure Areas page appears in list (virtual entry if not yet saved)
   // Removed areas virtual page: only show what exists in Supabase pages_content
@@ -573,8 +616,11 @@ export default function PagesEditor() {
       // Hide any legacy 'service-area/{service}/{area}' entries entirely
       return false;
     }
-    // Hide any service-page/{slug} entries entirely (not used on website)
-    if (p.page_slug?.startsWith('service-page/')) return false;
+    // Legacy 'service-page/{slug}' entries: remap to services/{slug} visibility filter
+    if (p.page_slug?.startsWith('service-page/')) {
+      const slug = p.page_slug.replace('service-page/', '');
+      return activeServiceSlugs.includes(slug);
+    }
     return true;
   });
 
@@ -613,7 +659,9 @@ export default function PagesEditor() {
   });
 
   const mergedPages = [
-    // Only show pages that actually exist in Supabase
+    // Include service detail virtual pages (only for services active in Supabase) when missing from CMS
+    ...serviceDetailVirtualPages.filter(v => !furtherFilteredCmsPages.some(p => p.page_slug === v.page_slug)),
+    // Only show pages that actually exist in Supabase (and categories for active services)
     ...furtherFilteredCmsPages.filter(p => {
       if (p.page_slug?.startsWith('services/')) {
         const slug = p.page_slug.replace('services/', '');
@@ -680,7 +728,7 @@ export default function PagesEditor() {
               <CardContent className="space-y-4">
                 <div className="flex items-center space-x-2 text-white/60 text-sm">
                   <Globe className="h-4 w-4" />
-                  <span>{page.page_slug === '' ? '/' : `/${page.page_slug}`}</span>
+                  <span>{(() => { const slug = page.page_slug?.startsWith('service-page/') ? `services/${page.page_slug.replace('service-page/','')}` : page.page_slug; return slug === '' ? '/' : `/${slug}`; })()}</span>
                 </div>
                 
                 <p className="text-white/80 text-sm line-clamp-2">
@@ -709,7 +757,7 @@ export default function PagesEditor() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(page.page_slug === '' ? '/' : `/${page.page_slug}`, '_blank')}
+                    onClick={() => { const slug = page.page_slug?.startsWith('service-page/') ? `services/${page.page_slug.replace('service-page/','')}` : page.page_slug; window.open(slug === '' ? '/' : `/${slug}`, '_blank'); }}
                     className="flex-1 text-white border-white/20 hover:bg-white/10"
                   >
                     <Eye className="h-4 w-4 mr-2" />
