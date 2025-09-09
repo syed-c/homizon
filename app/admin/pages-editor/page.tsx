@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FileText, Plus, Eye, Edit, RotateCcw, Search, 
-  Globe, Calendar, BarChart3, Settings, Save, X, Trash
+  Globe, Calendar, BarChart3, Settings, Save, X, Trash, MapPin, Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -671,6 +671,31 @@ export default function PagesEditor() {
     })
   ];
 
+  // Categorization helpers (MUST be declared before any early returns)
+  const isLocation = (slug: string) => slug.startsWith('areas/') && slug.split('/').length === 2;
+  const isLocationService = (slug: string) => slug.startsWith('areas/') && slug.split('/').length === 3;
+  const isService = (slug: string) => slug.startsWith('services/') && slug.split('/').length === 2;
+  const isMain = (slug: string) => !slug || slug === '' || ['areas','services','contact','about','/'].includes(slug);
+
+  type Cat = 'main' | 'locations' | 'locationServices' | 'services';
+  const [activeCat, setActiveCat] = useState<Cat>('main');
+
+  const q = searchTerm.toLowerCase();
+  const filteredList = mergedPages.filter(p => p.page_slug.toLowerCase().includes(q) || p.meta_title.toLowerCase().includes(q));
+  const catLists = {
+    main: filteredList.filter(p => isMain(p.page_slug)),
+    locations: filteredList.filter(p => isLocation(p.page_slug)),
+    locationServices: filteredList.filter(p => isLocationService(p.page_slug)),
+    services: filteredList.filter(p => isService(p.page_slug)),
+  } as const;
+
+  const statCards = [
+    { title: 'Main Pages', value: catLists.main.length, color: 'from-blue-500 to-cyan-500', icon: Globe },
+    { title: 'Locations', value: catLists.locations.length, color: 'from-green-500 to-emerald-500', icon: MapPin },
+    { title: "Location's Services", value: catLists.locationServices.length, color: 'from-purple-500 to-pink-500', icon: Layers },
+    { title: 'Services', value: catLists.services.length, color: 'from-orange-500 to-red-500', icon: Settings },
+  ];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -701,10 +726,36 @@ export default function PagesEditor() {
         />
       </div>
 
+      {/* Category Tabs */}
+      <Tabs defaultValue={activeCat} onValueChange={(v) => setActiveCat(v as Cat)} className="w-full">
+        <TabsList className="grid w-full grid-cols-4 bg-white/10">
+          <TabsTrigger value="main">Main Pages</TabsTrigger>
+          <TabsTrigger value="locations">Locations</TabsTrigger>
+          <TabsTrigger value="locationServices">Location's Services</TabsTrigger>
+          <TabsTrigger value="services">Services</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((s, i) => (
+          <Card key={s.title} className="bg-white/5 backdrop-blur-sm border border-white/10">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div>
+                <p className="text-white/60 text-sm">{s.title}</p>
+                <p className="text-2xl text-white font-bold mt-1">{s.value}</p>
+              </div>
+              <div className={`w-10 h-10 bg-gradient-to-r ${s.color} rounded-xl flex items-center justify-center`}>
+                <s.icon className="h-5 w-5 text-white" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {/* Pages Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {mergedPages
-          .filter(page => page.page_slug.toLowerCase().includes(searchTerm.toLowerCase()) || page.meta_title.toLowerCase().includes(searchTerm.toLowerCase()))
+        {(activeCat === 'main' ? catLists.main : activeCat === 'locations' ? catLists.locations : activeCat === 'locationServices' ? catLists.locationServices : catLists.services)
           .map((page) => (
           <motion.div
             key={page.id}
@@ -716,12 +767,8 @@ export default function PagesEditor() {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-white text-lg mb-2">
-                      {page.meta_title}
-                    </CardTitle>
-                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                      Published
-                    </Badge>
+                    <CardTitle className="text-white text-lg mb-2">{page.meta_title}</CardTitle>
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Published</Badge>
                   </div>
                 </div>
               </CardHeader>
@@ -730,47 +777,23 @@ export default function PagesEditor() {
                   <Globe className="h-4 w-4" />
                   <span>{(() => { const slug = page.page_slug?.startsWith('service-page/') ? `services/${page.page_slug.replace('service-page/','')}` : page.page_slug; return slug === '' ? '/' : `/${slug}`; })()}</span>
                 </div>
-                
-                <p className="text-white/80 text-sm line-clamp-2">
-                  {page.meta_description}
-                </p>
-                
+                <p className="text-white/80 text-sm line-clamp-2">{page.meta_description}</p>
                 <div className="flex items-center justify-between text-xs text-white/60">
                   <div className="flex items-center space-x-4">
                     <span>Content: {JSON.stringify(page.content).length} chars</span>
                     <span>FAQs: {page.content?.faqs?.items?.length || 0}</span>
                   </div>
                 </div>
-                
                 <div className="flex items-center justify-between text-xs text-white/60">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="h-3 w-3" />
-                    <span>Modified: {new Date(page.updated_at).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <BarChart3 className="h-3 w-3" />
-                    <span>0 views</span>
-                  </div>
+                  <div className="flex items-center space-x-2"><Calendar className="h-3 w-3" /><span>Modified: {new Date(page.updated_at).toLocaleDateString()}</span></div>
+                  <div className="flex items-center space-x-2"><BarChart3 className="h-3 w-3" /><span>0 views</span></div>
                 </div>
-                
                 <div className="flex items-center space-x-2 pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => { const slug = page.page_slug?.startsWith('service-page/') ? `services/${page.page_slug.replace('service-page/','')}` : page.page_slug; window.open(slug === '' ? '/' : `/${slug}`, '_blank'); }}
-                    className="flex-1 text-white border-white/20 hover:bg-white/10"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    View
+                  <Button variant="outline" size="sm" onClick={() => { const slug = page.page_slug?.startsWith('service-page/') ? `services/${page.page_slug.replace('service-page/','')}` : page.page_slug; window.open(slug === '' ? '/' : `/${slug}`, '_blank'); }} className="flex-1 text-white border-white/20 hover:bg-white/10">
+                    <Eye className="h-4 w-4 mr-2" /> View
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditPage(page)}
-                    className="flex-1 text-white border-white/20 hover:bg-white/10"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
+                  <Button variant="outline" size="sm" onClick={() => handleEditPage(page)} className="flex-1 text-white border-white/20 hover:bg-white/10">
+                    <Edit className="h-4 w-4 mr-2" /> Edit
                   </Button>
                 </div>
               </CardContent>

@@ -473,3 +473,14 @@ This document tracks all changes, fixes, and deployment-related actions performe
 - Ensured legacy `service-page/{slug}` cards open and save as `services/{slug}` and View buttons link to `/services/{slug}`.
   - Updated URL display and View logic in `app/admin/pages-editor/page.tsx`.
 
+### 2025-09-09 (Grouped pages list in editor)
+
+- Organized `/admin/pages-editor` list into categories:
+  - Main Pages, Locations, Location's Services, Services
+  - Implemented grouping and section headers in `app/admin/pages-editor/page.tsx`.
+
+### 2025-09-09 (Editor tabs + stats)
+
+- Added category tabs to `/admin/pages-editor`: Main Pages, Locations, Location's Services, Services
+- Added stat cards showing counts for each category at the top.
+
