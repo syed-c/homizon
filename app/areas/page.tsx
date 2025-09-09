@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
-import { areas } from '@/lib/data';
+import { listAreasFromSupabase } from '@/lib/supabase';
 import { useSettings } from '@/lib/settings-context';
 import { getPageContentFromSupabase } from '@/lib/supabase';
 import { listProvidersFromSupabase, listLeadsFromSupabase } from '@/lib/supabase';
@@ -43,18 +43,34 @@ export default function AreasPage() {
     return imageMap[areaName] || 'https://images.pexels.com/photos/1134176/pexels-photo-1134176.jpeg?auto=compress&cs=tinysrgb&h=300&w=400';
   };
 
-  // Generate once to keep Featured/All Areas stable
-  const dubaiAreas = useMemo(() => areas.map(area => ({
-    ...area,
-    serviceProviders: Math.floor(Math.random() * 30) + 15,
-    avgResponseTime: `${Math.floor(Math.random() * 30) + 20} mins`,
-    rating: 4.5 + Math.random() * 0.5,
-    totalBookings: Math.floor(Math.random() * 2000) + 800,
-    emergencyAvailable: Math.random() > 0.3,
-    featured: Math.random() > 0.7,
-    image: getAreaImage(area.name),
-    popularServices: ['AC Repair', 'Deep Cleaning', 'Plumbing', 'Electrical']
-  })), []);
+  const [dubaiAreas, setDubaiAreas] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadAreas = async () => {
+      try {
+        const res = await listAreasFromSupabase();
+        const rows = (res.data || []).filter((a: any)=>a.status==='active');
+        const mapped = rows.map((area: any)=>({
+          name: area.name,
+          slug: area.slug,
+          description: area.description || `${area.name} area in Dubai`,
+          subAreas: [],
+          serviceProviders: Math.floor(Math.random() * 30) + 15,
+          avgResponseTime: `${Math.floor(Math.random() * 30) + 20} mins`,
+          rating: 4.5 + Math.random() * 0.5,
+          totalBookings: Math.floor(Math.random() * 2000) + 800,
+          emergencyAvailable: Math.random() > 0.3,
+          featured: !!area.featured,
+          image: getAreaImage(area.name),
+          popularServices: ['AC Repair', 'Deep Cleaning', 'Plumbing', 'Electrical']
+        }));
+        setDubaiAreas(mapped);
+      } catch {
+        setDubaiAreas([]);
+      }
+    };
+    loadAreas();
+  }, []);
 
   // Load CMS content for Areas page (slug: 'areas')
   useEffect(() => {
@@ -131,11 +147,11 @@ export default function AreasPage() {
         const providers: any[] = provRes.data || [];
         const leads: any[] = leadsRes.data || [];
         const nameToSlug: Record<string, string> = {};
-        areas.forEach(a => { nameToSlug[a.name] = a.slug; });
+        dubaiAreas.forEach(a => { nameToSlug[a.name] = a.slug; });
 
         const stats: Record<string, { providers: number; bookings: number; responseMins: number; _samples: number; _sum: number }>
           = {} as any;
-        areas.forEach(a => { stats[a.slug] = { providers: 0, bookings: 0, responseMins: 0, _samples: 0, _sum: 0 }; });
+        dubaiAreas.forEach(a => { stats[a.slug] = { providers: 0, bookings: 0, responseMins: 0, _samples: 0, _sum: 0 }; });
 
         providers.forEach(p => {
           if (Array.isArray(p.areas)) {
@@ -170,7 +186,7 @@ export default function AreasPage() {
       }
     };
     loadStats();
-  }, []);
+  }, [dubaiAreas.length]);
   const otherAreas = sortedAreas.filter(area => !area.featured);
 
   return (

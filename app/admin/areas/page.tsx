@@ -15,8 +15,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { areas, Area, SubArea } from '@/lib/data';
+import { Area, SubArea } from '@/lib/data';
+import { listAreasFromSupabase, createAreaInSupabase, deleteAreaFromSupabase, updateAreaStatusInSupabase, listServicesFromSupabase, updateAreaInSupabase } from '@/lib/supabase';
 
 interface AreaData extends Area {
   providerCount: number;
@@ -47,6 +49,9 @@ export default function AreasManagement() {
     isActive: true,
     lastUpdated: new Date().toISOString().split('T')[0]
   });
+  const [newAreaServices, setNewAreaServices] = useState<string[]>([]);
+  const [newAreaFeatured, setNewAreaFeatured] = useState<boolean>(false);
+  const [servicesDb, setServicesDb] = useState<{ slug: string; name: string }[]>([]);
   const [newSubArea, setNewSubArea] = useState<Partial<SubArea>>({
     name: '',
     slug: '',
@@ -67,49 +72,46 @@ export default function AreasManagement() {
     console.log('Initializing areas data...');
 
     try {
-      // Load from API first, fallback to local data
-      const response = await fetch('/api/admin/areas');
-      if (response.ok) {
-        const apiData = await response.json();
-        if (apiData.areas) {
-          // Convert API areas to AreaData format
-          const enhancedAreas: AreaData[] = apiData.areas.map((area: any) => ({
-            ...area,
-            providerCount: Math.floor(Math.random() * 50) + 10,
-            totalLeads: Math.floor(Math.random() * 500) + 100,
-            averageRating: Math.round((Math.random() * 2 + 3) * 10) / 10,
-            isActive: Math.random() > 0.1,
-            lastUpdated: new Date().toISOString().split('T')[0]
-          }));
-          setAreasData(enhancedAreas);
-          setLoading(false);
-          console.log('Areas data loaded from API:', enhancedAreas.length);
-          return;
-        }
-      }
+      // Load from Supabase
+      const [areasRes, servicesRes] = await Promise.all([
+        listAreasFromSupabase(),
+        listServicesFromSupabase()
+      ]);
+      const dbAreas = (areasRes.data || []).filter((a: any) => a.status !== 'deleted');
+      const enhancedAreas: AreaData[] = dbAreas.map((area: any) => ({
+        id: area.id,
+        name: area.name,
+        slug: area.slug,
+        description: area.description || `${area.name} area in Dubai`,
+        sector: area.sector || '',
+        subAreas: [],
+        providerCount: Math.floor(Math.random() * 50) + 10,
+        totalLeads: Math.floor(Math.random() * 500) + 100,
+        averageRating: Math.round((Math.random() * 2 + 3) * 10) / 10,
+        isActive: area.status === 'active',
+        lastUpdated: area.updated_at || new Date().toISOString().split('T')[0]
+      }));
+      setAreasData(enhancedAreas);
+      setServicesDb((servicesRes.data || []).filter((s: any)=>s.status==='active').map((s:any)=>({ slug: s.slug, name: s.name })));
+      setLoading(false);
+      return;
     } catch (error) {
       console.error('API load failed, using local data:', error);
     }
 
-    // Fallback to local data with reduced processing
-    const enhancedAreas: AreaData[] = areas.slice(0, 20).map(area => ({
-      ...area,
-      providerCount: Math.floor(Math.random() * 50) + 10,
-      totalLeads: Math.floor(Math.random() * 500) + 100,
-      averageRating: Math.round((Math.random() * 2 + 3) * 10) / 10, // 3.0 - 5.0
-      isActive: Math.random() > 0.1, // 90% active
-      lastUpdated: new Date().toISOString().split('T')[0]
-    }));
-
-    setAreasData(enhancedAreas);
+    setAreasData([]);
     setLoading(false);
-    console.log('Areas data initialized locally:', enhancedAreas.length);
   };
 
   const handleSaveArea = async (area: AreaData) => {
     setIsSaving(true);
     try {
       console.log('Saving area data:', area);
+      try {
+        await updateAreaInSupabase(area.id, { name: area.name, sector: area.sector, description: area.description, services: (area as any).services || [] });
+      } catch (e) {
+        console.warn('Supabase area update failed:', e);
+      }
       
       // Update the areas data
       setAreasData(prev => 
@@ -149,6 +151,8 @@ export default function AreasManagement() {
 
   const handleToggleAreaStatus = async (areaId: string) => {
     try {
+      const target = areasData.find(a=>a.id===areaId);
+      const current = !!target?.isActive;
       setAreasData(prev => 
         prev.map(area => 
           area.id === areaId 
@@ -156,7 +160,7 @@ export default function AreasManagement() {
             : area
         )
       );
-      
+      await updateAreaStatusInSupabase(areaId, current ? 'inactive' : 'active');
       toast({
         title: "Success!",
         description: "Area status updated successfully.",
@@ -169,8 +173,9 @@ export default function AreasManagement() {
   const handleDeleteArea = async (areaId: string) => {
     if (confirm('Are you sure you want to delete this area? This action cannot be undone.')) {
       try {
+        const slug = areasData.find(a=>a.id===areaId)?.slug;
         setAreasData(prev => prev.filter(area => area.id !== areaId));
-        
+        await deleteAreaFromSupabase(areaId, slug);
         toast({
           title: "Success!",
           description: "Area deleted successfully.",
@@ -201,14 +206,14 @@ export default function AreasManagement() {
 
     setIsSaving(true);
     try {
-      const areaId = `area-${Date.now()}`;
       const slug = generateSlug(newArea.name);
-      
+      const res = await createAreaInSupabase(newArea.name!, slug, newAreaServices, newAreaFeatured);
+      const row: any = res.data;
       const fullArea: AreaData = {
-        id: areaId,
-        name: newArea.name,
-        slug: slug,
-        description: newArea.description,
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        description: newArea.description!,
         sector: newArea.sector!,
         subAreas: [],
         providerCount: 0,
@@ -217,16 +222,7 @@ export default function AreasManagement() {
         isActive: true,
         lastUpdated: new Date().toISOString().split('T')[0]
       };
-
-      // Call API to save
-      const response = await fetch('/api/admin/areas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'add', area: fullArea })
-      });
-
-      if (response.ok) {
-        setAreasData(prev => [...prev, fullArea]);
+      setAreasData(prev => [fullArea, ...prev]);
         setIsAddModalOpen(false);
         setNewArea({
           name: '',
@@ -240,12 +236,13 @@ export default function AreasManagement() {
           isActive: true,
           lastUpdated: new Date().toISOString().split('T')[0]
         });
+        setNewAreaServices([]);
+        setNewAreaFeatured(false);
 
         toast({
           title: "Success!",
-          description: "New area added successfully and is now available for service pages!",
+          description: "Area created. Pages Editor entries seeded for area and selected services.",
         });
-      }
     } catch (error) {
       console.error('Error adding area:', error);
       toast({
@@ -381,15 +378,11 @@ export default function AreasManagement() {
 
       {!loading && (
         <>
-          {/* Enhanced Header with Clear Workflow */}
+          {/* Header (workflow/buttons adjusted) */}
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-white">Areas Management</h1>
-              <p className="text-white/60 mt-2">Add and manage service areas. Each area can then be used to create dedicated service pages.</p>
-              <div className="mt-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                <p className="text-blue-400 text-sm font-medium">📍 Workflow:</p>
-                <p className="text-white/70 text-sm">1. Add Areas → 2. Go to Pages Management → 3. Create Service + Area Pages → 4. Edit Content</p>
-              </div>
+              <p className="text-white/60 mt-2">Add and manage service areas. Areas and area-service pages are created automatically.</p>
             </div>
             <div className="flex items-center space-x-3">
               <Button 
@@ -401,26 +394,11 @@ export default function AreasManagement() {
                 View Public Areas
               </Button>
               <Button 
-                variant="outline"
-                className="text-white border-white/20 hover:bg-white/10"
-                onClick={() => setIsAddSubAreaModalOpen(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Sub-Area
-              </Button>
-              <Button 
                 className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
                 onClick={() => setIsAddModalOpen(true)}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add New Area
-              </Button>
-              <Button 
-                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
-                onClick={() => window.open('/admin/pages', '_blank')}
-              >
-                <Globe className="h-4 w-4 mr-2" />
-                Manage Pages
               </Button>
             </div>
           </div>
@@ -670,6 +648,28 @@ export default function AreasManagement() {
                       rows={3}
                     />
                   </div>
+
+                  {/* Services multi-select for existing area */}
+                  <div>
+                    <Label className="text-white">Services in this area</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                      {servicesDb.map(s => (
+                        <label key={s.slug} className="flex items-center gap-2 text-white/80 text-sm">
+                          <input
+                            type="checkbox"
+                            className="accent-neon-green"
+                            checked={((editingArea as any).services || []).includes(s.slug)}
+                            onChange={(e)=>{
+                              const current: string[] = (editingArea as any).services || [];
+                              const next = e.target.checked ? Array.from(new Set([...current, s.slug])) : current.filter((x: string)=>x!==s.slug);
+                              setEditingArea({ ...(editingArea as any), services: next } as any);
+                            }}
+                          />
+                          <span>{s.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                   
                   <div className="flex justify-end space-x-3 pt-4 border-t border-white/10">
                     <Button variant="outline" className="text-white border-white/20" onClick={() => setIsEditModalOpen(false)}>
@@ -694,7 +694,7 @@ export default function AreasManagement() {
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold">Add New Area</DialogTitle>
                 <DialogDescription className="text-white/60">
-                  Create a new service area. This will immediately be available for service page creation.
+                  Create a new service area. Editor entries for the area and selected services will be created automatically.
                 </DialogDescription>
               </DialogHeader>
               
@@ -740,6 +740,32 @@ export default function AreasManagement() {
                   <p className="text-white/50 text-xs mt-1">This will be the URL: /areas/{newArea.slug}</p>
                 </div>
                 
+                {/* Services multi-select */}
+                <div>
+                  <Label className="text-white">Services to include in this area</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                    {servicesDb.map(s => (
+                      <label key={s.slug} className="flex items-center gap-2 text-white/80 text-sm">
+                        <input
+                          type="checkbox"
+                          className="accent-neon-green"
+                          checked={newAreaServices.includes(s.slug)}
+                          onChange={(e)=>{
+                            setNewAreaServices(prev=> e.target.checked ? [...prev, s.slug] : prev.filter(x=>x!==s.slug));
+                          }}
+                        />
+                        <span>{s.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Featured toggle */}
+                <div className="flex items-center gap-3">
+                  <Switch id="featured" checked={newAreaFeatured} onCheckedChange={setNewAreaFeatured} />
+                  <Label htmlFor="featured" className="text-white">Feature this area</Label>
+                </div>
+
                 <div>
                   <Label htmlFor="newAreaDescription" className="text-white">Description *</Label>
                   <Textarea
@@ -768,8 +794,8 @@ export default function AreasManagement() {
             </DialogContent>
           </Dialog>
 
-          {/* Add New Sub-Area Modal */}
-          <Dialog open={isAddSubAreaModalOpen} onOpenChange={setIsAddSubAreaModalOpen}>
+          {/* Add New Sub-Area Modal (hidden per request, keep code but not trigger) */}
+          <Dialog open={false} onOpenChange={setIsAddSubAreaModalOpen}>
             <DialogContent className="max-w-2xl bg-neutral-900 border-white/10 text-white">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold">Add New Sub-Area</DialogTitle>

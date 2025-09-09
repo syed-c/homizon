@@ -1,3 +1,15 @@
+- 2025-09-09: Service-area routing refactor and editor integration
+  - Switched URL pattern from `/{service}/{area}` to `/areas/{area}/{service}`.
+  - Added server route `app/areas/[area]/[service]/page.tsx` that fetches service, area and real providers from Supabase (filtered by both area and service).
+  - Created client renderer `app/areas/[area]/[service]/service-client.tsx` to mirror the previous UI (hero, stats, quick-booking light card with dark text, providers grid).
+  - Removed legacy routes and components:
+    - Deleted `app/[service]/[area]/page.tsx` and the old `service-area-page-client.tsx`.
+    - Deleted `app/areas/[area]/[subarea]/page.tsx` that conflicted with the new route and caused `use()` runtime errors.
+  - Updated links and CMS lookups to the new slug.
+  - Pages Editor:
+    - Added virtual entries for service-area pages under `areas/{area}/{service}` and an editor type "serviceAreaDetail" (Hero, About, Providers, Meta).
+    - Hid legacy editor entries with slug pattern `/{service}/{area}`.
+  - Fixed quick-booking card readability by using dark text on the light gradient card.
 ## Homizon Project – Process Log
 
 This document tracks all changes, fixes, and deployment-related actions performed on the project. I will continue appending to this file with each change going forward.
@@ -381,4 +393,73 @@ This document tracks all changes, fixes, and deployment-related actions performe
   - Added `scripts/migrate-services-to-supabase.js` to upsert static `lib/data` services into Supabase.
   - Home popular services and services directory now read active services from Supabase, with safe fallback.
 
+
+### 2025-09-09 (Areas: dynamic + CMS seeding)
+
+- Dynamic Areas management (mirrors Services behavior)
+  - Added Supabase helpers in `lib/supabase.ts`:
+    - `listAreasFromSupabase`, `createAreaInSupabase`, `updateAreaStatusInSupabase`, `deleteAreaFromSupabase`
+    - `AreaRow` type (status, featured, services[])
+  - Rewrote admin API `app/api/admin/areas/route.ts` to use Supabase instead of in-memory:
+    - `POST` creates area row using Service Role Key and seeds `pages_content` for `areas/{area}` and for each selected service at `areas/{area}/{service}`
+    - `GET` returns current Supabase areas
+    - `DELETE` removes area row and cleans `pages_content` entries for `areas/{area}` and `areas/{area}/*`
+  - Refactored `/admin/areas/page.tsx` to be Supabase-driven:
+    - Removed Workflow box, Add Sub-Area button, and Manage Pages button; kept View Public Areas + Add New Area
+    - Add Area modal fields: Area Name, Page Slug (auto), Services to include (multi-select from active services), Feature toggle, Description
+    - On create, calls `createAreaInSupabase` which seeds editor entries
+    - Activate/Deactivate uses `updateAreaStatusInSupabase`; Delete uses `deleteAreaFromSupabase`
+  - Pages Editor integration `app/admin/pages-editor/page.tsx`:
+    - Loads areas from Supabase; builds virtual entries for `areas/{area}` and `areas/{area}/{service}` using each area's `services[]` list (falls back to all active services if empty)
+    - Filters out legacy/hardcoded area-service pages
+  - Public Areas page `app/areas/page.tsx`:
+    - Removed hardcoded `areas` import; now lists only areas from Supabase (status=active)
+    - Stats aggregation updated to use dynamic list
+
+- Impact
+  - Adding an area in `/admin/areas` instantly creates editor entries in `/admin/pages-editor` for the area and for each selected service under the slug pattern `/areas/{areaSlug}/{serviceSlug}`.
+  - Removing an area deletes associated editor pages.
+  - All hardcoded areas replaced by Supabase data across admin and public views.
+
+### 2025-09-09 (Hotfix)
+
+- Fixed runtime error on `/admin/areas`: missing `Switch` import used in Add Area modal.
+  - Updated `app/admin/areas/page.tsx` to import `Switch` from `@/components/ui/switch`.
+  - Verified no linter errors.
+
+### 2025-09-09 (Routing enforcement)
+
+- Locked public dynamic routes to Supabase data only.
+  - `app/areas/[area]/page.tsx`: resolves area from Supabase (status=active); otherwise `notFound()`.
+  - `app/areas/[area]/[service]/page.tsx`: resolves service via `getServiceBySlugFromSupabase` (status=active) and area via Supabase; 404 if either missing/inactive.
+  - Removed usage of hardcoded lib/data for these routes.
+
+### 2025-09-09 (Editor visibility)
+
+- Pages Editor now shows only records that exist in Supabase for Areas and Area-Service pages.
+  - Removed all virtual entries for `areas`, `areas/{area}`, and `areas/{area}/{service}` from `app/admin/pages-editor/page.tsx`.
+  - Added strict filters so any CMS records with `areas/{area}` appear only when the area exists in Supabase; and `areas/{area}/{service}` only when both area and service are active (and if an area's services[] is specified, it must include that service).
+  - Editor list is now a true reflection of `pages_content` plus Supabase-driven service detail virtuals only.
+
+### 2025-09-09 (Area services UX and dynamic lists)
+
+- Area service tiles now respect per-area service selection from Supabase.
+  - Updated `app/areas/[area]/area-page-client.tsx` to load `areas.services` and intersect with active services; only those tiles render.
+- Admin Areas edit modal supports updating services for an existing area.
+  - Added services multi-select; persisted via new `updateAreaInSupabase`.
+- Supabase helpers extended:
+  - Added `updateAreaInSupabase`; expanded `AreaRow` with `sector` and `description`.
+
+### 2025-09-09 (Editor cleanup)
+
+- Removed all `service-page/{slug}` cards from Pages Editor (not part of website).
+  - Updated `app/admin/pages-editor/page.tsx` to not generate or display any `service-page` entries.
+
+### 2025-09-09 (Area and Area-Service providers filtering + CMS)
+
+- Area-Service pages now load CMS content and filter providers strictly by both area and service.
+  - `app/areas/[area]/[service]/page.tsx`: loads `pages_content` at `areas/{area}/{service}` for meta/content; passes to client.
+  - `app/areas/[area]/[service]/service-client.tsx`: renders CMS fields (hero/ about) with fallbacks; shows message when no providers match.
+- Area-only pages filter providers strictly by area.
+  - `app/areas/[area]/area-page-client.tsx`: robust area match (supports array or CSV in provider.areas, slug/name normalization).
 

@@ -16,11 +16,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { 
-  services,
   Service,
   Area
 } from '@/lib/data';
-import { listProvidersFromSupabase, getPageContentFromSupabase } from '@/lib/supabase';
+import { listProvidersFromSupabase, getPageContentFromSupabase, listAreasFromSupabase, listServicesFromSupabase } from '@/lib/supabase';
 import { useSettings } from '@/lib/settings-context';
 
 interface AreaPageClientProps {
@@ -33,6 +32,7 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [cms, setCms] = useState<any>(null);
   const [providers, setProviders] = useState<any[]>([]);
+  const [serviceCards, setServiceCards] = useState<any[]>([]);
   const { settings } = useSettings();
 
   console.log("Area page loaded:", { areaSlug: area.slug });
@@ -49,13 +49,53 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
     loadCms();
   }, [area.slug]);
 
+  // Load services allowed for this area from Supabase (areas.services intersect active services)
+  useEffect(() => {
+    const loadAreaServices = async () => {
+      try {
+        const [areasRes, servicesRes] = await Promise.all([
+          listAreasFromSupabase(),
+          listServicesFromSupabase()
+        ]);
+        const areaRow: any = (areasRes.data || []).find((a: any) => a.slug === area.slug);
+        const activeServices: any[] = (servicesRes.data || []).filter((s: any) => s.status === 'active');
+        const allowed: string[] = Array.isArray(areaRow?.services) && areaRow.services.length
+          ? areaRow.services
+          : activeServices.map((s: any) => s.slug);
+        const list = activeServices
+          .filter((s: any) => allowed.includes(s.slug))
+          .slice(0, 12)
+          .map((s: any) => ({ slug: s.slug, name: s.name }));
+        setServiceCards(list);
+      } catch {
+        setServiceCards([]);
+      }
+    };
+    loadAreaServices();
+  }, [area.slug]);
+
   // Load real providers who serve this area from Supabase
   useEffect(() => {
     const loadProviders = async () => {
       try {
         const res = await listProvidersFromSupabase();
         const rows: any[] = res.data || [];
-        const filtered = rows.filter((p: any) => Array.isArray(p.areas) && p.areas.includes(area.slug));
+        const toArray = (val: any): any[] => {
+          if (Array.isArray(val)) return val;
+          if (typeof val === 'string') {
+            try { const parsed = JSON.parse(val); if (Array.isArray(parsed)) return parsed; } catch {}
+            return val.split(',').map(s => s.trim()).filter(Boolean);
+          }
+          return [];
+        };
+        const normalizeSlug = (v: string) => String(v).toLowerCase().replace(/\s+/g, '-');
+        const areaSlugSet = new Set([area.slug, area.name.toLowerCase(), normalizeSlug(area.name)]);
+        const filtered = rows.filter((p: any) => {
+          const pAreas = toArray(p.areas);
+          const asSlugs = pAreas.map((x: any) => normalizeSlug(String(x)));
+          const asNames = pAreas.map((x: any) => String(x).toLowerCase());
+          return asSlugs.some(s => areaSlugSet.has(s)) || asNames.some(n => areaSlugSet.has(n));
+        });
         setProviders(filtered);
       } catch {
         setProviders([]);
@@ -215,15 +255,15 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {services.slice(0, 12).map((service, index) => (
-            <div key={service.id}>
-              <Link href={`/${service.slug}/${area.slug}`}>
+          {serviceCards.map((service: any) => (
+            <div key={service.slug}>
+              <Link href={`/areas/${area.slug}/${service.slug}`}>
                 <Card className="bg-white/5 backdrop-blur-sm border border-white/10 hover:border-primary-500/50 transition-all duration-300 cursor-pointer group">
                   <CardContent className="p-4 text-center">
                     <h3 className="font-semibold text-white group-hover:text-primary-400 transition-colors text-sm">
                       {service.name}
                     </h3>
-                    <p className="text-white/60 text-xs mt-1">{service.averagePrice}</p>
+                    <p className="text-white/60 text-xs mt-1">AED —</p>
                     <div className="text-accent-400 text-xs mt-2">
                       Book in {area.name} →
                     </div>

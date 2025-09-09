@@ -1,8 +1,6 @@
 import { notFound } from 'next/navigation';
-import { 
-  getAreaBySlug, 
-  sampleProviders
-} from '@/lib/data';
+import { sampleProviders } from '@/lib/data';
+import { listAreasFromSupabase } from '@/lib/supabase';
 import { Metadata } from 'next';
 import AreaPageClient from './area-page-client';
 
@@ -14,7 +12,12 @@ interface AreaPageProps {
 
 export async function generateMetadata({ params }: AreaPageProps): Promise<Metadata> {
   const { area: areaSlug } = await params;
-  const area = getAreaBySlug(areaSlug);
+  let area: any = null;
+  try {
+    const res = await listAreasFromSupabase();
+    const rows: any[] = res.data || [];
+    area = rows.find(a => a.slug === areaSlug && a.status === 'active') || null;
+  } catch {}
   
   if (!area) {
     return {
@@ -73,7 +76,12 @@ export async function generateMetadata({ params }: AreaPageProps): Promise<Metad
 
 export default async function AreaPage({ params }: AreaPageProps) {
   const { area: areaSlug } = await params;
-  const area = getAreaBySlug(areaSlug);
+  let area: any = null;
+  try {
+    const res = await listAreasFromSupabase();
+    const rows: any[] = res.data || [];
+    area = rows.find(a => a.slug === areaSlug && a.status === 'active') || null;
+  } catch {}
 
   if (!area) {
     notFound();

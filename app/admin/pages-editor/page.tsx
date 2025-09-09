@@ -15,8 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { services, serviceCategories, areas as areasList } from '@/lib/data';
-import { listServicesFromSupabase } from '@/lib/supabase';
+import { services, serviceCategories } from '@/lib/data';
+import { listServicesFromSupabase, listAreasFromSupabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 interface PageContent {
@@ -169,7 +169,7 @@ export default function PagesEditor() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pageContent, setPageContent] = useState<HomePageContent | ServicesPageContent | ServiceDetailPageContent | any>(defaultHomePageContent);
-  const [pageType, setPageType] = useState<'home' | 'services' | 'category' | 'serviceDetail' | 'areas' | 'areaDetail'>('home');
+  const [pageType, setPageType] = useState<'home' | 'services' | 'category' | 'serviceDetail' | 'areas' | 'areaDetail' | 'serviceAreaDetail'>('home');
   const [metaData, setMetaData] = useState({
     slug: '',
     meta_title: "HOMIZON - Dubai's Premier Home Services Platform",
@@ -177,6 +177,7 @@ export default function PagesEditor() {
   });
   const { toast } = useToast();
   const [servicesDb, setServicesDb] = useState<{ slug: string; name: string }[]>([]);
+  const [areasDb, setAreasDb] = useState<{ slug: string; name: string; services?: string[] }[]>([]);
 
   useEffect(() => {
     loadPages();
@@ -192,7 +193,17 @@ export default function PagesEditor() {
         setServicesDb([]);
       }
     };
+    const loadAreas = async () => {
+      try {
+        const res = await listAreasFromSupabase();
+        const db = (res.data || []).filter((a: any) => a.status === 'active');
+        setAreasDb(db.map((a: any) => ({ slug: a.slug, name: a.name, services: a.services || [] })));
+      } catch {
+        setAreasDb([]);
+      }
+    };
     loadServices();
+    loadAreas();
   }, []);
 
   const loadPages = async () => {
@@ -284,29 +295,41 @@ export default function PagesEditor() {
         }
       } as any);
     } else if (page.page_slug && page.page_slug.startsWith('areas/')) {
-      setPageType('areaDetail');
+      // handle area detail pages already above; here we catch area-service pages under areas/{area}/{service}
+      const segments = page.page_slug.split('/');
+      if (segments.length === 3) {
+        setPageType('serviceAreaDetail');
+        const incoming = (page.content || {}) as any;
+        setPageContent({
+          hero: {
+            h1: incoming?.hero?.h1 || '{ Service } & Maintenance\n in { Location }',
+            description: incoming?.hero?.description || 'Find trusted { Service } professionals in { Location }. { number of provider for that location } verified providers with { rating for that area } average rating.'
+          },
+          about: {
+            h2: incoming?.about?.h2 || 'About { Service } & Maintenance in { Location }',
+            paragraph: incoming?.about?.paragraph || 'Professional air conditioning repair, maintenance, and installation services. A popular residential area in West Dubai with excellent amenities and family-friendly communities.'
+          },
+          providers: {
+            h2: incoming?.providers?.h2 || 'Available Providers',
+            paragraph: incoming?.providers?.paragraph || 'Choose from our network of verified { Service } & maintenance professionals in { Location }'
+          }
+        } as any);
+      }
+    } else if (page.page_slug && page.page_slug.startsWith('service-area/')) {
+      setPageType('serviceAreaDetail');
       const incoming = (page.content || {}) as any;
       setPageContent({
         hero: {
-          h1: incoming?.hero?.h1 || 'Home Services in\n{ Location }',
-          description: incoming?.hero?.description || 'A traditional neighborhood with local markets and cultural attractions. Connect with 2 verified professionals with an average rating of 4.8 stars.'
-        },
-        providers: {
-          h2: incoming?.providers?.h2 || '{ No. of providers } Service Providers in { Location }',
-          paragraph: incoming?.providers?.paragraph || 'Verified professionals ready to serve you with quality guaranteed'
+          h1: incoming?.hero?.h1 || '{ Service } & Maintenance\n in { Location }',
+          description: incoming?.hero?.description || 'Find trusted { Service } professionals in { Location }. { number of provider for that location } verified providers with { rating for that area } average rating.'
         },
         about: {
-          h2: incoming?.about?.h2 || 'About Home Services in { Location }',
-          paragraph: incoming?.about?.paragraph || 'Find professional Home Services services in this area. Our verified experts provide reliable, high-quality service with transparent pricing and guaranteed satisfaction.'
+          h2: incoming?.about?.h2 || 'About { Service } & Maintenance in { Location }',
+          paragraph: incoming?.about?.paragraph || 'Professional air conditioning repair, maintenance, and installation services. A popular residential area in West Dubai with excellent amenities and family-friendly communities.'
         },
-        faqs: {
-          h2: incoming?.faqs?.h2 || 'FAQs',
-          paragraph: incoming?.faqs?.paragraph || '',
-          items: Array.isArray(incoming?.faqs?.items) ? incoming.faqs.items : []
-        },
-        cta: {
-          h2: incoming?.cta?.h2 || "Need Home Services? We're Here to Help!",
-          paragraph: incoming?.cta?.paragraph || 'Get connected with verified service professionals. Compare quotes, read reviews, and book instantly.'
+        providers: {
+          h2: incoming?.providers?.h2 || 'Available Providers',
+          paragraph: incoming?.providers?.paragraph || 'Choose from our network of verified { Service } & maintenance professionals in { Location }'
         }
       } as any);
     } else if (page.page_slug && page.page_slug.startsWith('service-page/')) {
@@ -538,68 +561,60 @@ export default function PagesEditor() {
   const activeServiceSlugs = servicesDb.map(s => s.slug);
 
   // Virtual entries for each individual service detail page (only for active services in Supabase)
-  const serviceDetailVirtualPages: PageContent[] = servicesDb.map((svc: any) => ({
-    id: `service-page-${svc.slug}`,
-    page_slug: `service-page/${svc.slug}`,
-    content: {
-      hero: { h1: `${svc.name} in Dubai`, description: `${svc.description}. Professional, verified providers.` },
-      about: { h2: `About ${svc.name} in Dubai`, paragraph: '' },
-      why: { h2: `Why Choose ${svc.name} in Dubai?`, paragraph: '' },
-      faqs: { h2: 'Frequently Asked Questions', paragraph: '', items: [] },
-      cta: { h2: `Need ${svc.name}? We're Here to Help!`, paragraph: '' }
-    },
-    meta_title: `${svc.name} in Dubai | HOMIZON`,
-    meta_description: `${svc.description || ''}`,
-    updated_at: new Date().toISOString()
-  }));
+  // Hide service detail virtual pages entirely (not used on website)
+  const serviceDetailVirtualPages: PageContent[] = [];
 
   // Ensure Areas page appears in list (virtual entry if not yet saved)
-  const areasVirtualPage: PageContent = {
-    id: 'areas-page',
-    page_slug: 'areas',
-    content: {
-      hero: { h1: 'Service Areas\nAcross Dubai', description: 'Professional home services available in all major areas of Dubai. Find trusted experts in your neighborhood with fast response times and guaranteed quality.' },
-      featured: { h2: 'Featured Areas', paragraph: 'Most popular areas with highest service demand and fastest response times' },
-      coverage: { h2: 'Complete Dubai Coverage', paragraph: 'From luxury villas to high-rise apartments, we provide professional home services across all areas of Dubai with our network of verified experts.' },
-      emergency: { h2: '24/7 Emergency Services', paragraph: 'Urgent plumbing, electrical, or AC issues? Our emergency response team is available 24/7 across all major areas in Dubai with response times as fast as 1 hour.' }
-    },
-    meta_title: 'Service Areas across Dubai | HOMIZON',
-    meta_description: 'Browse all Dubai service areas and find verified professionals with fast response times.',
-    updated_at: new Date().toISOString()
-  };
+  // Removed areas virtual page: only show what exists in Supabase pages_content
 
   // Filter out CMS pages for services that are not present in Supabase
   const filteredCmsPages = pages.filter(p => {
-    if (!p.page_slug?.startsWith('service-page/')) return true;
-    const slug = p.page_slug.replace('service-page/', '');
-    return activeServiceSlugs.includes(slug);
+    if (p.page_slug?.startsWith('service-area/')) {
+      // Hide any legacy 'service-area/{service}/{area}' entries entirely
+      return false;
+    }
+    // Hide any service-page/{slug} entries entirely (not used on website)
+    if (p.page_slug?.startsWith('service-page/')) return false;
+    return true;
   });
 
   // Build virtual entries for per-location area detail pages
-  const areaDetailVirtualPages: PageContent[] = areasList.map(a => ({
-    id: `areas-${a.slug}`,
-    page_slug: `areas/${a.slug}`,
-    content: {
-      hero: { h1: `Home Services in\n${a.name}`, description: `${a.description} Connect with {providers} verified professionals with an average rating of 4.8 stars.` },
-      providers: { h2: `{ No. of providers } Service Providers in ${a.name}`, paragraph: 'Verified professionals ready to serve you with quality guaranteed' },
-      about: { h2: `About Home Services in ${a.name}`, paragraph: `Find professional Home Services services in ${a.name}. Our verified experts provide reliable, high-quality service with transparent pricing and guaranteed satisfaction.` },
-      faqs: { h2: 'FAQs', paragraph: '', items: [] },
-      cta: { h2: `Need Home Services in ${a.name}? We're Here to Help!`, paragraph: `Get connected with verified service professionals in ${a.name}. Compare quotes, read reviews, and book your service instantly.` }
-    },
-    meta_title: `Home Services in ${a.name} | HOMIZON`,
-    meta_description: `Find trusted home services in ${a.name}, Dubai.`,
-    updated_at: new Date().toISOString()
-  }));
+  const areaDetailVirtualPages: PageContent[] = [];
+
+  // Virtual entries for service-area pages for each area and popular services
+  const serviceAreaVirtualPages: PageContent[] = [];
+
+  // Exclude legacy service-area pages saved under pattern "{service}/{area}"
+  const serviceSlugs = services.map(s => s.slug);
+  const areaSlugs = areasDb.map(a => a.slug);
+  const furtherFilteredCmsPages = filteredCmsPages.filter(p => {
+    if (!p.page_slug) return true;
+    const parts = p.page_slug.split('/');
+    if (parts.length === 2 && serviceSlugs.includes(parts[0]) && areaSlugs.includes(parts[1])) {
+      return false;
+    }
+    // Enforce that any 'areas/{area}' page only appears if area exists in Supabase
+    if (parts[0] === 'areas' && parts.length === 2) {
+      return areaSlugs.includes(parts[1]);
+    }
+    // Enforce that any 'areas/{area}/{service}' page only appears if both area & service are active in Supabase
+    if (parts[0] === 'areas' && parts.length === 3) {
+      const [_, areaSlug, serviceSlug] = parts;
+      if (!areaSlugs.includes(areaSlug)) return false;
+      if (!activeServiceSlugs.includes(serviceSlug)) return false;
+      // Optional: if area has an explicit services[] list, only allow when included
+      const areaRecord = areasDb.find(a => a.slug === areaSlug);
+      if (areaRecord && Array.isArray(areaRecord.services) && areaRecord.services.length > 0) {
+        return (areaRecord.services as any).includes(serviceSlug);
+      }
+      return true;
+    }
+    return true;
+  });
 
   const mergedPages = [
-    // Always include Areas page first (virtual if missing)
-    ...(filteredCmsPages.some(p => p.page_slug === 'areas') ? [] : [areasVirtualPage]),
-    // Include per-location area pages if not present in CMS
-    ...areaDetailVirtualPages.filter(v => !filteredCmsPages.some(p => p.page_slug === v.page_slug)),
-    // Do not include category virtual pages; only show service pages that exist in Supabase
-    ...serviceDetailVirtualPages.filter(v => !filteredCmsPages.some(p => p.page_slug === v.page_slug)),
-    ...filteredCmsPages.filter(p => {
-      // additionally hide any services/{slug} pages not in Supabase
+    // Only show pages that actually exist in Supabase
+    ...furtherFilteredCmsPages.filter(p => {
       if (p.page_slug?.startsWith('services/')) {
         const slug = p.page_slug.replace('services/', '');
         return activeServiceSlugs.includes(slug);
@@ -777,6 +792,14 @@ export default function PagesEditor() {
                 <TabsTrigger value="about">About</TabsTrigger>
                 <TabsTrigger value="faqs">FAQs</TabsTrigger>
                 <TabsTrigger value="cta">CTA</TabsTrigger>
+                <TabsTrigger value="meta">Meta SEO</TabsTrigger>
+              </TabsList>
+            )}
+            {pageType === 'serviceAreaDetail' && (
+              <TabsList className="grid w-full grid-cols-4 bg-white/10">
+                <TabsTrigger value="hero">Hero</TabsTrigger>
+                <TabsTrigger value="about">About</TabsTrigger>
+                <TabsTrigger value="providers">Providers</TabsTrigger>
                 <TabsTrigger value="meta">Meta SEO</TabsTrigger>
               </TabsList>
             )}
@@ -1181,6 +1204,53 @@ export default function PagesEditor() {
                       <Textarea
                         value={(pageContent as any)?.emergency?.paragraph || ''}
                         onChange={(e)=>setPageContent(prev=>({ ...prev, emergency: { ...(prev as any).emergency, paragraph: e.target.value } }))}
+                        rows={3}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+              </>
+            )}
+
+            {pageType === 'serviceAreaDetail' && (
+              <>
+                <TabsContent value="about" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-white">About H2</Label>
+                      <Input
+                        value={(pageContent as any)?.about?.h2 || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, about: { ...(prev as any).about, h2: e.target.value } }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white">About Paragraph</Label>
+                      <Textarea
+                        value={(pageContent as any)?.about?.paragraph || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, about: { ...(prev as any).about, paragraph: e.target.value } }))}
+                        rows={4}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="providers" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-white">Providers H2</Label>
+                      <Input
+                        value={(pageContent as any)?.providers?.h2 || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, providers: { ...(prev as any).providers, h2: e.target.value } }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white">Providers Paragraph</Label>
+                      <Textarea
+                        value={(pageContent as any)?.providers?.paragraph || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, providers: { ...(prev as any).providers, paragraph: e.target.value } }))}
                         rows={3}
                         className="bg-white/5 border-white/20 text-white"
                       />

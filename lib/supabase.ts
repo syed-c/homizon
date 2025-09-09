@@ -685,3 +685,107 @@ export async function listAllPagesContentFromSupabase() {
 }
 
 
+// Areas (CMS) ---------------------------------------------------------------
+export type AreaRow = {
+  id: string;
+  name: string;
+  slug: string;
+  status: 'active' | 'inactive' | 'deleted';
+  featured?: boolean;
+  services?: string[] | null; // array of service slugs enabled for this area
+  sector?: string | null;
+  description?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export async function listAreasFromSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.warn('Supabase not configured; returning empty areas list');
+    return { data: [] as AreaRow[] };
+  }
+  const endpoint = `${SUPABASE_URL}/rest/v1/areas?select=*`;
+  const res = await fetch(endpoint, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    cache: 'no-store'
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Supabase areas fetch failed: HTTP ${res.status} ${text}`);
+  }
+  const data = await res.json();
+  return { data: (data || []) as AreaRow[] };
+}
+
+export async function createAreaInSupabase(name: string, slug: string, services: string[], featured: boolean) {
+  // Route creation through our server API so the service role key stays server-side and we can seed pages_content
+  const res = await fetch('/api/admin/areas', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, slug, services, featured })
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(`Create area failed: HTTP ${res.status} ${JSON.stringify(json)}`);
+  }
+  return { data: json.data as AreaRow };
+}
+
+export async function updateAreaStatusInSupabase(areaId: string, status: 'active' | 'inactive' | 'deleted') {
+  if (!SUPABASE_URL || (!SUPABASE_ANON_KEY && !SUPABASE_SERVICE_ROLE_KEY)) return { skipped: true };
+  const endpoint = `${SUPABASE_URL}/rest/v1/areas?id=eq.${encodeURIComponent(areaId)}`;
+  const apiKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+  const res = await fetch(endpoint, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: apiKey as string,
+      Authorization: `Bearer ${apiKey}`,
+      Prefer: 'return=representation'
+    },
+    body: JSON.stringify({ status, updated_at: new Date().toISOString() })
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Supabase update area failed: HTTP ${res.status} ${text}`);
+  }
+  const data = await res.json();
+  return { data: Array.isArray(data) ? data[0] : data };
+}
+
+export async function deleteAreaFromSupabase(areaId: string, slug?: string) {
+  // Route delete through our server API to enforce DB delete and page_content cleanup
+  const url = `/api/admin/areas?id=${encodeURIComponent(areaId)}${slug ? `&slug=${encodeURIComponent(slug)}` : ''}`;
+  const res = await fetch(url, { method: 'DELETE' });
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}));
+    throw new Error(`Delete area failed: HTTP ${res.status} ${JSON.stringify(json)}`);
+  }
+  return { success: true };
+}
+
+export async function updateAreaInSupabase(areaId: string, updates: Partial<AreaRow>) {
+  if (!SUPABASE_URL || (!SUPABASE_ANON_KEY && !SUPABASE_SERVICE_ROLE_KEY)) return { skipped: true };
+  const endpoint = `${SUPABASE_URL}/rest/v1/areas?id=eq.${encodeURIComponent(areaId)}`;
+  const apiKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+  const res = await fetch(endpoint, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: apiKey as string,
+      Authorization: `Bearer ${apiKey}`,
+      Prefer: 'return=representation'
+    },
+    body: JSON.stringify({
+      ...updates,
+      updated_at: new Date().toISOString()
+    })
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Supabase update area failed: HTTP ${res.status} ${text}`);
+  }
+  const data = await res.json();
+  return { data: Array.isArray(data) ? data[0] : data };
+}
+
