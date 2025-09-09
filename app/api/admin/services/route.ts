@@ -84,9 +84,15 @@ export async function DELETE(req: Request) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     const slug = searchParams.get('slug') || undefined;
-    if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
+    if (!id && !slug) return NextResponse.json({ error: 'id or slug is required' }, { status: 400 });
 
-    const delRes = await fetch(`${SUPABASE_URL}/rest/v1/services?id=eq.${encodeURIComponent(id)}`, {
+    // Determine delete filter (prefer UUID id, fallback to slug)
+    const byId = isUuid(id || '');
+    const deleteUrl = byId
+      ? `${SUPABASE_URL}/rest/v1/services?id=eq.${encodeURIComponent(id as string)}`
+      : `${SUPABASE_URL}/rest/v1/services?slug=eq.${encodeURIComponent(slug || (id as string))}`;
+
+    const delRes = await fetch(deleteUrl, {
       method: 'DELETE',
       headers: {
         apikey: SERVICE_KEY,
@@ -100,9 +106,10 @@ export async function DELETE(req: Request) {
     }
 
     // Remove page content
-    if (slug) {
+    if (slug || (!byId && id)) {
       try {
-        await fetch(`${SUPABASE_URL}/rest/v1/pages_content?page_slug=eq.${encodeURIComponent(`service-page/${slug}`)}`, {
+        const s = slug || (id as string);
+        await fetch(`${SUPABASE_URL}/rest/v1/pages_content?page_slug=eq.${encodeURIComponent(`service-page/${s}`)}`, {
           method: 'DELETE',
           headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, Prefer: 'return=minimal' }
         });
