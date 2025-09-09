@@ -17,11 +17,10 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { 
   services,
-  sampleProviders,
   Service,
-  Provider,
   Area
 } from '@/lib/data';
+import { listProvidersFromSupabase, getPageContentFromSupabase } from '@/lib/supabase';
 import { useSettings } from '@/lib/settings-context';
 
 interface AreaPageClientProps {
@@ -32,38 +31,47 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
   const [sortBy, setSortBy] = useState('rating');
   const [filterBy, setFilterBy] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [customContent, setCustomContent] = useState<any>(null);
+  const [cms, setCms] = useState<any>(null);
+  const [providers, setProviders] = useState<any[]>([]);
   const { settings } = useSettings();
 
   console.log("Area page loaded:", { areaSlug: area.slug });
 
-  // Fetch custom content from admin
+  // Fetch CMS content from pages_content using slug pattern: areas/{areaSlug}
   useEffect(() => {
-    const fetchCustomContent = async () => {
+    const loadCms = async () => {
       try {
-        const pageId = `area-${area.slug}`;
-        const response = await fetch(`/api/admin/pages?id=${pageId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setCustomContent(data);
-        }
-      } catch (error) {
-        console.log('No custom content found for this page');
-      }
+        const res = await getPageContentFromSupabase(`areas/${area.slug}`);
+        const content = (res as any)?.data?.content;
+        setCms(content || null);
+      } catch {}
     };
-    fetchCustomContent();
+    loadCms();
   }, [area.slug]);
 
-  // Get all providers who serve this area
-  const providers = sampleProviders.filter(provider => 
-    provider.isApproved && provider.areas.includes(area.slug)
-  );
+  // Load real providers who serve this area from Supabase
+  useEffect(() => {
+    const loadProviders = async () => {
+      try {
+        const res = await listProvidersFromSupabase();
+        const rows: any[] = res.data || [];
+        const filtered = rows.filter((p: any) => Array.isArray(p.areas) && p.areas.includes(area.slug));
+        setProviders(filtered);
+      } catch {
+        setProviders([]);
+      }
+    };
+    loadProviders();
+  }, [area.slug]);
 
   // Filter and sort providers
-  let filteredProviders = providers.filter(provider => {
-    const matchesSearch = provider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         provider.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         provider.description.toLowerCase().includes(searchTerm.toLowerCase());
+  let filteredProviders = providers.filter((provider: any) => {
+    const name = (provider.name || '').toLowerCase();
+    const company = (provider.company || '').toLowerCase();
+    const description = (provider.description || '').toLowerCase();
+    const matchesSearch = name.includes(searchTerm.toLowerCase()) ||
+                         company.includes(searchTerm.toLowerCase()) ||
+                         description.includes(searchTerm.toLowerCase());
     
     if (filterBy === 'emergency') return matchesSearch && provider.availability.emergency;
     if (filterBy === 'top-rated') return matchesSearch && provider.rating >= 4.5;
@@ -71,15 +79,15 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
     return matchesSearch;
   });
 
-  filteredProviders.sort((a, b) => {
-    if (sortBy === 'rating') return b.rating - a.rating;
-    if (sortBy === 'experience') return b.experience - a.experience;
-    if (sortBy === 'reviews') return b.reviewCount - a.reviewCount;
+  filteredProviders.sort((a: any, b: any) => {
+    if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+    if (sortBy === 'experience') return (b.experience || 0) - (a.experience || 0);
+    if (sortBy === 'reviews') return (b.reviewcount || b.reviewCount || 0) - (a.reviewcount || a.reviewCount || 0);
     return 0;
   });
 
-  const averageRating = providers.reduce((sum, p) => sum + p.rating, 0) / providers.length || 0;
-  const emergencyProviders = providers.filter(p => p.availability.emergency).length;
+  const averageRating = providers.reduce((sum, p) => sum + (p.rating || 0), 0) / (providers.length || 1);
+  const emergencyProviders = providers.filter(p => p.availability?.emergency).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 text-white overflow-x-hidden">
@@ -112,18 +120,36 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
             </div>
 
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-              <span className="bg-gradient-to-r from-white to-primary-200 bg-clip-text text-transparent">
-                Home Services in
-              </span>
-              <br />
-              <span className="bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent">
-                {area.name}
-              </span>
+              {(() => {
+                const raw = cms?.hero?.h1 || `Home Services in\n${area.name}`;
+                const processed = raw
+                  .replace('{ Location }', area.name)
+                  .replace('{Location}', area.name)
+                  .replace('{ location }', area.name)
+                  .replace('{location}', area.name);
+                const parts = processed.split('\n');
+                return (
+                  <>
+                    <span className="bg-gradient-to-r from-white to-primary-200 bg-clip-text text-transparent">
+                      {parts[0]}
+                    </span>
+                    <br />
+                    <span className="bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent">
+                      {parts[1] || ''}
+                    </span>
+                  </>
+                );
+              })()}
             </h1>
             
             <p className="text-xl text-white/70 mb-8 max-w-3xl mx-auto leading-relaxed">
-              {area.description} Connect with {providers.length} verified professionals 
-              with an average rating of {averageRating.toFixed(1)} stars.
+              {(() => {
+                const template = cms?.hero?.description || `${area.description} Connect with {providers} verified professionals with an average rating of {rating} stars.`;
+                return template
+                  .replace('{providers}', String(providers.length))
+                  .replace('{reviews}', averageRating.toFixed(1))
+                  .replace('{rating}', averageRating.toFixed(1));
+              })()}
             </p>
 
             {/* Quick Stats */}
@@ -140,10 +166,7 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
                 <div className="text-2xl font-bold text-primary-400">{emergencyProviders}</div>
                 <div className="text-white/60 text-sm">Emergency Available</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-accent-400">{area.subAreas.length}</div>
-                <div className="text-white/60 text-sm">Sub Areas</div>
-              </div>
+              {/* Removed Sub Areas counter to align with simplified layout */}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -212,33 +235,7 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
         </div>
       </div>
 
-      {/* Sub Areas */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white mb-4">Sub Areas in {area.name}</h2>
-          <p className="text-white/60">Find services in specific neighborhoods</p>
-        </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {area.subAreas.map((subArea, index) => (
-            <div key={subArea.id}>
-              <Link href={`/areas/${area.slug}/${subArea.slug}`}>
-                <Card className="bg-white/5 backdrop-blur-sm border border-white/10 hover:border-primary-500/50 transition-all duration-300 cursor-pointer group">
-                  <CardContent className="p-4 text-center">
-                    <h3 className="font-semibold text-white group-hover:text-primary-400 transition-colors">
-                      {subArea.name}
-                    </h3>
-                    <p className="text-white/60 text-sm mt-1">{subArea.description}</p>
-                    <div className="text-accent-400 text-xs mt-2">
-                      View Services →
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Sub Areas section removed as requested */}
 
       {/* Filters and Search */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
@@ -284,10 +281,10 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-white mb-4">
-            {filteredProviders.length} Service Providers in {area.name}
+            {cms?.providers?.h2 || `${filteredProviders.length} Service Providers in ${area.name}`}
           </h2>
           <p className="text-white/60 text-lg">
-            Verified professionals ready to serve you with quality guaranteed
+            {cms?.providers?.paragraph || 'Verified professionals ready to serve you with quality guaranteed'}
           </p>
         </div>
 
@@ -320,7 +317,7 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
       </div>
 
       {/* Custom Content Section */}
-      {customContent && (customContent.customHeading || customContent.customContent) && (
+      {(cms?.about?.h2 || cms?.about?.paragraph) && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
           <div className="bg-gradient-to-r from-primary-900/30 to-accent-900/30 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
             <div className="flex items-center space-x-3 mb-6">
@@ -329,18 +326,12 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-white">
-                  {customContent.customHeading || `About Home Services in ${area.name}`}
+                  {cms?.about?.h2 || `About Home Services in ${area.name}`}
                 </h2>
                 <p className="text-white/60 text-sm">Local insights and expert information</p>
               </div>
             </div>
-            
-            {customContent.customContent && (
-              <div 
-                className="prose prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: customContent.customContent }}
-              />
-            )}
+            <p className="text-white/70 leading-relaxed">{cms?.about?.paragraph || ''}</p>
             
             <div className="mt-6 flex items-center space-x-4 text-sm text-white/60">
               <div className="flex items-center space-x-1">
@@ -349,7 +340,7 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
               </div>
               <div className="flex items-center space-x-1">
                 <Clock className="h-4 w-4 text-blue-400" />
-                <span>Updated {customContent.lastModified || 'recently'}</span>
+                <span>Updated {cms?.lastModified || 'recently'}</span>
               </div>
               <div className="flex items-center space-x-1">
                 <Users className="h-4 w-4 text-purple-400" />
@@ -363,12 +354,12 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
       {/* FAQ Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-white mb-4">Frequently Asked Questions</h2>
-          <p className="text-white/60 text-lg">Common questions about services in {area.name}</p>
+          <h2 className="text-3xl font-bold text-white mb-4">{cms?.faqs?.h2 || 'Frequently Asked Questions'}</h2>
+          <p className="text-white/60 text-lg">{cms?.faqs?.paragraph || `Common questions about services in ${area.name}`}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {(customContent?.customFAQs || [
+          {(cms?.faqs?.items || [
             {
               question: `How quickly can I get a service provider in ${area.name}?`,
               answer: `Most service providers in ${area.name} can respond within 30-60 minutes. For emergency services, response time is typically 15-30 minutes.`
@@ -416,11 +407,10 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
         <div className="text-center mt-12">
           <div className="bg-gradient-to-r from-primary-900/50 to-accent-900/50 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
             <h3 className="text-2xl font-bold text-white mb-4">
-              Need Home Services in {area.name}? We're Here to Help!
+              {cms?.cta?.h2 || `Need Home Services in ${area.name}? We're Here to Help!`}
             </h3>
             <p className="text-white/70 mb-6 max-w-2xl mx-auto">
-              Get connected with verified service professionals in {area.name}. 
-              Compare quotes, read reviews, and book your service instantly.
+              {cms?.cta?.paragraph || `Get connected with verified service professionals in ${area.name}. Compare quotes, read reviews, and book your service instantly.`}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href={`/book?area=${area.slug}`}>
@@ -444,7 +434,7 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
 }
 
 function ProviderLineItem({ provider, area, index }: { 
-  provider: Provider; 
+  provider: any; 
   area: Area; 
   index: number; 
 }) {
@@ -456,7 +446,7 @@ function ProviderLineItem({ provider, area, index }: {
           {/* Profile Image - Smaller on mobile */}
           <div className="relative flex-shrink-0">
             <img 
-              src={provider.profileImage || 'https://images.pexels.com/photos/4050291/pexels-photo-4050291.jpeg?auto=compress&cs=tinysrgb&h=80&w=80'} 
+              src={provider.profileImage || provider.profileimage || provider.avatar_url || provider.photo_url || 'https://images.pexels.com/photos/4050291/pexels-photo-4050291.jpeg?auto=compress&cs=tinysrgb&h=80&w=80'} 
               alt={provider.name}
               className="w-12 h-12 rounded-full object-cover border-2 border-primary-500/50"
             />
@@ -594,14 +584,7 @@ function ProviderLineItem({ provider, area, index }: {
                 Book Now
               </Button>
             </Link>
-            
-            <Button variant="outline" size="icon" className="text-white border-white/20 hover:bg-white/10 rounded-xl">
-              <MessageSquare className="h-4 w-4" />
-            </Button>
-            
-            <Button variant="outline" size="icon" className="text-white border-white/20 hover:bg-white/10 rounded-xl">
-              <Phone className="h-4 w-4" />
-            </Button>
+            {/* Message/Call buttons removed as requested */}
           </div>
         </div>
       </div>

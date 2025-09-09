@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { services, serviceCategories } from '@/lib/data';
+import { services, serviceCategories, areas as areasList } from '@/lib/data';
 import { listServicesFromSupabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -168,8 +168,8 @@ export default function PagesEditor() {
   const [editingPage, setEditingPage] = useState<PageContent | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [pageContent, setPageContent] = useState<HomePageContent | ServicesPageContent | ServiceDetailPageContent>(defaultHomePageContent);
-  const [pageType, setPageType] = useState<'home' | 'services' | 'category' | 'serviceDetail'>('home');
+  const [pageContent, setPageContent] = useState<HomePageContent | ServicesPageContent | ServiceDetailPageContent | any>(defaultHomePageContent);
+  const [pageType, setPageType] = useState<'home' | 'services' | 'category' | 'serviceDetail' | 'areas' | 'areaDetail'>('home');
   const [metaData, setMetaData] = useState({
     slug: '',
     meta_title: "HOMIZON - Dubai's Premier Home Services Platform",
@@ -262,6 +262,53 @@ export default function PagesEditor() {
         }
       };
       setPageContent(merged);
+    } else if (page.page_slug === 'areas') {
+      setPageType('areas');
+      const incoming = (page.content || {}) as any;
+      setPageContent({
+        hero: {
+          h1: incoming?.hero?.h1 || 'Service Areas\nAcross Dubai',
+          description: incoming?.hero?.description || 'Professional home services available in all major areas of Dubai. Find trusted experts in your neighborhood with fast response times and guaranteed quality.'
+        },
+        featured: {
+          h2: incoming?.featured?.h2 || 'Featured Areas',
+          paragraph: incoming?.featured?.paragraph || 'Most popular areas with highest service demand and fastest response times'
+        },
+        coverage: {
+          h2: incoming?.coverage?.h2 || 'Complete Dubai Coverage',
+          paragraph: incoming?.coverage?.paragraph || 'From luxury villas to high-rise apartments, we provide professional home services across all areas of Dubai with our network of verified experts.'
+        },
+        emergency: {
+          h2: incoming?.emergency?.h2 || '24/7 Emergency Services',
+          paragraph: incoming?.emergency?.paragraph || 'Urgent plumbing, electrical, or AC issues? Our emergency response team is available 24/7 across all major areas in Dubai with response times as fast as 1 hour.'
+        }
+      } as any);
+    } else if (page.page_slug && page.page_slug.startsWith('areas/')) {
+      setPageType('areaDetail');
+      const incoming = (page.content || {}) as any;
+      setPageContent({
+        hero: {
+          h1: incoming?.hero?.h1 || 'Home Services in\n{ Location }',
+          description: incoming?.hero?.description || 'A traditional neighborhood with local markets and cultural attractions. Connect with 2 verified professionals with an average rating of 4.8 stars.'
+        },
+        providers: {
+          h2: incoming?.providers?.h2 || '{ No. of providers } Service Providers in { Location }',
+          paragraph: incoming?.providers?.paragraph || 'Verified professionals ready to serve you with quality guaranteed'
+        },
+        about: {
+          h2: incoming?.about?.h2 || 'About Home Services in { Location }',
+          paragraph: incoming?.about?.paragraph || 'Find professional Home Services services in this area. Our verified experts provide reliable, high-quality service with transparent pricing and guaranteed satisfaction.'
+        },
+        faqs: {
+          h2: incoming?.faqs?.h2 || 'FAQs',
+          paragraph: incoming?.faqs?.paragraph || '',
+          items: Array.isArray(incoming?.faqs?.items) ? incoming.faqs.items : []
+        },
+        cta: {
+          h2: incoming?.cta?.h2 || "Need Home Services? We're Here to Help!",
+          paragraph: incoming?.cta?.paragraph || 'Get connected with verified service professionals. Compare quotes, read reviews, and book instantly.'
+        }
+      } as any);
     } else if (page.page_slug && page.page_slug.startsWith('service-page/')) {
       setPageType('serviceDetail');
       const incoming = (page.content || {}) as any;
@@ -506,6 +553,21 @@ export default function PagesEditor() {
     updated_at: new Date().toISOString()
   }));
 
+  // Ensure Areas page appears in list (virtual entry if not yet saved)
+  const areasVirtualPage: PageContent = {
+    id: 'areas-page',
+    page_slug: 'areas',
+    content: {
+      hero: { h1: 'Service Areas\nAcross Dubai', description: 'Professional home services available in all major areas of Dubai. Find trusted experts in your neighborhood with fast response times and guaranteed quality.' },
+      featured: { h2: 'Featured Areas', paragraph: 'Most popular areas with highest service demand and fastest response times' },
+      coverage: { h2: 'Complete Dubai Coverage', paragraph: 'From luxury villas to high-rise apartments, we provide professional home services across all areas of Dubai with our network of verified experts.' },
+      emergency: { h2: '24/7 Emergency Services', paragraph: 'Urgent plumbing, electrical, or AC issues? Our emergency response team is available 24/7 across all major areas in Dubai with response times as fast as 1 hour.' }
+    },
+    meta_title: 'Service Areas across Dubai | HOMIZON',
+    meta_description: 'Browse all Dubai service areas and find verified professionals with fast response times.',
+    updated_at: new Date().toISOString()
+  };
+
   // Filter out CMS pages for services that are not present in Supabase
   const filteredCmsPages = pages.filter(p => {
     if (!p.page_slug?.startsWith('service-page/')) return true;
@@ -513,7 +575,27 @@ export default function PagesEditor() {
     return activeServiceSlugs.includes(slug);
   });
 
+  // Build virtual entries for per-location area detail pages
+  const areaDetailVirtualPages: PageContent[] = areasList.map(a => ({
+    id: `areas-${a.slug}`,
+    page_slug: `areas/${a.slug}`,
+    content: {
+      hero: { h1: `Home Services in\n${a.name}`, description: `${a.description} Connect with {providers} verified professionals with an average rating of 4.8 stars.` },
+      providers: { h2: `{ No. of providers } Service Providers in ${a.name}`, paragraph: 'Verified professionals ready to serve you with quality guaranteed' },
+      about: { h2: `About Home Services in ${a.name}`, paragraph: `Find professional Home Services services in ${a.name}. Our verified experts provide reliable, high-quality service with transparent pricing and guaranteed satisfaction.` },
+      faqs: { h2: 'FAQs', paragraph: '', items: [] },
+      cta: { h2: `Need Home Services in ${a.name}? We're Here to Help!`, paragraph: `Get connected with verified service professionals in ${a.name}. Compare quotes, read reviews, and book your service instantly.` }
+    },
+    meta_title: `Home Services in ${a.name} | HOMIZON`,
+    meta_description: `Find trusted home services in ${a.name}, Dubai.`,
+    updated_at: new Date().toISOString()
+  }));
+
   const mergedPages = [
+    // Always include Areas page first (virtual if missing)
+    ...(filteredCmsPages.some(p => p.page_slug === 'areas') ? [] : [areasVirtualPage]),
+    // Include per-location area pages if not present in CMS
+    ...areaDetailVirtualPages.filter(v => !filteredCmsPages.some(p => p.page_slug === v.page_slug)),
     // Do not include category virtual pages; only show service pages that exist in Supabase
     ...serviceDetailVirtualPages.filter(v => !filteredCmsPages.some(p => p.page_slug === v.page_slug)),
     ...filteredCmsPages.filter(p => {
@@ -669,6 +751,24 @@ export default function PagesEditor() {
               <TabsList className="grid w-full grid-cols-2 bg-white/10">
                 <TabsTrigger value="hero">Hero</TabsTrigger>
                 <TabsTrigger value="meta">Meta SEO</TabsTrigger>
+              </TabsList>
+            )}
+            {pageType === 'areas' && (
+              <TabsList className="grid w-full grid-cols-5 bg-white/10">
+                <TabsTrigger value="hero">Hero</TabsTrigger>
+                <TabsTrigger value="featured">Featured</TabsTrigger>
+                <TabsTrigger value="coverage">Coverage</TabsTrigger>
+                <TabsTrigger value="emergency">Emergency</TabsTrigger>
+                <TabsTrigger value="meta">Meta SEO</TabsTrigger>
+              </TabsList>
+            )}
+            {pageType === 'areaDetail' && (
+              <TabsList className="grid w-full grid-cols-5 bg-white/10">
+                <TabsTrigger value="hero">Hero</TabsTrigger>
+                <TabsTrigger value="providers">Providers</TabsTrigger>
+                <TabsTrigger value="about">About</TabsTrigger>
+                <TabsTrigger value="faqs">FAQs</TabsTrigger>
+                <TabsTrigger value="cta">CTA</TabsTrigger>
               </TabsList>
             )}
             {pageType === 'serviceDetail' && (
@@ -841,6 +941,149 @@ export default function PagesEditor() {
                 </div>
               </TabsContent>
             )}
+
+            {/* Area Detail sections */}
+            {pageType === 'areaDetail' && (
+              <>
+                <TabsContent value="providers" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-white">Providers H2</Label>
+                      <Input
+                        value={(pageContent as any)?.providers?.h2 || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, providers: { ...(prev as any).providers, h2: e.target.value } }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white">Providers Paragraph</Label>
+                      <Textarea
+                        value={(pageContent as any)?.providers?.paragraph || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, providers: { ...(prev as any).providers, paragraph: e.target.value } }))}
+                        rows={3}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="about" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-white">About H2</Label>
+                      <Input
+                        value={(pageContent as any)?.about?.h2 || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, about: { ...(prev as any).about, h2: e.target.value } }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white">About Paragraph</Label>
+                      <Textarea
+                        value={(pageContent as any)?.about?.paragraph || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, about: { ...(prev as any).about, paragraph: e.target.value } }))}
+                        rows={4}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="faqs" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-white">FAQs H2</Label>
+                      <Input
+                        value={(pageContent as any)?.faqs?.h2 || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, faqs: { ...(prev as any).faqs, h2: e.target.value } }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white">FAQs Paragraph</Label>
+                      <Textarea
+                        value={(pageContent as any)?.faqs?.paragraph || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, faqs: { ...(prev as any).faqs, paragraph: e.target.value } }))}
+                        rows={3}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-white">FAQ Items</Label>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-white border-white/20"
+                        onClick={() => setPageContent(prev => ({
+                          ...prev,
+                          faqs: {
+                            ...(prev as any).faqs,
+                            items: [ ...(((prev as any).faqs?.items) || []), { question: '', answer: '' } ]
+                          }
+                        }))}
+                      >
+                        <Plus className="h-4 w-4 mr-2" /> Add FAQ
+                      </Button>
+                    </div>
+                    {(((pageContent as any)?.faqs?.items) || []).map((item: any, i: number) => (
+                      <div key={i} className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-3">
+                        <div>
+                          <Label className="text-white text-sm">Question</Label>
+                          <Input
+                            value={item.question}
+                            onChange={(e) => setPageContent(prev => ({
+                              ...prev,
+                              faqs: {
+                                ...(prev as any).faqs,
+                                items: ((prev as any).faqs.items).map((x: any, idx: number) => idx === i ? { ...x, question: e.target.value } : x)
+                              }
+                            }))}
+                            className="bg-white/5 border-white/20 text-white"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-white text-sm">Answer</Label>
+                          <Textarea
+                            value={item.answer}
+                            onChange={(e) => setPageContent(prev => ({
+                              ...prev,
+                              faqs: {
+                                ...(prev as any).faqs,
+                                items: ((prev as any).faqs.items).map((x: any, idx: number) => idx === i ? { ...x, answer: e.target.value } : x)
+                              }
+                            }))}
+                            rows={3}
+                            className="bg-white/5 border-white/20 text-white"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="cta" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-white">CTA H2</Label>
+                      <Input
+                        value={(pageContent as any)?.cta?.h2 || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, cta: { ...(prev as any).cta, h2: e.target.value } }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white">CTA Paragraph</Label>
+                      <Textarea
+                        value={(pageContent as any)?.cta?.paragraph || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, cta: { ...(prev as any).cta, paragraph: e.target.value } }))}
+                        rows={3}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+              </>
+            )}
             
             {/* CTA Section - Services page only */}
             {pageType === 'services' && (
@@ -877,6 +1120,74 @@ export default function PagesEditor() {
                   </div>
                 </div>
               </TabsContent>
+            )}
+
+            {pageType === 'areas' && (
+              <>
+                <TabsContent value="featured" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-white">Featured H2</Label>
+                      <Input
+                        value={(pageContent as any)?.featured?.h2 || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, featured: { ...(prev as any).featured, h2: e.target.value } }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white">Featured Paragraph</Label>
+                      <Textarea
+                        value={(pageContent as any)?.featured?.paragraph || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, featured: { ...(prev as any).featured, paragraph: e.target.value } }))}
+                        rows={3}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="coverage" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-white">Coverage H2</Label>
+                      <Input
+                        value={(pageContent as any)?.coverage?.h2 || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, coverage: { ...(prev as any).coverage, h2: e.target.value } }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white">Coverage Paragraph</Label>
+                      <Textarea
+                        value={(pageContent as any)?.coverage?.paragraph || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, coverage: { ...(prev as any).coverage, paragraph: e.target.value } }))}
+                        rows={3}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="emergency" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-white">Emergency H2</Label>
+                      <Input
+                        value={(pageContent as any)?.emergency?.h2 || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, emergency: { ...(prev as any).emergency, h2: e.target.value } }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white">Emergency Paragraph</Label>
+                      <Textarea
+                        value={(pageContent as any)?.emergency?.paragraph || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, emergency: { ...(prev as any).emergency, paragraph: e.target.value } }))}
+                        rows={3}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+              </>
             )}
 
             {/* Popular Services Section (Home only) */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   MapPin, Star, Clock, Phone, Search, Filter, Users, 
@@ -14,11 +14,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Link from 'next/link';
 import { areas } from '@/lib/data';
 import { useSettings } from '@/lib/settings-context';
+import { getPageContentFromSupabase } from '@/lib/supabase';
+import { listProvidersFromSupabase, listLeadsFromSupabase } from '@/lib/supabase';
 
 export default function AreasPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('popular');
+  const [sortBy, setSortBy] = useState('alphabetical');
   const { settings } = useSettings();
+  const [cms, setCms] = useState<any>(null);
 
   console.log("Areas page loaded");
   console.log("Search query:", searchQuery);
@@ -40,7 +43,8 @@ export default function AreasPage() {
     return imageMap[areaName] || 'https://images.pexels.com/photos/1134176/pexels-photo-1134176.jpeg?auto=compress&cs=tinysrgb&h=300&w=400';
   };
 
-  const dubaiAreas = areas.map(area => ({
+  // Generate once to keep Featured/All Areas stable
+  const dubaiAreas = useMemo(() => areas.map(area => ({
     ...area,
     serviceProviders: Math.floor(Math.random() * 30) + 15,
     avgResponseTime: `${Math.floor(Math.random() * 30) + 20} mins`,
@@ -50,24 +54,123 @@ export default function AreasPage() {
     featured: Math.random() > 0.7,
     image: getAreaImage(area.name),
     popularServices: ['AC Repair', 'Deep Cleaning', 'Plumbing', 'Electrical']
-  }));
+  })), []);
+
+  // Load CMS content for Areas page (slug: 'areas')
+  useEffect(() => {
+    const loadCms = async () => {
+      try {
+        const res = await getPageContentFromSupabase('areas');
+        const content = (res as any)?.data?.content;
+        if (content) setCms(content);
+      } catch {}
+    };
+    loadCms();
+  }, []);
 
   const filteredAreas = dubaiAreas.filter(area =>
     area.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     area.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Stable alphabetical ordering used for All Areas; user can still change sort via UI
   const sortedAreas = [...filteredAreas].sort((a, b) => {
     switch (sortBy) {
       case 'popular': return b.totalBookings - a.totalBookings;
       case 'rating': return b.rating - a.rating;
       case 'response-time': return parseInt(a.avgResponseTime) - parseInt(b.avgResponseTime);
       case 'providers': return b.serviceProviders - a.serviceProviders;
-      default: return 0;
+      case 'alphabetical':
+      default:
+        return a.name.localeCompare(b.name);
     }
   });
 
   const featuredAreas = sortedAreas.filter(area => area.featured);
+  const [carouselStart, setCarouselStart] = useState(0);
+  const step = 2; // scroll two at a time
+  const visibleCount = 6; // show 6 cards at once
+
+  const nextSlide = () => {
+    if (featuredAreas.length === 0) return;
+    setCarouselStart(prev => (prev + step) % featuredAreas.length);
+  };
+
+  const prevSlide = () => {
+    if (featuredAreas.length === 0) return;
+    setCarouselStart(prev => (prev - step + featuredAreas.length) % featuredAreas.length);
+  };
+
+  useEffect(() => {
+    if (featuredAreas.length <= step) return;
+    const id = setInterval(() => nextSlide(), 5000);
+    return () => clearInterval(id);
+  }, [featuredAreas.length]);
+
+  const getVisibleAreas = () => {
+    if (featuredAreas.length <= visibleCount) return featuredAreas;
+    const out: typeof featuredAreas = [] as any;
+    for (let i = 0; i < visibleCount; i++) {
+      out.push(featuredAreas[(carouselStart + i) % featuredAreas.length]);
+    }
+    return out;
+  };
+
+  // Dynamic stats for All Areas (providers, bookings, response time)
+  const [areaStats, setAreaStats] = useState<Record<string, { providers: number; bookings: number; responseMins: number }>>({});
+  const [areasPage, setAreasPage] = useState(1);
+  const areasPerPage = 12;
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const [provRes, leadsRes] = await Promise.all([
+          listProvidersFromSupabase(),
+          listLeadsFromSupabase()
+        ]);
+        const providers: any[] = provRes.data || [];
+        const leads: any[] = leadsRes.data || [];
+        const nameToSlug: Record<string, string> = {};
+        areas.forEach(a => { nameToSlug[a.name] = a.slug; });
+
+        const stats: Record<string, { providers: number; bookings: number; responseMins: number; _samples: number; _sum: number }>
+          = {} as any;
+        areas.forEach(a => { stats[a.slug] = { providers: 0, bookings: 0, responseMins: 0, _samples: 0, _sum: 0 }; });
+
+        providers.forEach(p => {
+          if (Array.isArray(p.areas)) {
+            p.areas.forEach((slug: string) => {
+              if (stats[slug]) stats[slug].providers += 1;
+            });
+          }
+        });
+
+        leads.forEach(l => {
+          const slug = nameToSlug[l.area] || '';
+          if (slug && stats[slug]) {
+            stats[slug].bookings += 1;
+            const created = new Date(l.createdat || l.created_at || l.createdAt || 0).getTime();
+            const updated = new Date(l.updatedat || l.updated_at || l.updatedAt || 0).getTime();
+            if (created && updated && updated > created) {
+              stats[slug]._samples += 1;
+              stats[slug]._sum += Math.round((updated - created) / 60000);
+            }
+          }
+        });
+
+        Object.keys(stats).forEach(slug => {
+          const s = stats[slug];
+          s.responseMins = s._samples > 0 ? Math.max(1, Math.round(s._sum / s._samples)) : 30;
+          delete (s as any)._sum; delete (s as any)._samples;
+        });
+
+        setAreaStats(stats);
+      } catch {
+        setAreaStats({});
+      }
+    };
+    loadStats();
+  }, []);
   const otherAreas = sortedAreas.filter(area => !area.featured);
 
   return (
@@ -83,17 +186,16 @@ export default function AreasPage() {
           <div className="text-center mb-12">
             <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight" data-macaly="areas-hero-title">
               <span className="bg-gradient-to-r from-white to-neon-blue bg-clip-text text-transparent">
-                Service Areas
+                {(cms?.hero?.h1 || 'Service Areas\nAcross Dubai').split('\n')[0]}
               </span>
               <br />
               <span className="bg-gradient-to-r from-neon-blue to-neon-green bg-clip-text text-transparent">
-                Across Dubai
+                {(cms?.hero?.h1 || 'Service Areas\nAcross Dubai').split('\n')[1] || ''}
               </span>
             </h1>
             
             <p className="text-xl text-white/70 mb-12 max-w-4xl mx-auto leading-relaxed" data-macaly="areas-hero-description">
-              Professional home services available in all major areas of Dubai. 
-              Find trusted experts in your neighborhood with fast response times and guaranteed quality.
+              {cms?.hero?.description || 'Professional home services available in all major areas of Dubai. Find trusted experts in your neighborhood with fast response times and guaranteed quality.'}
             </p>
 
             {/* Search and Filter */}
@@ -129,14 +231,23 @@ export default function AreasPage() {
               </div>
             </div>
 
-            {/* Quick Stats */}
+            {/* Quick Stats - dynamic aggregates */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-              {[
-                { icon: MapPin, label: 'Areas Covered', value: '25+' },
-                { icon: Users, label: 'Service Providers', value: '300+' },
-                { icon: Clock, label: 'Avg Response', value: '30 mins' },
-                { icon: Star, label: 'Customer Rating', value: '4.8/5' }
-              ].map((stat, index) => (
+              {(() => {
+                const totalProviders = Object.values(areaStats).reduce((sum: number, s: any) => sum + (s?.providers || 0), 0);
+                const avgResponse = (() => {
+                  const values = Object.values(areaStats).map((s: any) => s?.responseMins || 0).filter(Boolean) as number[];
+                  if (values.length === 0) return 30;
+                  return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+                })();
+                const avgRating = 4.8; // placeholder until ratings are tracked globally
+                return [
+                  { icon: MapPin, label: 'Areas Covered', value: `${sortedAreas.length}+` },
+                  { icon: Users, label: 'Service Providers', value: `${totalProviders}+` },
+                  { icon: Clock, label: 'Avg Response', value: `${avgResponse} min` },
+                  { icon: Star, label: 'Customer Rating', value: `${avgRating}/5` }
+                ];
+              })().map((stat, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
@@ -163,25 +274,28 @@ export default function AreasPage() {
             <div className="text-center mb-12">
               <h2 className="text-4xl font-bold mb-4 text-white" data-macaly="featured-areas-title">
                 <span className="bg-gradient-to-r from-white to-neon-green bg-clip-text text-transparent">
-                  Featured Areas
+                  {cms?.featured?.h2 || 'Featured Areas'}
                 </span>
               </h2>
               <p className="text-white/60 text-lg max-w-2xl mx-auto" data-macaly="featured-areas-description">
-                Most popular areas with highest service demand and fastest response times
+                {cms?.featured?.paragraph || 'Most popular areas with highest service demand and fastest response times'}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {featuredAreas.map((area, index) => (
-                <motion.div
-                  key={area.slug}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  whileHover={{ y: -5 }}
-                  className="group"
-                >
+            <div className="relative">
+              <motion.div
+                key={carouselStart}
+                initial={{ x: 40, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.4 }}
+              >
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {getVisibleAreas().map((area, index) => (
+                  <motion.div
+                    key={area.slug}
+                    whileHover={{ y: -5 }}
+                    className="group"
+                  >
                   <Card className="bg-gradient-card backdrop-blur-sm border-2 border-neon-green/50 overflow-hidden hover:border-neon-green transition-all duration-500 h-full hover:shadow-neon-green">
                     <div className="relative h-48 overflow-hidden">
                       <img 
@@ -272,31 +386,28 @@ export default function AreasPage() {
                       </div>
                     </CardContent>
                   </Card>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))}
+                </div>
+              </motion.div>
             </div>
           </section>
         )}
 
-        {/* All Areas Grid */}
+        {/* All Areas Grid - static with pagination, dynamic stats */}
         <section className="py-16">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-2xl font-bold text-white">
               <span className="bg-gradient-to-r from-white to-neon-blue bg-clip-text text-transparent">
-                All Service Areas ({otherAreas.length})
+                All Service Areas ({sortedAreas.length})
               </span>
             </h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {otherAreas.map((area, index) => (
-              <motion.div
+            {sortedAreas.slice((areasPage-1)*areasPerPage, areasPage*areasPerPage).map((area, index) => (
+              <div
                 key={area.slug}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.05 }}
-                viewport={{ once: true }}
-                whileHover={{ y: -3 }}
               >
                 <Link href={`/areas/${area.slug}`}>
                   <Card className="bg-gradient-card backdrop-blur-sm border border-white/10 hover:border-neon-blue/50 transition-all duration-300 cursor-pointer h-full hover:shadow-card-hover">
@@ -323,15 +434,15 @@ export default function AreasPage() {
                       <div className="space-y-3 text-sm">
                         <div className="flex items-center justify-between">
                           <span className="text-white/60">Providers:</span>
-                          <span className="text-neon-blue font-medium">{area.serviceProviders}</span>
+                          <span className="text-neon-blue font-medium">{areaStats[area.slug]?.providers ?? area.serviceProviders}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-white/60">Response:</span>
-                          <span className="text-white/80">{area.avgResponseTime}</span>
+                          <span className="text-white/80">{(areaStats[area.slug]?.responseMins ?? parseInt(area.avgResponseTime)).toString()} mins</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-white/60">Bookings:</span>
-                          <span className="text-white/80">{area.totalBookings}</span>
+                          <span className="text-white/80">{areaStats[area.slug]?.bookings ?? area.totalBookings}</span>
                         </div>
                       </div>
 
@@ -344,9 +455,18 @@ export default function AreasPage() {
                     </CardContent>
                   </Card>
                 </Link>
-              </motion.div>
+              </div>
             ))}
           </div>
+
+          {/* Pagination */}
+          {sortedAreas.length > areasPerPage && (
+            <div className="mt-10 flex items-center justify-center gap-3">
+              <Button variant="outline" className="text-white border-white/20 hover:bg-white/10" disabled={areasPage===1} onClick={()=>setAreasPage(p=>Math.max(1,p-1))}>Prev</Button>
+              <span className="text-white/60 text-sm">Page {areasPage} of {Math.ceil(sortedAreas.length/areasPerPage)}</span>
+              <Button variant="outline" className="text-white border-white/20 hover:bg-white/10" disabled={areasPage>=Math.ceil(sortedAreas.length/areasPerPage)} onClick={()=>setAreasPage(p=>p+1)}>Next</Button>
+            </div>
+          )}
         </section>
 
         {/* Coverage Stats */}
@@ -354,12 +474,11 @@ export default function AreasPage() {
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold mb-4 text-white" data-macaly="coverage-stats-title">
               <span className="bg-gradient-to-r from-white to-neon-green bg-clip-text text-transparent">
-                Complete Dubai Coverage
+                {cms?.coverage?.h2 || 'Complete Dubai Coverage'}
               </span>
             </h2>
             <p className="text-white/60 text-lg max-w-3xl mx-auto" data-macaly="coverage-stats-description">
-              From luxury villas to high-rise apartments, we provide professional home services 
-              across all areas of Dubai with our network of verified experts.
+              {cms?.coverage?.paragraph || 'From luxury villas to high-rise apartments, we provide professional home services across all areas of Dubai with our network of verified experts.'}
             </p>
           </div>
 
@@ -413,11 +532,10 @@ export default function AreasPage() {
           <div className="bg-gradient-to-r from-neon-blue/20 to-neon-green/20 rounded-3xl p-8 border border-neon-blue/30 text-center">
             <div className="flex items-center justify-center space-x-3 mb-4">
               <Zap className="h-8 w-8 text-neon-blue" />
-              <h3 className="text-2xl font-bold text-white">24/7 Emergency Services</h3>
+              <h3 className="text-2xl font-bold text-white">{cms?.emergency?.h2 || '24/7 Emergency Services'}</h3>
             </div>
             <p className="text-white/70 mb-6 max-w-2xl mx-auto">
-              Urgent plumbing, electrical, or AC issues? Our emergency response team is available 
-              24/7 across all major areas in Dubai with response times as fast as 1 hour.
+              {cms?.emergency?.paragraph || 'Urgent plumbing, electrical, or AC issues? Our emergency response team is available 24/7 across all major areas in Dubai with response times as fast as 1 hour.'}
             </p>
             <Button className="bg-gradient-to-r from-neon-blue to-neon-green hover:from-neon-blue/80 hover:to-neon-green/80 text-black px-8 py-3 rounded-full font-semibold shadow-neon hover:shadow-neon-strong transition-all duration-300">
               <Zap className="mr-2 h-5 w-5" />

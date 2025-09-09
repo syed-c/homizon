@@ -347,6 +347,35 @@ This document tracks all changes, fixes, and deployment-related actions performe
     - `lib/supabase.ts`
   - Next: add SQL migrations for `services`/`service_content` tables and refactor public pages to fetch from Supabase.
 
+- Areas page upgrades and CMS integration
+  - Implemented Featured Areas slider showing 6 cards, auto-advances by 2 items in an infinite loop.
+  - Removed animations from All Areas; added stable alphabetical ordering and pagination (12 per page).
+  - Dynamic stats for All Areas: providers (Supabase providers), bookings and approx response time (Supabase leads).
+  - Connected `/areas` page to CMS (`pages_content` slug: `areas`) with fields:
+    - hero: { h1 (supports two-line with \n), description }
+    - featured: { h2, paragraph }
+    - coverage: { h2, paragraph }
+    - emergency: { h2, paragraph }
+  - Editor updates: added Areas page editing in `/admin/pages-editor` with tabs for Hero, Featured, Coverage, Emergency, Meta.
+  - Files updated:
+    - `app/areas/page.tsx`
+    - `app/admin/pages-editor/page.tsx`
+
+- Services pages enforcement via Supabase
+  - Service detail route 404s for any service not active in Supabase.
+  - Category pages list only Supabase services assigned to that category.
+  - Files updated:
+    - `app/services/[service]/page.tsx`
+    - `app/services/[service]/service-page-client.tsx`
+
+- Admin Services API (secure)
+  - `POST /api/admin/services`: create service using Service Role Key; seeds `pages_content` for service page.
+  - `DELETE /api/admin/services?id=<uuid>|slug&slug=<slug?>`: deletes DB row and associated `pages_content` by slug.
+  - Client helpers now call these API routes for create/delete.
+  - Files updated:
+    - `app/api/admin/services/route.ts`
+    - `lib/supabase.ts`
+
 - Migration utilities
   - Added SQL to create `services` and `service_content` in `scripts/setup-pages-content-table.sql`.
   - Added `scripts/migrate-services-to-supabase.js` to upsert static `lib/data` services into Supabase.
