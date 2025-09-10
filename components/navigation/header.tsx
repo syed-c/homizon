@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { Bell, Settings, LogOut } from 'lucide-react';
 import { useSettings } from '@/lib/settings-context';
+import { getPageContentFromSupabase } from '@/lib/supabase';
 
 // Lightweight data for header - only what's needed
 const headerServiceCategories = [
@@ -43,6 +44,31 @@ export default function Header() {
   const { settings } = useSettings();
   const pathname = usePathname();
   const isProviderRoute = pathname?.startsWith('/provider/');
+
+  // CMS-driven header config
+  const [menus, setMenus] = useState<Array<{ label: string; url: string; children?: Array<{ label: string; url: string }> }>>([
+    { label: 'Home', url: '/' },
+    { label: 'Services', url: '/services', children: headerServiceCategories.map(c => ({ label: c.name, url: `/services/${c.slug}` })) },
+    { label: 'Areas', url: '/areas', children: headerAreas.map(a => ({ label: a.name, url: `/areas/${a.slug}` })) },
+    { label: 'How It Works', url: '/how-it-works' },
+    { label: 'About', url: '/about' }
+  ]);
+  const [ctas, setCtas] = useState<Array<{ label: string; url: string; variant?: 'primary' | 'outline' }>>([
+    { label: 'Browse Providers', url: '/providers', variant: 'outline' },
+    { label: 'Find Services', url: '/providers', variant: 'primary' }
+  ]);
+
+  useEffect(() => {
+    const loadHeader = async () => {
+      try {
+        const res = await getPageContentFromSupabase('header');
+        const content: any = (res as any)?.data?.content;
+        if (content?.menus && Array.isArray(content.menus)) setMenus(content.menus);
+        if (content?.ctas && Array.isArray(content.ctas)) setCtas(content.ctas);
+      } catch {}
+    };
+    loadHeader();
+  }, []);
 
   const handleLogout = () => {
     try {
@@ -98,92 +124,29 @@ export default function Header() {
 
           {/* Main Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/" className="text-white/80 hover:text-neon-blue transition-colors">
-              Home
-            </Link>
-            
-            {/* Services Dropdown */}
-            <div className="relative group">
-              <button className="text-white/80 hover:text-neon-blue transition-colors flex items-center">
-                Services
-                <ChevronDown className="ml-1 h-4 w-4" />
-              </button>
-              <div className="absolute top-full left-0 mt-2 w-80 bg-black/95 backdrop-blur-xl border border-neon-blue/30 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-                <div className="p-6">
-                  <h3 className="text-neon-blue font-semibold mb-4">Service Categories</h3>
-                  <div className="grid grid-cols-1 gap-2">
-                    {headerServiceCategories.map((category) => (
-                      <Link
-                        key={category.id}
-                        href={`/services/${category.slug}`}
-                        className="flex items-center p-2 rounded-lg hover:bg-neon-blue/10 transition-colors group/item"
-                      >
-                        <div className="w-8 h-8 bg-gradient-to-r from-neon-blue to-neon-green rounded-lg flex items-center justify-center mr-3">
-                          <span className="text-xs font-bold text-black">{category.name.charAt(0)}</span>
-                        </div>
-                        <div>
-                          <div className="text-white font-medium group-hover/item:text-neon-blue transition-colors">
-                            {category.name}
-                          </div>
-                          <div className="text-white/60 text-xs">{category.services} services</div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-white/10">
-                    <Link href="/services" className="text-neon-green hover:text-neon-green/80 text-sm font-medium">
-                      View All Services →
-                    </Link>
-                  </div>
-                </div>
+            {menus.map((m, idx) => (
+              <div key={`${m.label}-${idx}`} className={m.children?.length ? 'relative group' : ''}>
+                {m.children?.length ? (
+                  <>
+                    <button className="text-white/80 hover:text-neon-blue transition-colors flex items-center">
+                      {m.label}
+                      <ChevronDown className="ml-1 h-4 w-4" />
+                    </button>
+                    <div className="absolute top-full left-0 mt-2 min-w-[14rem] bg-black/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                      <div className="p-4 grid grid-cols-1 gap-2">
+                        {m.children.map((c, ci) => (
+                          <Link key={`${c.label}-${ci}`} href={c.url} className="flex items-center p-2 rounded-lg hover:bg-white/10 transition-colors">
+                            <span className="text-white/80">{c.label}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <Link href={m.url} className="text-white/80 hover:text-neon-blue transition-colors">{m.label}</Link>
+                )}
               </div>
-            </div>
-
-            {/* Areas Dropdown */}
-            <div className="relative group">
-              <button className="text-white/80 hover:text-neon-green transition-colors flex items-center">
-                Areas
-                <ChevronDown className="ml-1 h-4 w-4" />
-              </button>
-              <div className="absolute top-full left-0 mt-2 w-96 bg-black/95 backdrop-blur-xl border border-neon-green/30 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-                <div className="p-6">
-                  <h3 className="text-neon-green font-semibold mb-4">Popular Areas</h3>
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    {headerAreas.slice(0, 12).map((area) => (
-                      <Link
-                        key={area.id}
-                        href={`/areas/${area.slug}`}
-                        className="flex items-center p-2 rounded-lg hover:bg-neon-green/10 transition-colors group/item"
-                      >
-                        <MapPin className="h-4 w-4 text-neon-green mr-2" />
-                        <div>
-                          <div className="text-white font-medium group-hover/item:text-neon-green transition-colors text-sm">
-                            {area.name}
-                          </div>
-                          <div className="text-white/60 text-xs">{area.subAreas} sub-areas</div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    <Link href="/areas" className="text-neon-green hover:text-neon-green/80 text-sm font-medium">
-                      View All Areas →
-                    </Link>
-                    <Link href="/sitemap" className="text-neon-blue hover:text-neon-blue/80 text-sm font-medium">
-                      Full Sitemap →
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <Link href="/how-it-works" className="text-white/80 hover:text-neon-blue transition-colors">
-              How It Works
-            </Link>
-            
-            <Link href="/about" className="text-white/80 hover:text-neon-blue transition-colors">
-              About
-            </Link>
+            ))}
           </nav>
 
           {/* CTA Buttons or Provider Actions */}
@@ -194,19 +157,16 @@ export default function Header() {
             </div>
             {!isProviderRoute && (
               <>
-                <Link href="/providers">
-                  <Button 
-                    variant="outline" 
-                    className="hidden md:flex border-neon-green/50 text-neon-green hover:bg-neon-green/10 transition-all duration-300"
-                  >
-                    Browse Providers
-                  </Button>
-                </Link>
-                <Link href="/providers">
-                  <Button className="bg-gradient-to-r from-neon-blue to-neon-green hover:from-neon-blue/80 hover:to-neon-green/80 text-black font-semibold transition-all duration-300">
-                    Find Services
-                  </Button>
-                </Link>
+                {ctas.map((b, i) => (
+                  <Link key={`${b.label}-${i}`} href={b.url}>
+                    <Button 
+                      variant={b.variant === 'outline' ? 'outline' : undefined}
+                      className={b.variant === 'outline' ? 'hidden md:flex border-neon-green/50 text-neon-green hover:bg-neon-green/10 transition-all duration-300' : 'bg-gradient-to-r from-neon-blue to-neon-green hover:from-neon-blue/80 hover:to-neon-green/80 text-black font-semibold transition-all duration-300'}
+                    >
+                      {b.label}
+                    </Button>
+                  </Link>
+                ))}
               </>
             )}
             {isProviderRoute && (
@@ -266,14 +226,9 @@ export default function Header() {
                 </button>
                 {activeDropdown === 'mobile-services' && (
                   <div className="grid grid-cols-1 gap-2 pl-4">
-                    {headerServiceCategories.slice(0, 6).map((category) => (
-                      <Link
-                        key={category.id}
-                        href={`/services/${category.slug}`}
-                        className="text-white/60 hover:text-neon-blue transition-colors py-1 text-sm"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        {category.name}
+                    {(menus.find(m => m.label.toLowerCase().includes('service'))?.children || []).slice(0,6).map((c,ci) => (
+                      <Link key={`${c.label}-${ci}`} href={c.url} className="text-white/60 hover:text-neon-blue transition-colors py-1 text-sm" onClick={() => setIsMenuOpen(false)}>
+                        {c.label}
                       </Link>
                     ))}
                     <Link 
@@ -298,14 +253,9 @@ export default function Header() {
                 </button>
                 {activeDropdown === 'mobile-areas' && (
                   <div className="grid grid-cols-2 gap-2 pl-4">
-                    {headerAreas.slice(0, 8).map((area) => (
-                      <Link
-                        key={area.id}
-                        href={`/areas/${area.slug}`}
-                        className="text-white/60 hover:text-neon-green transition-colors py-1 text-sm"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        {area.name}
+                    {(menus.find(m => m.label.toLowerCase().includes('area'))?.children || []).slice(0,8).map((c,ci) => (
+                      <Link key={`${c.label}-${ci}`} href={c.url} className="text-white/60 hover:text-neon-green transition-colors py-1 text-sm" onClick={() => setIsMenuOpen(false)}>
+                        {c.label}
                       </Link>
                     ))}
                     <Link 

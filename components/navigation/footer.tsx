@@ -7,15 +7,35 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSettings } from '@/lib/settings-context';
-import { serviceCategories, areas } from '@/lib/data';
+import { getPageContentFromSupabase } from '@/lib/supabase';
+import React from 'react';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
   const { settings } = useSettings();
+  const [columns, setColumns] = React.useState<Array<{ title: string; links: Array<{ label: string; url: string }> }>>([
+    { title: 'Popular Services', links: [] },
+    { title: 'Service Areas', links: [] },
+    { title: 'Company & Support', links: [
+      { label: 'About Us', url: '/about' },
+      { label: 'How It Works', url: '/how-it-works' },
+      { label: 'Contact Us', url: '/contact' },
+      { label: 'FAQ', url: '/faq' },
+      { label: 'Find Providers', url: '/providers' },
+      { label: 'Sitemap', url: '/sitemap' }
+    ] }
+  ]);
 
-  // Get popular services and areas
-  const popularServices = serviceCategories.filter(cat => cat.isPopular).slice(0, 8);
-  const topAreas = areas.slice(0, 12);
+  React.useEffect(() => {
+    const loadFooter = async () => {
+      try {
+        const res = await getPageContentFromSupabase('footer');
+        const content: any = (res as any)?.data?.content;
+        if (content?.columns && Array.isArray(content.columns)) setColumns(content.columns);
+      } catch {}
+    };
+    loadFooter();
+  }, []);
 
   return (
     <>
@@ -151,109 +171,24 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* Popular Services */}
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <span className="w-1 h-6 bg-gradient-to-b from-neon-green to-neon-blue rounded-full mr-3"></span>
-                Popular Services
-              </h3>
-              <ul className="space-y-2">
-                {popularServices.map((category) => (
-                  <li key={category.id}>
-                    <Link 
-                      href={`/services/${category.slug}`}
-                      className="flex items-center text-white/60 hover:text-neon-green transition-colors text-sm group"
-                    >
-                      <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      {category.name}
-                    </Link>
-                  </li>
-                ))}
-                <li className="pt-2">
-                  <Link 
-                    href="/services"
-                    className="text-neon-green hover:text-neon-green/80 transition-colors text-sm font-medium flex items-center"
-                  >
-                    View All Services <ChevronRight className="w-4 h-4 ml-1" />
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Service Areas */}
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <span className="w-1 h-6 bg-gradient-to-b from-neon-blue to-purple-500 rounded-full mr-3"></span>
-                Service Areas
-              </h3>
-              <ul className="space-y-2">
-                {topAreas.map((area) => (
-                  <li key={area.id}>
-                    <Link 
-                      href={`/areas/${area.slug}`}
-                      className="flex items-center text-white/60 hover:text-neon-blue transition-colors text-sm group"
-                    >
-                      <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      {area.name}
-                    </Link>
-                  </li>
-                ))}
-                <li className="pt-2">
-                  <Link 
-                    href="/areas"
-                    className="text-neon-blue hover:text-neon-blue/80 transition-colors text-sm font-medium flex items-center"
-                  >
-                    View All Areas <ChevronRight className="w-4 h-4 ml-1" />
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Company & Support */}
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <span className="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full mr-3"></span>
-                Company & Support
-              </h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link href="/about" className="flex items-center text-white/60 hover:text-neon-green transition-colors text-sm group">
-                    <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    About Us
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/how-it-works" className="flex items-center text-white/60 hover:text-neon-green transition-colors text-sm group">
-                    <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    How It Works
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/contact" className="flex items-center text-white/60 hover:text-neon-green transition-colors text-sm group">
-                    <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    Contact Us
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/faq" className="flex items-center text-white/60 hover:text-neon-green transition-colors text-sm group">
-                    <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    FAQ
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/providers" className="flex items-center text-white/60 hover:text-neon-green transition-colors text-sm group">
-                    <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    Find Providers
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/sitemap" className="flex items-center text-white/60 hover:text-neon-green transition-colors text-sm group">
-                    <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    Sitemap
-                  </Link>
-                </li>
-              </ul>
-            </div>
+            {columns.map((col, ci) => (
+              <div key={`${col.title}-${ci}`}>
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <span className="w-1 h-6 bg-gradient-to-b from-neon-green to-neon-blue rounded-full mr-3"></span>
+                  {col.title}
+                </h3>
+                <ul className="space-y-2">
+                  {col.links.map((lnk, li) => (
+                    <li key={`${lnk.label}-${li}`}>
+                      <Link href={lnk.url} className="flex items-center text-white/60 hover:text-neon-green transition-colors text-sm group">
+                        <ChevronRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        {lnk.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
 

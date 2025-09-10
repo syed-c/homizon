@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { services, serviceCategories } from '@/lib/data';
-import { listServicesFromSupabase, listAreasFromSupabase } from '@/lib/supabase';
+import { listServicesFromSupabase, listAreasFromSupabase, uploadImageToSupabaseStorage } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 interface PageContent {
@@ -178,6 +178,7 @@ export default function PagesEditor() {
   const { toast } = useToast();
   const [servicesDb, setServicesDb] = useState<{ slug: string; name: string }[]>([]);
   const [areasDb, setAreasDb] = useState<{ slug: string; name: string; services?: string[] }[]>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     loadPages();
@@ -252,6 +253,21 @@ export default function PagesEditor() {
     setEditingPage(page);
     
     // Determine page type based on slug
+    if (page.page_slug === 'header') {
+      setPageType('globalHeader' as any);
+      const incoming = (page.content || {}) as any;
+      setPageContent({ menus: incoming.menus || [], ctas: incoming.ctas || [] });
+      setMetaData({ slug: 'header', meta_title: page.meta_title, meta_description: page.meta_description });
+      setEditModalOpen(true);
+      return;
+    } else if (page.page_slug === 'footer') {
+      setPageType('globalFooter' as any);
+      const incoming = (page.content || {}) as any;
+      setPageContent({ columns: incoming.columns || [] });
+      setMetaData({ slug: 'footer', meta_title: page.meta_title, meta_description: page.meta_description });
+      setEditModalOpen(true);
+      return;
+    } else 
     if (page.page_slug === 'services') {
       setPageType('services');
       const incoming = (page.content || {}) as any;
@@ -344,6 +360,39 @@ export default function PagesEditor() {
           providers: {
             h2: incoming?.providers?.h2 || 'Available Providers',
             paragraph: incoming?.providers?.paragraph || 'Choose from our network of verified { Service } & maintenance professionals in { Location }'
+          }
+        } as any);
+      } else if (segments.length === 2) {
+        // Area detail page redesign schema
+        setPageType('areaDetail');
+        const incoming = (page.content || {}) as any;
+        setPageContent({
+          hero: {
+            h1: incoming?.hero?.h1 || 'Home Services in\n{ Location }',
+            description: incoming?.hero?.description || 'Premium neighborhood community. Professional home services with fast response times.',
+            image_url: incoming?.hero?.image_url || '',
+            badge: incoming?.hero?.badge || 'Service Area',
+            eta: incoming?.hero?.eta || '25 mins'
+          },
+          services: {
+            h2: incoming?.services?.h2 || '',
+            paragraph: incoming?.services?.paragraph || ''
+          },
+          sub_areas: {
+            h2: incoming?.sub_areas?.h2 || 'Sub-Areas We Cover',
+            items: Array.isArray(incoming?.sub_areas?.items) ? incoming.sub_areas.items : []
+          },
+          why: {
+            h2: incoming?.why?.h2 || '',
+            items: Array.isArray(incoming?.why?.items) ? incoming.why.items : []
+          },
+          reviews: {
+            h2: incoming?.reviews?.h2 || 'Recent Customer Reviews',
+            items: Array.isArray(incoming?.reviews?.items) ? incoming.reviews.items : []
+          },
+          emergency: {
+            h2: incoming?.emergency?.h2 || '',
+            paragraph: incoming?.emergency?.paragraph || ''
           }
         } as any);
       }
@@ -495,7 +544,7 @@ export default function PagesEditor() {
         if (s.startsWith('/')) s = s.slice(1);
         return s;
       })();
-
+      
       const updatedContent = {
         page_slug: normalizedSlug,
         content: pageContent,
@@ -693,8 +742,8 @@ export default function PagesEditor() {
     }
     // Legacy 'service-page/{slug}' entries: remap to services/{slug} visibility filter
     if (p.page_slug?.startsWith('service-page/')) {
-      const slug = p.page_slug.replace('service-page/', '');
-      return activeServiceSlugs.includes(slug);
+    const slug = p.page_slug.replace('service-page/', '');
+    return activeServiceSlugs.includes(slug);
     }
     return true;
   });
@@ -729,6 +778,9 @@ export default function PagesEditor() {
   const mergedPages = [
     // Include About page if missing
     ...(furtherFilteredCmsPages.some(p => p.page_slug === 'about') ? [] : [aboutVirtualPage]),
+    // Global: Header & Footer
+    { id: 'global-header', page_slug: 'header', content: { menus: [], ctas: [] }, meta_title: 'Header | HOMIZON', meta_description: 'Global header configuration', updated_at: new Date().toISOString() } as PageContent,
+    { id: 'global-footer', page_slug: 'footer', content: { columns: [] }, meta_title: 'Footer | HOMIZON', meta_description: 'Global footer configuration', updated_at: new Date().toISOString() } as PageContent,
     // Include service detail virtual pages (only for services active in Supabase) when missing from CMS
     ...serviceDetailVirtualPages.filter(v => !furtherFilteredCmsPages.some(p => p.page_slug === v.page_slug)),
     // Only show pages that actually exist in Supabase (and categories for active services)
@@ -745,7 +797,7 @@ export default function PagesEditor() {
   const isLocation = (slug: string) => slug.startsWith('areas/') && slug.split('/').length === 2;
   const isLocationService = (slug: string) => slug.startsWith('areas/') && slug.split('/').length === 3;
   const isService = (slug: string) => slug.startsWith('services/') && slug.split('/').length === 2;
-  const isMain = (slug: string) => !slug || slug === '' || ['areas','services','contact','about','/'].includes(slug);
+  const isMain = (slug: string) => !slug || slug === '' || ['areas','services','contact','about','header','footer','/'].includes(slug);
 
   type Cat = 'main' | 'locations' | 'locationServices' | 'services';
   const [activeCat, setActiveCat] = useState<Cat>('main');
@@ -857,7 +909,7 @@ export default function PagesEditor() {
                 <div className="flex items-center justify-between text-xs text-white/60">
                   <div className="flex items-center space-x-2"><Calendar className="h-3 w-3" /><span>Modified: {new Date(page.updated_at).toLocaleDateString()}</span></div>
                   <div className="flex items-center space-x-2"><BarChart3 className="h-3 w-3" /><span>0 views</span></div>
-                </div>
+                  </div>
                 <div className="flex items-center space-x-2 pt-2">
                   <Button variant="outline" size="sm" onClick={() => { const slug = page.page_slug?.startsWith('service-page/') ? `services/${page.page_slug.replace('service-page/','')}` : page.page_slug; window.open(slug === '' ? '/' : `/${slug}`, '_blank'); }} className="flex-1 text-white border-white/20 hover:bg-white/10">
                     <Eye className="h-4 w-4 mr-2" /> View
@@ -882,10 +934,45 @@ export default function PagesEditor() {
               {pageType === 'category' && 'Edit Category Page Content'}
               {pageType === 'serviceDetail' && 'Edit Service Page Content'}
               {pageType === 'about' && 'Edit About Page Content'}
+              {editingPage?.page_slug === 'header' && 'Edit Header'}
+              {editingPage?.page_slug === 'footer' && 'Edit Footer'}
             </DialogTitle>
           </DialogHeader>
           
-          <Tabs defaultValue="hero" className="w-full">
+          <Tabs defaultValue={editingPage?.page_slug==='header' ? 'menus' : editingPage?.page_slug==='footer' ? 'columns' : 'hero'} className="w-full">
+            {editingPage?.page_slug === 'header' && (
+              <TabsList className="grid w-full grid-cols-2 bg-white/10">
+                <TabsTrigger value="menus">Menus</TabsTrigger>
+                <TabsTrigger value="ctas">CTAs</TabsTrigger>
+              </TabsList>
+            )}
+            {editingPage?.page_slug === 'footer' && (
+              <TabsList className="grid w-full grid-cols-1 bg-white/10">
+                <TabsTrigger value="columns">Columns</TabsTrigger>
+              </TabsList>
+            )}
+
+            {/* Fallback: render raw editors even if tabs library fails */}
+            {editingPage?.page_slug === 'header' && (
+              <div className="space-y-4 mt-4">
+                <div>
+                  <Label className="text-white">Menus JSON</Label>
+                  <Textarea rows={12} value={JSON.stringify((pageContent as any)?.menus || [], null, 2)} onChange={(e)=>{ try { setPageContent((prev:any)=>({ ...(prev||{}), menus: JSON.parse(e.target.value||'[]') })); } catch {} }} className="bg-white/5 border-white/20 text-white font-mono text-xs" />
+                </div>
+                <div>
+                  <Label className="text-white">CTAs JSON</Label>
+                  <Textarea rows={10} value={JSON.stringify((pageContent as any)?.ctas || [], null, 2)} onChange={(e)=>{ try { setPageContent((prev:any)=>({ ...(prev||{}), ctas: JSON.parse(e.target.value||'[]') })); } catch {} }} className="bg-white/5 border-white/20 text-white font-mono text-xs" />
+                </div>
+              </div>
+            )}
+            {editingPage?.page_slug === 'footer' && (
+              <div className="space-y-4 mt-4">
+                <div>
+                  <Label className="text-white">Columns JSON</Label>
+                  <Textarea rows={14} value={JSON.stringify((pageContent as any)?.columns || [], null, 2)} onChange={(e)=>{ try { setPageContent((prev:any)=>({ ...(prev||{}), columns: JSON.parse(e.target.value||'[]') })); } catch {} }} className="bg-white/5 border-white/20 text-white font-mono text-xs" />
+                </div>
+              </div>
+            )}
             {pageType === 'home' && (
               <TabsList className="grid w-full grid-cols-6 bg-white/10">
                 <TabsTrigger value="hero">Hero</TabsTrigger>
@@ -920,12 +1007,15 @@ export default function PagesEditor() {
               </TabsList>
             )}
             {pageType === 'areaDetail' && (
-              <TabsList className="grid w-full grid-cols-5 bg-white/10">
+              <TabsList className="grid w-full grid-cols-8 bg-white/10">
                 <TabsTrigger value="hero">Hero</TabsTrigger>
-                <TabsTrigger value="providers">Providers</TabsTrigger>
-                <TabsTrigger value="about">About</TabsTrigger>
-                <TabsTrigger value="faqs">FAQs</TabsTrigger>
+                <TabsTrigger value="services">Services Block</TabsTrigger>
+                <TabsTrigger value="sub-areas">Sub-Areas</TabsTrigger>
+                <TabsTrigger value="why">Why Choose</TabsTrigger>
+                <TabsTrigger value="reviews">Reviews</TabsTrigger>
+                <TabsTrigger value="emergency">Emergency</TabsTrigger>
                 <TabsTrigger value="cta">CTA</TabsTrigger>
+                <TabsTrigger value="meta">Meta SEO</TabsTrigger>
               </TabsList>
             )}
             {pageType === 'serviceDetail' && (
@@ -956,7 +1046,8 @@ export default function PagesEditor() {
               </TabsList>
             )}
 
-            {/* Hero Section - Common for both page types (for services categories we use hero.h1/description) */}
+            {/* Hero Section - skip for global header/footer editors */}
+            {editingPage?.page_slug !== 'header' && editingPage?.page_slug !== 'footer' && (
             <TabsContent value="hero" className="space-y-4">
               <div className="space-y-4">
                 <div>
@@ -982,8 +1073,45 @@ export default function PagesEditor() {
                     className="bg-white/5 border-white/20 text-white"
                   />
                 </div>
+                {pageType === 'areaDetail' && (
+                  <div>
+                    <Label className="text-white">Hero Image URL</Label>
+                    <Input
+                      value={(pageContent as any)?.hero?.image_url || ''}
+                      onChange={(e)=>setPageContent(prev=>({ ...prev, hero: { ...(prev as any).hero, image_url: e.target.value } }))}
+                      placeholder="https://..."
+                      className="bg-white/5 border-white/20 text-white"
+                    />
+                    <div className="flex items-center gap-2 mt-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            setUploadingImage(true);
+                            const areaSlug = (editingPage?.page_slug || '').split('/')[1] || 'area';
+                            const result = await uploadImageToSupabaseStorage(file as any, `areas/${areaSlug}`);
+                            if ((result as any)?.url) {
+                              setPageContent(prev => ({ ...prev, hero: { ...(prev as any).hero, image_url: (result as any).url } }));
+                              toast({ title: 'Upload complete', description: 'Hero image uploaded successfully' });
+                            }
+                          } catch (err: any) {
+                            toast({ title: 'Upload failed', description: err?.message || 'Could not upload image', variant: 'destructive' });
+                          } finally {
+                            setUploadingImage(false);
+                          }
+                        }}
+                        className="text-white text-sm"
+                      />
+                      {uploadingImage && <span className="text-white/60 text-xs">Uploading...</span>}
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
+            )}
             
             {/* Why Choose Us Section - Services page only */}
             {pageType === 'services' && (
@@ -1117,122 +1245,94 @@ export default function PagesEditor() {
               </TabsContent>
             )}
 
-            {/* Area Detail sections */}
+            {/* Area Detail sections - new design */}
             {pageType === 'areaDetail' && (
               <>
-                <TabsContent value="providers" className="space-y-4">
+                <TabsContent value="services" className="space-y-4">
                   <div className="space-y-4">
                     <div>
-                      <Label className="text-white">Providers H2</Label>
-                      <Input
-                        value={(pageContent as any)?.providers?.h2 || ''}
-                        onChange={(e)=>setPageContent(prev=>({ ...prev, providers: { ...(prev as any).providers, h2: e.target.value } }))}
-                        className="bg-white/5 border-white/20 text-white"
-                      />
+                      <Label className="text-white">Services Block H2</Label>
+                      <Input value={(pageContent as any)?.services?.h2 || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, services: { ...(prev as any).services, h2: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
                     </div>
                     <div>
-                      <Label className="text-white">Providers Paragraph</Label>
-                      <Textarea
-                        value={(pageContent as any)?.providers?.paragraph || ''}
-                        onChange={(e)=>setPageContent(prev=>({ ...prev, providers: { ...(prev as any).providers, paragraph: e.target.value } }))}
-                        rows={3}
-                        className="bg-white/5 border-white/20 text-white"
-                      />
+                      <Label className="text-white">Services Block Paragraph</Label>
+                      <Textarea value={(pageContent as any)?.services?.paragraph || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, services: { ...(prev as any).services, paragraph: e.target.value } }))} rows={3} className="bg-white/5 border-white/20 text-white" />
                     </div>
                   </div>
                 </TabsContent>
 
-                <TabsContent value="about" className="space-y-4">
+                <TabsContent value="sub-areas" className="space-y-4">
                   <div className="space-y-4">
                     <div>
-                      <Label className="text-white">About H2</Label>
-                      <Input
-                        value={(pageContent as any)?.about?.h2 || ''}
-                        onChange={(e)=>setPageContent(prev=>({ ...prev, about: { ...(prev as any).about, h2: e.target.value } }))}
-                        className="bg-white/5 border-white/20 text-white"
-                      />
+                      <Label className="text-white">Sub-Areas H2</Label>
+                      <Input value={(pageContent as any)?.sub_areas?.h2 || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, sub_areas: { ...(prev as any).sub_areas, h2: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
                     </div>
-                    <div>
-                      <Label className="text-white">About Paragraph</Label>
-                      <Textarea
-                        value={(pageContent as any)?.about?.paragraph || ''}
-                        onChange={(e)=>setPageContent(prev=>({ ...prev, about: { ...(prev as any).about, paragraph: e.target.value } }))}
-                        rows={4}
-                        className="bg-white/5 border-white/20 text-white"
-                      />
+                    <div className="flex items-center justify-between">
+                      <Label className="text-white">Sub-Areas Items</Label>
+                      <Button size="sm" variant="outline" className="text-white border-white/20" onClick={()=>setPageContent(prev=>({ ...prev, sub_areas: { ...(prev as any).sub_areas, items: [ ...(((prev as any).sub_areas?.items)||[]), { title: '', providers: '', response: '' } ] } }))}><Plus className="h-4 w-4 mr-2"/>Add Item</Button>
                     </div>
+                    {(((pageContent as any)?.sub_areas?.items) || []).map((item:any,i:number)=> (
+                      <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-white/5 rounded border border-white/10">
+                        <Input value={item.title} onChange={(e)=>setPageContent(prev=>({ ...prev, sub_areas: { ...(prev as any).sub_areas, items: ((prev as any).sub_areas.items).map((x:any,idx:number)=> idx===i? { ...x, title: e.target.value } : x) } }))} placeholder="Title" className="bg-white/5 border-white/20 text-white"/>
+                        <Input value={item.providers} onChange={(e)=>setPageContent(prev=>({ ...prev, sub_areas: { ...(prev as any).sub_areas, items: ((prev as any).sub_areas.items).map((x:any,idx:number)=> idx===i? { ...x, providers: e.target.value } : x) } }))} placeholder="Providers" className="bg-white/5 border-white/20 text-white"/>
+                        <Input value={item.response} onChange={(e)=>setPageContent(prev=>({ ...prev, sub_areas: { ...(prev as any).sub_areas, items: ((prev as any).sub_areas.items).map((x:any,idx:number)=> idx===i? { ...x, response: e.target.value } : x) } }))} placeholder="Response Time" className="bg-white/5 border-white/20 text-white"/>
+                      </div>
+                    ))}
                   </div>
                 </TabsContent>
 
-                <TabsContent value="faqs" className="space-y-4">
+                <TabsContent value="why" className="space-y-4">
                   <div className="space-y-4">
                     <div>
-                      <Label className="text-white">FAQs H2</Label>
-                      <Input
-                        value={(pageContent as any)?.faqs?.h2 || ''}
-                        onChange={(e)=>setPageContent(prev=>({ ...prev, faqs: { ...(prev as any).faqs, h2: e.target.value } }))}
-                        className="bg-white/5 border-white/20 text-white"
-                      />
+                      <Label className="text-white">Why Choose H2</Label>
+                      <Input value={(pageContent as any)?.why?.h2 || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, why: { ...(prev as any).why, h2: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
                     </div>
-                    <div>
-                      <Label className="text-white">FAQs Paragraph</Label>
-                      <Textarea
-                        value={(pageContent as any)?.faqs?.paragraph || ''}
-                        onChange={(e)=>setPageContent(prev=>({ ...prev, faqs: { ...(prev as any).faqs, paragraph: e.target.value } }))}
-                        rows={3}
-                        className="bg-white/5 border-white/20 text-white"
-                      />
+                    <div className="flex items-center justify-between">
+                      <Label className="text-white">Why Items</Label>
+                      <Button size="sm" variant="outline" className="text-white border-white/20" onClick={()=>setPageContent(prev=>({ ...prev, why: { ...(prev as any).why, items: [ ...(((prev as any).why?.items)||[]), { title: '', paragraph: '' } ] } }))}><Plus className="h-4 w-4 mr-2"/>Add Item</Button>
                     </div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="text-white">FAQ Items</Label>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-white border-white/20"
-                        onClick={() => setPageContent(prev => ({
-                          ...prev,
-                          faqs: {
-                            ...(prev as any).faqs,
-                            items: [ ...(((prev as any).faqs?.items) || []), { question: '', answer: '' } ]
-                          }
-                        }))}
-                      >
-                        <Plus className="h-4 w-4 mr-2" /> Add FAQ
-                      </Button>
+                    {(((pageContent as any)?.why?.items) || []).map((item:any,i:number)=> (
+                      <div key={i} className="p-3 bg-white/5 rounded border border-white/10 space-y-2">
+                        <Input value={item.title} onChange={(e)=>setPageContent(prev=>({ ...prev, why: { ...(prev as any).why, items: ((prev as any).why.items).map((x:any,idx:number)=> idx===i? { ...x, title: e.target.value } : x) } }))} placeholder="Title" className="bg-white/5 border-white/20 text-white" />
+                        <Textarea rows={2} value={item.paragraph} onChange={(e)=>setPageContent(prev=>({ ...prev, why: { ...(prev as any).why, items: ((prev as any).why.items).map((x:any,idx:number)=> idx===i? { ...x, paragraph: e.target.value } : x) } }))} className="bg-white/5 border-white/20 text-white" />
                     </div>
-                    {(((pageContent as any)?.faqs?.items) || []).map((item: any, i: number) => (
-                      <div key={i} className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-3">
-                        <div>
-                          <Label className="text-white text-sm">Question</Label>
-                          <Input
-                            value={item.question}
-                            onChange={(e) => setPageContent(prev => ({
-                              ...prev,
-                              faqs: {
-                                ...(prev as any).faqs,
-                                items: ((prev as any).faqs.items).map((x: any, idx: number) => idx === i ? { ...x, question: e.target.value } : x)
-                              }
-                            }))}
-                            className="bg-white/5 border-white/20 text-white"
-                          />
+                    ))}
                         </div>
+                </TabsContent>
+
+                <TabsContent value="reviews" className="space-y-4">
+                  <div className="space-y-4">
                         <div>
-                          <Label className="text-white text-sm">Answer</Label>
-                          <Textarea
-                            value={item.answer}
-                            onChange={(e) => setPageContent(prev => ({
-                              ...prev,
-                              faqs: {
-                                ...(prev as any).faqs,
-                                items: ((prev as any).faqs.items).map((x: any, idx: number) => idx === i ? { ...x, answer: e.target.value } : x)
-                              }
-                            }))}
-                            rows={3}
-                            className="bg-white/5 border-white/20 text-white"
-                          />
+                      <Label className="text-white">Reviews H2</Label>
+                      <Input value={(pageContent as any)?.reviews?.h2 || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, reviews: { ...(prev as any).reviews, h2: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-white">Review Items</Label>
+                      <Button size="sm" variant="outline" className="text-white border-white/20" onClick={()=>setPageContent(prev=>({ ...prev, reviews: { ...(prev as any).reviews, items: [ ...(((prev as any).reviews?.items)||[]), { name: '', area: '', rating: '★★★★★', paragraph: '' } ] } }))}><Plus className="h-4 w-4 mr-2"/>Add Review</Button>
+                    </div>
+                    {(((pageContent as any)?.reviews?.items) || []).map((item:any,i:number)=> (
+                      <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-white/5 rounded border border-white/10">
+                        <Input value={item.name} onChange={(e)=>setPageContent(prev=>({ ...prev, reviews: { ...(prev as any).reviews, items: ((prev as any).reviews.items).map((x:any,idx:number)=> idx===i? { ...x, name: e.target.value } : x) } }))} placeholder="Name" className="bg-white/5 border-white/20 text-white" />
+                        <Input value={item.area} onChange={(e)=>setPageContent(prev=>({ ...prev, reviews: { ...(prev as any).reviews, items: ((prev as any).reviews.items).map((x:any,idx:number)=> idx===i? { ...x, area: e.target.value } : x) } }))} placeholder="Area (optional)" className="bg-white/5 border-white/20 text-white" />
+                        <Input value={item.rating} onChange={(e)=>setPageContent(prev=>({ ...prev, reviews: { ...(prev as any).reviews, items: ((prev as any).reviews.items).map((x:any,idx:number)=> idx===i? { ...x, rating: e.target.value } : x) } }))} placeholder="★★★★★" className="bg-white/5 border-white/20 text-white" />
+                        <div className="md:col-span-3">
+                          <Textarea rows={2} value={item.paragraph} onChange={(e)=>setPageContent(prev=>({ ...prev, reviews: { ...(prev as any).reviews, items: ((prev as any).reviews.items).map((x:any,idx:number)=> idx===i? { ...x, paragraph: e.target.value } : x) } }))} placeholder="Review text" className="bg-white/5 border-white/20 text-white" />
                         </div>
                       </div>
                     ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="emergency" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-white">Emergency H2</Label>
+                      <Input value={(pageContent as any)?.emergency?.h2 || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, emergency: { ...(prev as any).emergency, h2: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
+                    </div>
+                    <div>
+                      <Label className="text-white">Emergency Paragraph</Label>
+                      <Textarea value={(pageContent as any)?.emergency?.paragraph || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, emergency: { ...(prev as any).emergency, paragraph: e.target.value } }))} rows={3} className="bg-white/5 border-white/20 text-white" />
+                    </div>
                   </div>
                 </TabsContent>
 
@@ -1240,23 +1340,15 @@ export default function PagesEditor() {
                   <div className="space-y-4">
                     <div>
                       <Label className="text-white">CTA H2</Label>
-                      <Input
-                        value={(pageContent as any)?.cta?.h2 || ''}
-                        onChange={(e)=>setPageContent(prev=>({ ...prev, cta: { ...(prev as any).cta, h2: e.target.value } }))}
-                        className="bg-white/5 border-white/20 text-white"
-                      />
+                      <Input value={(pageContent as any)?.cta?.h2 || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, cta: { ...(prev as any).cta, h2: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
                     </div>
                     <div>
                       <Label className="text-white">CTA Paragraph</Label>
-                      <Textarea
-                        value={(pageContent as any)?.cta?.paragraph || ''}
-                        onChange={(e)=>setPageContent(prev=>({ ...prev, cta: { ...(prev as any).cta, paragraph: e.target.value } }))}
-                        rows={3}
-                        className="bg-white/5 border-white/20 text-white"
-                      />
+                      <Textarea value={(pageContent as any)?.cta?.paragraph || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, cta: { ...(prev as any).cta, paragraph: e.target.value } }))} rows={3} className="bg-white/5 border-white/20 text-white" />
                     </div>
                   </div>
                 </TabsContent>
+
               </>
             )}
             
@@ -1974,7 +2066,7 @@ export default function PagesEditor() {
             </Button>
             <Button
               onClick={handleSavePage}
-              disabled={saving || !pageContent.hero.h1 || !metaData.meta_title}
+              disabled={saving || !pageContent.hero?.h1 && !(editingPage?.page_slug==='header' || editingPage?.page_slug==='footer') || !metaData.meta_title}
               className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
             >
               {saving ? (

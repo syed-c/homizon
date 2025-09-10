@@ -523,3 +523,27 @@ This document tracks all changes, fixes, and deployment-related actions performe
 - Service pages fetch CMS from the correct slug
   - File: `app/services/[service]/service-page-client.tsx` – now loads page content from `services/{slug}` with a fallback to legacy `service-page/{slug}` so edits in the editor reflect on the public page immediately.
 
+- Area page redesign (locations)
+  - File: `app/areas/[area]/area-page-client.tsx` – rebuilt layout to match provided design:
+    - Hero with stats and CMS-driven hero image (`hero.image_url`, `hero.badge`, `hero.eta`).
+    - Services Available block with CMS texts (`services.h2`, `services.paragraph`).
+    - Optional Sub-Areas grid (`sub_areas.items[]` with `title`, `providers`, `response`).
+    - Why Choose section (`why.items[]` with `title`, `paragraph`).
+    - Reviews grid (`reviews.items[]` with `name`, `area`, `rating`, `paragraph`).
+    - Emergency banner (`emergency.h2`, `emergency.paragraph`).
+    - Removed providers section from locations pages; providers now shown only on location-service pages.
+  - File: `app/admin/pages-editor/page.tsx` – extended area detail editing when slug is `areas/{area}`:
+    - Tabs: Hero (with direct image upload), Services Block, Sub-Areas, Why Choose, Reviews, Emergency, CTA, Meta SEO.
+    - Hero supports image URL and direct upload to Supabase Storage; uploaded URL auto-fills `hero.image_url`.
+    - CRUD for sub-areas, why items, and reviews; all saved to `pages_content`.
+  - Restored single Meta SEO tab (removed duplicate meta fields) to avoid confusion in editor.
+  - All existing area pages automatically use the new template; CMS fallbacks ensure safe rendering when fields are empty.
+
+- CMS editable Header and Footer
+  - File: `components/navigation/header.tsx` – main nav menus and CTA buttons load from `pages_content` slug `header` (content.menus[], content.ctas[]). Defaults preserved; logo remains static.
+  - File: `components/navigation/footer.tsx` – footer columns load from `pages_content` slug `footer` (content.columns[] with title + links[]). Defaults provided.
+  - Pages Editor updated to manage these (implemented):
+    - Virtual entries added for `header` and `footer` under Main Pages.
+    - Header editor tabs: Menus (JSON), CTAs (JSON).
+    - Footer editor tab: Columns (JSON).
+    - Saving uses existing pages-content API; changes reflect immediately in UI.
