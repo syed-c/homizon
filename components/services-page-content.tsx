@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Search, Filter, Star, Clock, Shield, Award, Users, Phone, 
@@ -89,12 +89,23 @@ export default function ServicesPageContent() {
         const res = await listServicesFromSupabase();
         const db = (res.data || []).filter((s: any) => s.status === 'active');
         // Merge with defaults expected by UI
+        const categorize = (slug: string, fallback: string = 'appliance-repair') => {
+          const s = String(slug).toLowerCase();
+          if (/(^|[-])ac(?![a-z])|air-?conditioner|airconditioner|a\s*c/.test(s)) return 'ac-repair-cleaning';
+          if (/(wash|refrigerator|fridge|dryer|dishwasher|stove|cooker|oven|microwave|gas|electric|ice|wine|cooler)/.test(s)) return 'appliance-repair';
+          if (/(clean)/.test(s)) return 'deep-cleaning';
+          if (/(pest|termite|bed-?bug|rodent|mosquito|cockroach)/.test(s)) return 'pest-control';
+          if (/(plumb)/.test(s)) return 'plumbing';
+          if (/(electric)/.test(s)) return 'electrician';
+          if (/(handyman|mount|assembly|light|installation)/.test(s)) return 'handyman';
+          return fallback;
+        };
         const normalized = db.map((row: any) => ({
           id: row.id,
           name: row.name,
           slug: row.slug,
           description: `${row.name} services in Dubai`,
-          category: 'general',
+          category: row.category || row.category_slug || categorize(row.slug),
           icon: 'Settings',
           averagePrice: 'AED 0',
           estimatedTime: '—',
@@ -118,6 +129,45 @@ export default function ServicesPageContent() {
   console.log("Services directory page loaded");
   console.log("Selected category:", selectedCategory);
   console.log("Search query:", searchQuery);
+
+  // Only keep categories that have at least one service from Supabase
+  const visibleCategories = useMemo(() => {
+    const slugsWithService = new Set<string>(servicesData.map(s => String(s.category)));
+    return serviceCategories.filter(cat => slugsWithService.has(cat.slug));
+  }, [servicesData]);
+
+  // Build quick lookup maps for service normalization
+  const serviceSlugSet = useMemo(() => new Set(servicesData.map(s => String(s.slug).toLowerCase())), [servicesData]);
+  const nameToSlug = useMemo(() => {
+    const map: Record<string, string> = {};
+    servicesData.forEach(s => { map[String(s.name).toLowerCase()] = String(s.slug).toLowerCase(); });
+    return map;
+  }, [servicesData]);
+  const idToSlug = useMemo(() => {
+    const map: Record<string, string> = {};
+    servicesData.forEach(s => { map[String(s.id)] = String(s.slug).toLowerCase(); });
+    return map;
+  }, [servicesData]);
+
+  const normalizeProviderServiceSlugs = (provider: any): Set<string> => {
+    const result = new Set<string>();
+    let raw: any = provider?.services ?? [];
+    if (typeof raw === 'string') {
+      raw = raw.split(',').map((x: string) => x.trim()).filter(Boolean);
+    }
+    if (!Array.isArray(raw)) return result;
+
+    for (const entry of raw) {
+      const lower = String(entry).toLowerCase();
+      // Direct matches by slug
+      if (serviceSlugSet.has(lower)) { result.add(lower); continue; }
+      // Match by name
+      if (nameToSlug[lower]) { result.add(nameToSlug[lower]); continue; }
+      // Match by id
+      if (idToSlug[String(entry)]) { result.add(idToSlug[String(entry)]); continue; }
+    }
+    return result;
+  };
 
   const filteredServices = servicesData.filter(service => {
     const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory;
@@ -166,7 +216,8 @@ export default function ServicesPageContent() {
 
   const countProvidersForService = (serviceSlug: string) => {
     try {
-      return providers.filter((p: any) => Array.isArray(p.services) && p.services.includes(serviceSlug)).length;
+      const target = String(serviceSlug).toLowerCase();
+      return providers.filter((p: any) => normalizeProviderServiceSlugs(p).has(target)).length;
     } catch {
       return 0;
     }
@@ -174,13 +225,15 @@ export default function ServicesPageContent() {
 
   const countProvidersForCategory = (categorySlug: string) => {
     try {
-      const categoryServiceSlugs = serviceCategories
-        .find(c => c.slug === categorySlug)?.services
-        ?.map((s: any) => s.slug) || [];
       if (categorySlug === 'all') return providers.length || 0;
+      const categorySlugs = servicesData
+        .filter(svc => String(svc.category) === String(categorySlug))
+        .map(svc => String(svc.slug));
+      if (categorySlugs.length === 0) return 0;
       return providers.filter((p: any) => {
-        if (!Array.isArray(p.services)) return false;
-        return p.services.some((s: string) => categoryServiceSlugs.includes(s));
+        const set = normalizeProviderServiceSlugs(p);
+        for (const slug of categorySlugs) { if (set.has(String(slug).toLowerCase())) return true; }
+        return false;
       }).length;
     } catch {
       return 0;
@@ -236,7 +289,7 @@ export default function ServicesPageContent() {
                   </SelectTrigger>
                   <SelectContent className="bg-black/95 border-neon-green/30">
                     <SelectItem value="all" className="text-white hover:bg-neon-green/10">All Categories</SelectItem>
-                    {serviceCategories.map(category => (
+                    {visibleCategories.map(category => (
                       <SelectItem key={category.id} value={category.slug} className="text-white hover:bg-neon-green/10">
                         {category.name}
                       </SelectItem>
@@ -258,7 +311,7 @@ export default function ServicesPageContent() {
               </div>
               
               <div className="text-center text-white/60 text-sm mt-6">
-                Found {sortedServices.length} services across {serviceCategories.length} categories
+                Found {sortedServices.length} services across {visibleCategories.length} categories
               </div>
             </div>
           </div>
@@ -306,7 +359,7 @@ export default function ServicesPageContent() {
               </motion.div>
             </Link>
 
-            {serviceCategories.map((category, index) => {
+            {visibleCategories.map((category, index) => {
               const Icon = getIcon(category.icon);
               const providersCount = countProvidersForCategory(category.slug);
               
@@ -332,7 +385,7 @@ export default function ServicesPageContent() {
                       <h3 className="font-bold text-white text-lg mb-2">{category.name}</h3>
                       <p className="text-white/60 text-sm mb-4">{category.description}</p>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-neon-blue font-medium">{category.services.length} services</span>
+                        <span className="text-neon-blue font-medium">{servicesData.filter(s => String(s.category) === String(category.slug)).length} services</span>
                         <span className="text-neon-green font-medium">{countProvidersForCategory(category.slug)} providers</span>
                       </div>
                     </div>

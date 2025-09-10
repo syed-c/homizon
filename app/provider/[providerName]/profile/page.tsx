@@ -13,8 +13,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { updateProviderInSupabase, uploadImageToSupabaseStorage } from '@/lib/supabase';
-import { services, areas } from '@/lib/data';
+import { updateProviderInSupabase, uploadImageToSupabaseStorage, listServicesFromSupabase, listAreasFromSupabase } from '@/lib/supabase';
+import { useMemo } from 'react';
 
 interface Provider {
   id: string;
@@ -41,13 +41,30 @@ export default function ProviderProfile() {
   const [saving, setSaving] = useState(false);
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const [profilePreview, setProfilePreview] = useState<string | null>(null);
+  const [servicesDb, setServicesDb] = useState<{ id?: string; slug: string; name: string; status?: string }[]>([]);
+  const [areasDb, setAreasDb] = useState<{ id?: string; slug: string; name: string; status?: string; description?: string }[]>([]);
 
   useEffect(() => {
     const storedProvider = localStorage.getItem('provider');
     if (storedProvider) {
       setProvider(JSON.parse(storedProvider));
     }
-    setLoading(false);
+    // Load services and areas from Supabase
+    const load = async () => {
+      try {
+        const [svcRes, areaRes] = await Promise.all([
+          listServicesFromSupabase(),
+          listAreasFromSupabase()
+        ]);
+        const svc = (svcRes.data || []).filter((s: any) => s.status === 'active').map((s: any) => ({ id: s.id, slug: s.slug, name: s.name, status: s.status }));
+        const ars = (areaRes.data || []).filter((a: any) => a.status === 'active').map((a: any) => ({ id: a.id, slug: a.slug, name: a.name, status: a.status, description: a.description }));
+        setServicesDb(svc);
+        setAreasDb(ars);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -290,17 +307,16 @@ export default function ProviderProfile() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {services.map(service => (
-                  <div key={service.id} className="flex items-center space-x-3">
+                {servicesDb.map(service => (
+                  <div key={service.id || service.slug} className="flex items-center space-x-3">
                     <Checkbox
-                      id={service.id}
-                      checked={provider.services.includes(service.id)}
-                      onCheckedChange={() => handleServiceToggle(service.id)}
+                      id={(service.id || service.slug) as string}
+                      checked={provider.services.includes((service.id || service.slug) as string)}
+                      onCheckedChange={() => handleServiceToggle((service.id || service.slug) as string)}
                       disabled={!editing}
                     />
-                    <label htmlFor={service.id} className="text-white/80 cursor-pointer flex-1">
+                    <label htmlFor={(service.id || service.slug) as string} className="text-white/80 cursor-pointer flex-1">
                       {service.name}
-                      <span className="text-white/50 text-sm ml-2">(Avg. {service.averagePrice})</span>
                     </label>
                   </div>
                 ))}
@@ -315,17 +331,17 @@ export default function ProviderProfile() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {areas.map(area => (
-                  <div key={area.id} className="flex items-center space-x-3">
+                {areasDb.map(area => (
+                  <div key={area.id || area.slug} className="flex items-center space-x-3">
                     <Checkbox
-                      id={area.id}
-                      checked={provider.areas.includes(area.id)}
-                      onCheckedChange={() => handleAreaToggle(area.id)}
+                      id={(area.id || area.slug) as string}
+                      checked={provider.areas.includes((area.id || area.slug) as string)}
+                      onCheckedChange={() => handleAreaToggle((area.id || area.slug) as string)}
                       disabled={!editing}
                     />
-                    <label htmlFor={area.id} className="text-white/80 cursor-pointer flex-1">
+                    <label htmlFor={(area.id || area.slug) as string} className="text-white/80 cursor-pointer flex-1">
                       {area.name}
-                      <span className="text-white/50 text-sm block">{area.description}</span>
+                      {area.description ? (<span className="text-white/50 text-sm block">{area.description}</span>) : null}
                     </label>
                   </div>
                 ))}

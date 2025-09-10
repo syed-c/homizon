@@ -169,7 +169,7 @@ export default function PagesEditor() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pageContent, setPageContent] = useState<HomePageContent | ServicesPageContent | ServiceDetailPageContent | any>(defaultHomePageContent);
-  const [pageType, setPageType] = useState<'home' | 'services' | 'category' | 'serviceDetail' | 'areas' | 'areaDetail' | 'serviceAreaDetail'>('home');
+  const [pageType, setPageType] = useState<'home' | 'services' | 'category' | 'serviceDetail' | 'areas' | 'areaDetail' | 'serviceAreaDetail' | 'about'>('home');
   const [metaData, setMetaData] = useState({
     slug: '',
     meta_title: "HOMIZON - Dubai's Premier Home Services Platform",
@@ -292,6 +292,38 @@ export default function PagesEditor() {
         emergency: {
           h2: incoming?.emergency?.h2 || '24/7 Emergency Services',
           paragraph: incoming?.emergency?.paragraph || 'Urgent plumbing, electrical, or AC issues? Our emergency response team is available 24/7 across all major areas in Dubai with response times as fast as 1 hour.'
+        }
+      } as any);
+    } else if (page.page_slug === 'about') {
+      // About page editor
+      setPageType('about');
+      const incoming = (page.content || {}) as any;
+      setPageContent({
+        hero: {
+          h1: incoming?.hero?.h1 || "Dubai's Largest\nService Directory",
+          description: incoming?.hero?.description || "Since 2020, we've been connecting Dubai residents with trusted professionals, making home maintenance simple, reliable, and stress-free through our comprehensive directory."
+        },
+        mission: {
+          h2: incoming?.mission?.h2 || 'Our Mission',
+          paragraph: incoming?.mission?.paragraph || ''
+        },
+        vision: {
+          h2: incoming?.vision?.h2 || 'Our Vision',
+          paragraph: incoming?.vision?.paragraph || ''
+        },
+        values: {
+          h2: incoming?.values?.h2 || 'Our Core Values',
+          paragraph: incoming?.values?.paragraph || 'These principles guide everything we do and every decision we make',
+          items: Array.isArray(incoming?.values?.items) ? incoming.values.items : [
+            { title: 'Trust & Safety', description: 'All professionals undergo rigorous background checks and verification processes.' },
+            { title: 'Quality Excellence', description: 'We maintain the highest standards of service quality with satisfaction guarantees.' },
+            { title: 'Reliability', description: 'On-time service delivery with emergency support available 24/7.' },
+            { title: 'Customer First', description: 'Your satisfaction is our priority with dedicated customer support.' }
+          ]
+        },
+        cta: {
+          h2: incoming?.cta?.h2 || 'Ready to Experience the Difference?',
+          paragraph: incoming?.cta?.paragraph || 'Join thousands of satisfied customers who trust our directory to find the best service providers in Dubai'
         }
       } as any);
     } else if (page.page_slug && page.page_slug.startsWith('areas/')) {
@@ -455,8 +487,17 @@ export default function PagesEditor() {
     try {
       setSaving(true);
       
+      const normalizedSlug = (() => {
+        let s = metaData.slug || editingPage.page_slug || '';
+        // normalize legacy service-page slug to services/{slug}
+        if (s.startsWith('service-page/')) s = `services/${s.replace('service-page/','')}`;
+        if (s === '/') s = '';
+        if (s.startsWith('/')) s = s.slice(1);
+        return s;
+      })();
+
       const updatedContent = {
-        page_slug: metaData.slug === '/' ? '' : metaData.slug || '',
+        page_slug: normalizedSlug,
         content: pageContent,
         meta_title: metaData.meta_title,
         meta_description: metaData.meta_description
@@ -464,8 +505,9 @@ export default function PagesEditor() {
 
       console.log('Saving page content:', updatedContent);
 
-      // Check if this is a new page or updating existing
-      const isNewPage = !editingPage.id || editingPage.id === 'home-page';
+      // Check if this slug exists in CMS; if not, create (POST) instead of update (PUT)
+      const existsInCms = pages.some(p => (p.page_slug || '') === normalizedSlug);
+      const isNewPage = !existsInCms;
       
       console.log('Is new page:', isNewPage, 'Method:', isNewPage ? 'POST' : 'PUT');
       
@@ -592,7 +634,6 @@ export default function PagesEditor() {
   const activeServiceSlugs = servicesDb.map(s => s.slug);
 
   // Virtual entries for each individual service detail page (only for active services in Supabase)
-  // Virtual entries for each individual service detail page (only for active services in Supabase)
   const serviceDetailVirtualPages: PageContent[] = servicesDb.map((svc: any) => ({
     id: `services-${svc.slug}`,
     page_slug: `services/${svc.slug}`,
@@ -607,8 +648,42 @@ export default function PagesEditor() {
     updated_at: new Date().toISOString()
   }));
 
-  // Ensure Areas page appears in list (virtual entry if not yet saved)
-  // Removed areas virtual page: only show what exists in Supabase pages_content
+  // Virtual About page entry so it shows even if not yet created in CMS
+  const aboutVirtualPage: PageContent = {
+    id: 'about-page',
+    page_slug: 'about',
+    content: {
+      hero: {
+        h1: "Dubai's Largest\nService Directory",
+        description: "Since 2020, we've been connecting Dubai residents with trusted professionals, making home maintenance simple, reliable, and stress-free through our comprehensive directory."
+      },
+      mission: {
+        h2: 'Our Mission',
+        paragraph: 'To revolutionize the home services industry in Dubai by providing a comprehensive directory that connects residents with verified professionals, ensuring quality service delivery and complete transparency at every touchpoint. We believe that finding trusted home services should be simple, transparent, and stress-free. Our mission is to make professional home services accessible to every household in Dubai through our comprehensive directory platform.'
+      },
+      vision: {
+        h2: 'Our Vision',
+        paragraph: 'To become the most trusted and comprehensive home services directory in the Middle East, setting new standards for transparency, reliability, and customer satisfaction. We envision a future where every home service need is met through our platform with professional excellence, transparent pricing, and guaranteed satisfaction, making us the first choice for residents and service providers across the region.'
+      },
+      values: {
+        h2: 'Our Core Values',
+        paragraph: 'These principles guide everything we do and every decision we make',
+        items: [
+          { title: 'Trust & Safety', description: 'All professionals undergo rigorous background checks and verification processes.' },
+          { title: 'Quality Excellence', description: 'We maintain the highest standards of service quality with satisfaction guarantees.' },
+          { title: 'Reliability', description: 'On-time service delivery with emergency support available 24/7.' },
+          { title: 'Customer First', description: 'Your satisfaction is our priority with dedicated customer support.' }
+        ]
+      },
+      cta: {
+        h2: 'Ready to Experience the Difference?',
+        paragraph: 'Join thousands of satisfied customers who trust our directory to find the best service providers in Dubai'
+      }
+    },
+    meta_title: 'About Us | HOMIZON',
+    meta_description: 'Learn about our mission, vision, and values at Homizon.' ,
+    updated_at: new Date().toISOString()
+  };
 
   // Filter out CMS pages for services that are not present in Supabase
   const filteredCmsPages = pages.filter(p => {
@@ -624,13 +699,6 @@ export default function PagesEditor() {
     return true;
   });
 
-  // Build virtual entries for per-location area detail pages
-  const areaDetailVirtualPages: PageContent[] = [];
-
-  // Virtual entries for service-area pages for each area and popular services
-  const serviceAreaVirtualPages: PageContent[] = [];
-
-  // Exclude legacy service-area pages saved under pattern "{service}/{area}"
   const serviceSlugs = services.map(s => s.slug);
   const areaSlugs = areasDb.map(a => a.slug);
   const furtherFilteredCmsPages = filteredCmsPages.filter(p => {
@@ -659,6 +727,8 @@ export default function PagesEditor() {
   });
 
   const mergedPages = [
+    // Include About page if missing
+    ...(furtherFilteredCmsPages.some(p => p.page_slug === 'about') ? [] : [aboutVirtualPage]),
     // Include service detail virtual pages (only for services active in Supabase) when missing from CMS
     ...serviceDetailVirtualPages.filter(v => !furtherFilteredCmsPages.some(p => p.page_slug === v.page_slug)),
     // Only show pages that actually exist in Supabase (and categories for active services)
@@ -811,6 +881,7 @@ export default function PagesEditor() {
               {pageType === 'services' && 'Edit Services Page Content'}
               {pageType === 'category' && 'Edit Category Page Content'}
               {pageType === 'serviceDetail' && 'Edit Service Page Content'}
+              {pageType === 'about' && 'Edit About Page Content'}
             </DialogTitle>
           </DialogHeader>
           
@@ -871,6 +942,16 @@ export default function PagesEditor() {
                 <TabsTrigger value="hero">Hero</TabsTrigger>
                 <TabsTrigger value="about">About</TabsTrigger>
                 <TabsTrigger value="providers">Providers</TabsTrigger>
+                <TabsTrigger value="meta">Meta SEO</TabsTrigger>
+              </TabsList>
+            )}
+            {pageType === 'about' && (
+              <TabsList className="grid w-full grid-cols-6 bg-white/10">
+                <TabsTrigger value="hero">Hero</TabsTrigger>
+                <TabsTrigger value="mission">Our Mission</TabsTrigger>
+                <TabsTrigger value="vision">Our Vision</TabsTrigger>
+                <TabsTrigger value="values">Core Values</TabsTrigger>
+                <TabsTrigger value="cta">CTA</TabsTrigger>
                 <TabsTrigger value="meta">Meta SEO</TabsTrigger>
               </TabsList>
             )}
@@ -1835,6 +1916,51 @@ export default function PagesEditor() {
                 </div>
               </div>
             </TabsContent>
+            {pageType === 'about' && (
+              <>
+                <TabsContent value="mission" className="space-y-4">
+                  <div className="space-y-3">
+                    <Label className="text-white">Mission H2</Label>
+                    <Input value={(pageContent as any)?.mission?.h2 || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, mission: { ...(prev as any).mission, h2: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
+                    <Label className="text-white">Mission Paragraph</Label>
+                    <Textarea rows={4} value={(pageContent as any)?.mission?.paragraph || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, mission: { ...(prev as any).mission, paragraph: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
+                  </div>
+                </TabsContent>
+                <TabsContent value="vision" className="space-y-4">
+                  <div className="space-y-3">
+                    <Label className="text-white">Vision H2</Label>
+                    <Input value={(pageContent as any)?.vision?.h2 || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, vision: { ...(prev as any).vision, h2: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
+                    <Label className="text-white">Vision Paragraph</Label>
+                    <Textarea rows={4} value={(pageContent as any)?.vision?.paragraph || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, vision: { ...(prev as any).vision, paragraph: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
+                  </div>
+                </TabsContent>
+                <TabsContent value="values" className="space-y-4">
+                  <div className="space-y-3">
+                    <Label className="text-white">Values H2</Label>
+                    <Input value={(pageContent as any)?.values?.h2 || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, values: { ...(prev as any).values, h2: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
+                    <Label className="text-white">Values Paragraph</Label>
+                    <Textarea rows={3} value={(pageContent as any)?.values?.paragraph || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, values: { ...(prev as any).values, paragraph: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
+                    <div className="space-y-3">
+                      <Label className="text-white">Value Items</Label>
+                      {(((pageContent as any)?.values?.items) || []).map((item: any, i: number) => (
+                        <div key={i} className="p-3 bg-white/5 border border-white/10 rounded-lg space-y-2">
+                          <Input value={item.title} onChange={(e)=>setPageContent(prev=>({ ...prev, values: { ...(prev as any).values, items: ((prev as any).values.items).map((x:any,idx:number)=> idx===i ? { ...x, title: e.target.value } : x) } }))} placeholder="Title" className="bg-white/5 border-white/20 text-white" />
+                          <Textarea rows={2} value={item.description} onChange={(e)=>setPageContent(prev=>({ ...prev, values: { ...(prev as any).values, items: ((prev as any).values.items).map((x:any,idx:number)=> idx===i ? { ...x, description: e.target.value } : x) } }))} placeholder="Description" className="bg-white/5 border-white/20 text-white" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="cta" className="space-y-4">
+                  <div className="space-y-3">
+                    <Label className="text-white">CTA H2</Label>
+                    <Input value={(pageContent as any)?.cta?.h2 || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, cta: { ...(prev as any).cta, h2: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
+                    <Label className="text-white">CTA Paragraph</Label>
+                    <Textarea rows={3} value={(pageContent as any)?.cta?.paragraph || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, cta: { ...(prev as any).cta, paragraph: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
+                  </div>
+                </TabsContent>
+              </>
+            )}
           </Tabs>
 
           {/* Modal Footer */}

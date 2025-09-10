@@ -8,9 +8,20 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { getPageContentFromSupabase } from '@/lib/supabase';
 
 export default function AboutPageContent() {
   console.log("About page loaded");
+  const [cms, setCms] = useState<any>(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getPageContentFromSupabase('about');
+        setCms((res as any)?.data?.content || null);
+      } catch {}
+    })();
+  }, []);
 
   const stats = [
     { label: 'Happy Customers', value: '25,000+', icon: Users },
@@ -76,18 +87,21 @@ export default function AboutPageContent() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
               <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight" data-macaly="about-hero-title">
-                <span className="bg-gradient-to-r from-white to-neon-blue bg-clip-text text-transparent">
-                  Dubai's Largest
-                </span>
-                <br />
-                <span className="bg-gradient-to-r from-neon-blue to-neon-green bg-clip-text text-transparent">
-                  Service Directory
-                </span>
+                {(() => {
+                  const h1 = cms?.hero?.h1 || "Dubai's Largest\nService Directory";
+                  const [l1, l2] = String(h1).split('\n');
+                  return (
+                    <>
+                      <span className="bg-gradient-to-r from-white to-neon-blue bg-clip-text text-transparent">{l1}</span>
+                      <br />
+                      <span className="bg-gradient-to-r from-neon-blue to-neon-green bg-clip-text text-transparent">{l2 || ''}</span>
+                    </>
+                  );
+                })()}
               </h1>
               
               <p className="text-xl text-white/70 mb-8 leading-relaxed" data-macaly="about-hero-description">
-                Since 2020, we've been connecting Dubai residents with trusted professionals, 
-                making home maintenance simple, reliable, and stress-free through our comprehensive directory.
+                {cms?.hero?.description || "Since 2020, we've been connecting Dubai residents with trusted professionals, making home maintenance simple, reliable, and stress-free through our comprehensive directory."}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -165,34 +179,17 @@ export default function AboutPageContent() {
             <div>
               <div className="flex items-center space-x-3 mb-6">
                 <Target className="h-8 w-8 text-neon-blue" />
-                <h2 className="text-3xl font-bold text-white">Our Mission</h2>
+                <h2 className="text-3xl font-bold text-white">{cms?.mission?.h2 || 'Our Mission'}</h2>
               </div>
-              <p className="text-white/70 text-lg leading-relaxed mb-6">
-                To revolutionize the home services industry in Dubai by providing a comprehensive 
-                directory that connects residents with verified professionals, ensuring quality 
-                service delivery and complete transparency at every touchpoint.
-              </p>
-              <p className="text-white/70 leading-relaxed">
-                We believe that finding trusted home services should be simple, transparent, and stress-free. 
-                Our mission is to make professional home services accessible to every household in Dubai 
-                through our comprehensive directory platform.
-              </p>
+              <p className="text-white/70 text-lg leading-relaxed mb-6">{cms?.mission?.paragraph || "To revolutionize the home services industry in Dubai by providing a comprehensive directory that connects residents with verified professionals, ensuring quality service delivery and complete transparency at every touchpoint. We believe that finding trusted home services should be simple, transparent, and stress-free. Our mission is to make professional home services accessible to every household in Dubai through our comprehensive directory platform."}</p>
             </div>
 
             <div>
               <div className="flex items-center space-x-3 mb-6">
                 <Eye className="h-8 w-8 text-neon-green" />
-                <h2 className="text-3xl font-bold text-white">Our Vision</h2>
+                <h2 className="text-3xl font-bold text-white">{cms?.vision?.h2 || 'Our Vision'}</h2>
               </div>
-              <p className="text-white/70 text-lg leading-relaxed mb-6">
-                To become the most trusted and comprehensive home services directory in the Middle East, 
-                setting new standards for transparency, reliability, and customer satisfaction.
-              </p>
-              <p className="text-white/70 leading-relaxed">
-                We envision a future where every home service need is met through our platform with 
-                professional excellence, transparent pricing, and guaranteed satisfaction, making us 
-                the first choice for residents and service providers across the region.
-              </p>
+              <p className="text-white/70 text-lg leading-relaxed mb-6">{cms?.vision?.paragraph || "To become the most trusted and comprehensive home services directory in the Middle East, setting new standards for transparency, reliability, and customer satisfaction. We envision a future where every home service need is met through our platform with professional excellence, transparent pricing, and guaranteed satisfaction, making us the first choice for residents and service providers across the region."}</p>
             </div>
           </div>
         </section>
@@ -202,19 +199,19 @@ export default function AboutPageContent() {
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold mb-4 text-white" data-macaly="values-title">
               <span className="bg-gradient-to-r from-white to-neon-green bg-clip-text text-transparent">
-                Our Core Values
+                {cms?.values?.h2 || 'Our Core Values'}
               </span>
             </h2>
             <p className="text-white/60 text-lg max-w-2xl mx-auto" data-macaly="values-description">
-              These principles guide everything we do and every decision we make
+              {cms?.values?.paragraph || 'These principles guide everything we do and every decision we make'}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {values.map((value, index) => (
+            {(cms?.values?.items || values).map((value: any, index: number) => (
               <div key={index} className="text-center">
                 <div className="w-16 h-16 bg-gradient-to-r from-neon-blue to-neon-green rounded-xl flex items-center justify-center mx-auto mb-6">
-                  <value.icon className="h-8 w-8 text-black" />
+                  {(value.icon ? value.icon : Shield) && <Shield className="h-8 w-8 text-black" />}
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-4">{value.title}</h3>
                 <p className="text-white/70 leading-relaxed">{value.description}</p>
@@ -223,40 +220,7 @@ export default function AboutPageContent() {
           </div>
         </section>
 
-        {/* Team Section */}
-        <section className="py-20">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4 text-white" data-macaly="team-title">
-              <span className="bg-gradient-to-r from-white to-neon-blue bg-clip-text text-transparent">
-                Meet Our Leadership
-              </span>
-            </h2>
-            <p className="text-white/60 text-lg max-w-2xl mx-auto" data-macaly="team-description">
-              Experienced professionals dedicated to transforming home services in Dubai
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {team.map((member, index) => (
-              <div key={index} className="text-center">
-                <Card className="bg-gradient-card backdrop-blur-sm border border-white/10 overflow-hidden hover:border-neon-blue/50 transition-all duration-300">
-                  <CardContent className="p-6">
-                    <div className="w-24 h-24 rounded-full overflow-hidden mx-auto mb-4 border-2 border-neon-blue/30">
-                      <img 
-                        src={member.image}
-                        alt={member.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <h3 className="text-xl font-semibold text-white mb-2">{member.name}</h3>
-                    <p className="text-neon-blue font-medium mb-3">{member.role}</p>
-                    <p className="text-white/60 text-sm">{member.experience}</p>
-                  </CardContent>
-                </Card>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Team Section removed per request */}
 
         {/* CTA Section */}
         <section className="py-20 text-center">

@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import { services } from '@/lib/data';
 import { listProvidersFromSupabase, getServiceBySlugFromSupabase, listAreasFromSupabase, getPageContentFromSupabase } from '@/lib/supabase';
 import ServiceAreaClient from './service-client';
 
@@ -65,12 +64,10 @@ export default async function AreaServicePage({ params }: AreaServicePageProps) 
     const res = await listProvidersFromSupabase();
     const rows: any[] = res.data || [];
     // Build normalization maps for robust matching
-    const serviceSlugSet = new Set([serviceSlug]);
-    const areaSlugSet = new Set([areaSlug]);
-    const serviceNames = services.filter(s => s.slug === serviceSlug).map(s => [s.slug, s.id, s.name?.toLowerCase()]).flat().filter(Boolean);
-    const areaNames = [area.slug, area.name?.toLowerCase()].filter(Boolean);
-    serviceNames.forEach(v => serviceSlugSet.add(String(v).toLowerCase()));
-    areaNames.forEach(v => areaSlugSet.add(String(v).toLowerCase()));
+    const serviceSlugSet = new Set<string>([String(service.slug).toLowerCase()]);
+    const areaSlugSet = new Set<string>([String(area.slug).toLowerCase()]);
+    if (service.name) serviceSlugSet.add(String(service.name).toLowerCase());
+    if (area.name) areaSlugSet.add(String(area.name).toLowerCase());
 
     const toArray = (val: any): any[] => {
       if (Array.isArray(val)) return val;

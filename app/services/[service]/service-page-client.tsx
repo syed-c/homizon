@@ -58,6 +58,7 @@ export default function ServicePageClient({ service, category }: ServicePageClie
   const [customContent, setCustomContent] = useState<any>(null);
   const [cmsContent, setCmsContent] = useState<any>(null);
   const [dbProviders, setDbProviders] = useState<any[]>([]);
+  const [serviceSlugMap, setServiceSlugMap] = useState<{ idToSlug: Record<string,string>; nameToSlug: Record<string,string> }>({ idToSlug: {}, nameToSlug: {} });
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const { settings } = useSettings();
@@ -95,21 +96,56 @@ export default function ServicePageClient({ service, category }: ServicePageClie
   useEffect(() => {
     const loadCms = async () => {
       try {
-        const res = await getPageContentFromSupabase(`service-page/${service.slug}`);
-        const content = (res as any)?.data?.content;
+        // Primary: services/{slug}
+        let res = await getPageContentFromSupabase(`services/${service.slug}`);
+        let content = (res as any)?.data?.content;
+        // Fallback to legacy service-page/{slug}
+        if (!content) {
+          res = await getPageContentFromSupabase(`service-page/${service.slug}`);
+          content = (res as any)?.data?.content;
+        }
         if (content) setCmsContent(content);
       } catch {}
     };
     loadCms();
   }, [service.slug]);
 
-  // Load providers from Supabase and filter by service slug
+  // Load providers and services from Supabase and filter by service slug with normalization
   useEffect(() => {
     const loadProviders = async () => {
       try {
-        const res = await listProvidersFromSupabase();
-        const all = res.data || [];
-        const filtered = all.filter((p: any) => Array.isArray(p.services) && p.services.includes(service.slug));
+        const [provRes, svcRes] = await Promise.all([
+          listProvidersFromSupabase(),
+          listServicesFromSupabase()
+        ]);
+        const allProviders: any[] = provRes.data || [];
+        const activeServices: any[] = (svcRes.data || []).filter((s: any) => s.status === 'active');
+        const idToSlug: Record<string,string> = {};
+        const nameToSlug: Record<string,string> = {};
+        activeServices.forEach((s: any) => {
+          idToSlug[String(s.id)] = String(s.slug).toLowerCase();
+          nameToSlug[String(s.name).toLowerCase()] = String(s.slug).toLowerCase();
+        });
+        setServiceSlugMap({ idToSlug, nameToSlug });
+
+        const normalizeProviderServices = (p: any): Set<string> => {
+          const out = new Set<string>();
+          let raw: any = p?.services ?? [];
+          if (typeof raw === 'string') {
+            raw = raw.split(',').map((x: string) => x.trim()).filter(Boolean);
+          }
+          if (!Array.isArray(raw)) return out;
+          for (const entry of raw) {
+            const asString = String(entry);
+            const lower = asString.toLowerCase();
+            if (lower === service.slug) { out.add(lower); continue; }
+            if (nameToSlug[lower]) { out.add(nameToSlug[lower]); continue; }
+            if (idToSlug[asString]) { out.add(idToSlug[asString]); continue; }
+          }
+          return out;
+        };
+
+        const filtered = allProviders.filter((p: any) => normalizeProviderServices(p).has(service.slug));
         setDbProviders(filtered);
       } catch {
         setDbProviders([]);
@@ -961,6 +997,7 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
   const [cmsHero, setCmsHero] = useState<{ h1?: string; description?: string } | null>(null);
   const [providerCounts, setProviderCounts] = useState<Record<string, number>>({});
   const [servicesDb, setServicesDb] = useState<any[]>([]);
+  const [serviceSlugMap, setServiceSlugMap] = useState<{ idToSlug: Record<string,string>; nameToSlug: Record<string,string> }>({ idToSlug: {}, nameToSlug: {} });
 
   console.log("Service category page loaded:", category.name);
 
@@ -980,15 +1017,43 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
     loadCms();
   }, [category.slug]);
 
-  // Load provider counts for services from Supabase only
+  // Load provider counts for services from Supabase using normalization
   useEffect(() => {
     const loadProviderCounts = async () => {
       try {
-        const res = await listProvidersFromSupabase();
-        const providers: any[] = res.data || [];
+        const [provRes, svcRes] = await Promise.all([
+          listProvidersFromSupabase(),
+          listServicesFromSupabase()
+        ]);
+        const providers: any[] = provRes.data || [];
+        const activeServices: any[] = (svcRes.data || []).filter((s: any) => s.status === 'active');
+        const idToSlug: Record<string,string> = {};
+        const nameToSlug: Record<string,string> = {};
+        activeServices.forEach((s: any) => {
+          idToSlug[String(s.id)] = String(s.slug).toLowerCase();
+          nameToSlug[String(s.name).toLowerCase()] = String(s.slug).toLowerCase();
+        });
+        setServiceSlugMap({ idToSlug, nameToSlug });
+
+        const normalizeProviderServices = (p: any): Set<string> => {
+          const out = new Set<string>();
+          let raw: any = p?.services ?? [];
+          if (typeof raw === 'string') raw = raw.split(',').map((x: string) => x.trim()).filter(Boolean);
+          if (!Array.isArray(raw)) return out;
+          for (const entry of raw) {
+            const asString = String(entry);
+            const lower = asString.toLowerCase();
+            if (nameToSlug[lower]) { out.add(nameToSlug[lower]); continue; }
+            if (idToSlug[asString]) { out.add(idToSlug[asString]); continue; }
+            out.add(lower); // already a slug
+          }
+          return out;
+        };
+
         const counts: Record<string, number> = {};
         servicesDb.forEach(svc => {
-          counts[svc.slug] = providers.filter(p => Array.isArray(p.services) && p.services.includes(svc.slug)).length;
+          const slug = String(svc.slug).toLowerCase();
+          counts[slug] = providers.filter(p => normalizeProviderServices(p).has(slug)).length;
         });
         setProviderCounts(counts);
       } catch (e) {
@@ -1006,8 +1071,37 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
     const loadCategoryServices = async () => {
       try {
         const res = await listServicesFromSupabase();
-        const allowedSlugs = new Set<string>(category.services.map(s => s.slug));
-        const db = (res.data || []).filter((s: any) => s.status === 'active' && allowedSlugs.has(s.slug));
+        const rows: any[] = (res.data || []).filter((s: any) => s.status === 'active');
+        // Map category_id -> slug (stable UUID mapping used in admin/services page)
+        const uuidToSlug: Record<string, string> = {
+          '11111111-1111-1111-1111-111111111111': 'ac-repair-cleaning',
+          '22222222-2222-2222-2222-222222222222': 'appliance-repair',
+          '33333333-3333-3333-3333-333333333333': 'deep-cleaning',
+          '44444444-4444-4444-4444-444444444444': 'pest-control',
+          '55555555-5555-5555-5555-555555555555': 'plumbing',
+          '66666666-6666-6666-6666-666666666666': 'electrician',
+          '77777777-7777-7777-7777-777777777777': 'handyman',
+          '88888888-8888-8888-8888-888888888888': 'laundry',
+          '99999999-9999-9999-9999-999999999999': 'packers-movers',
+          'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa': 'sanitization',
+        };
+        const inferCategory = (slug: string): string => {
+          const s = String(slug).toLowerCase();
+          if (/(^|[-])ac(?![a-z])|air-?conditioner|airconditioner|a\s*c/.test(s)) return 'ac-repair-cleaning';
+          if (/(wash|refrigerator|fridge|dryer|dishwasher|stove|cooker|oven|microwave|gas|electric|ice|wine|cooler)/.test(s)) return 'appliance-repair';
+          if (/(clean)/.test(s)) return 'deep-cleaning';
+          if (/(pest|termite|bed-?bug|rodent|mosquito|cockroach)/.test(s)) return 'pest-control';
+          if (/(plumb)/.test(s)) return 'plumbing';
+          if (/(electric)/.test(s)) return 'electrician';
+          if (/(handyman|mount|assembly|light|installation)/.test(s)) return 'handyman';
+          return 'appliance-repair';
+        };
+
+        const db = rows.filter((row: any) => {
+          const rowCategory = (row.category_id && uuidToSlug[String(row.category_id)]) || inferCategory(row.slug);
+          return rowCategory === category.slug;
+        });
+
         const normalized = db.map((row: any) => ({
           id: row.id,
           name: row.name,

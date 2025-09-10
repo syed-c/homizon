@@ -125,7 +125,7 @@ export default async function ServicePage({ params }: ServicePageProps) {
     serviceRow = res.data;
   } catch {}
 
-  // If Supabase does not have this service as active, treat as not found (even if present in static data)
+  // If Supabase does not have this service as active, it might still be a category
   if (!serviceRow || serviceRow.status !== 'active') {
     const categoryTmp = serviceCategories.find(cat => cat.slug === serviceSlug);
     if (!categoryTmp) {
@@ -133,14 +133,40 @@ export default async function ServicePage({ params }: ServicePageProps) {
     }
   }
 
-  const service = getServiceBySlug(serviceSlug);
+  // Build service data: prefer static template; fallback to basic object from Supabase
+  let service = serviceRow && serviceRow.status === 'active' ? getServiceBySlug(serviceSlug) : undefined;
+  if (!service && serviceRow && serviceRow.status === 'active') {
+    const s = String(serviceRow.slug || '').toLowerCase();
+    const categorize = (slug: string): string => {
+      if (/(^|[-])ac(?![a-z])|air-?conditioner|airconditioner|a\s*c/.test(slug)) return 'ac-repair-cleaning';
+      if (/(wash|refrigerator|fridge|dryer|dishwasher|stove|cooker|oven|microwave|gas|electric|ice|wine|cooler)/.test(slug)) return 'appliance-repair';
+      if (/(clean)/.test(slug)) return 'deep-cleaning';
+      if (/(pest|termite|bed-?bug|rodent|mosquito|cockroach)/.test(slug)) return 'pest-control';
+      if (/(plumb)/.test(slug)) return 'plumbing';
+      if (/(electric)/.test(slug)) return 'electrician';
+      if (/(handyman|mount|assembly|light|installation)/.test(slug)) return 'handyman';
+      return 'appliance-repair';
+    };
+    service = {
+      id: serviceRow.id,
+      name: serviceRow.name,
+      slug: serviceRow.slug,
+      description: `${serviceRow.name} services in Dubai`,
+      category: categorize(s),
+      icon: 'Settings',
+      averagePrice: 'AED 0',
+      estimatedTime: '—',
+      isPopular: false,
+      keywords: [serviceRow.name]
+    } as any;
+  }
 
   // If not found, check if it's a category
   const category = serviceCategories.find(cat => cat.slug === serviceSlug);
   
-  if ((!service || !serviceRow || serviceRow.status !== 'active') && !category) {
+  if ((!serviceRow || serviceRow.status !== 'active') && !category) {
     notFound();
   }
 
-  return <ServicePageClient service={service} category={category} />;
+  return <ServicePageClient service={service as any} category={category as any} />;
 }

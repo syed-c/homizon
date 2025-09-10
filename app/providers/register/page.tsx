@@ -15,7 +15,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { services, areas } from '@/lib/data';
+import { listServicesFromSupabase, listAreasFromSupabase } from '@/lib/supabase';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { uploadImageToSupabaseStorage, createProviderInSupabase, type ProviderInsert } from '@/lib/supabase';
 import { MultiSelect, OptionType } from '@/components/ui/multi-select';
@@ -83,6 +84,28 @@ export default function ProviderRegisterPage() {
     { number: 4, title: 'Pricing & Availability', description: 'Set your rates and schedule' },
     { number: 5, title: 'Review & Submit', description: 'Review your information' }
   ];
+
+  const [servicesDb, setServicesDb] = useState<{ id: string; slug: string; name: string; status?: string }[]>([]);
+  const [areasDb, setAreasDb] = useState<{ id?: string; slug: string; name: string }[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [svcRes, areaRes] = await Promise.all([
+          listServicesFromSupabase(),
+          listAreasFromSupabase()
+        ]);
+        const svc = (svcRes.data || []).filter((s: any) => s.status === 'active').map((s: any) => ({ id: s.id, slug: s.slug, name: s.name, status: s.status }));
+        const ars = (areaRes.data || []).filter((a: any) => a.status !== 'deleted').map((a: any) => ({ id: a.id, slug: a.slug, name: a.name }));
+        setServicesDb(svc);
+        setAreasDb(ars);
+      } catch (e) {
+        setServicesDb([]);
+        setAreasDb([]);
+      }
+    };
+    load();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -334,10 +357,10 @@ export default function ProviderRegisterPage() {
                     <h3 className="text-xl font-semibold text-white mb-4">Select Services You Offer</h3>
                     <div className="w-full">
                       <MultiSelect
-                        options={services.map(service => ({
-                          value: service.id,
+                        options={servicesDb.map(service => ({
+                          value: service.id || service.slug,
                           label: service.name,
-                          keywords: [service.averagePrice]
+                          keywords: [service.slug]
                         }))}
                         selected={formData.services}
                         onChange={(selectedServices) => {
@@ -357,10 +380,10 @@ export default function ProviderRegisterPage() {
                     <h3 className="text-xl font-semibold text-white mb-4">Select Service Areas</h3>
                     <div className="w-full">
                       <MultiSelect
-                        options={areas.map(area => ({
-                          value: area.id,
+                        options={areasDb.map(area => ({
+                          value: area.id || area.slug,
                           label: area.name,
-                          keywords: [area.description]
+                          keywords: [area.slug]
                         }))}
                         selected={formData.areas}
                         onChange={(selectedAreas) => {
@@ -419,7 +442,7 @@ export default function ProviderRegisterPage() {
                     <h3 className="text-xl font-semibold text-white mb-4">Set Your Service Rates</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {formData.services.map(serviceId => {
-                        const service = services.find(s => s.id === serviceId);
+                        const service = servicesDb.find(s => (s.id || s.slug) === serviceId);
                         return service ? (
                           <div key={serviceId} className="space-y-2">
                             <label className="block text-white/80 text-sm font-medium">{service.name}</label>
@@ -468,8 +491,8 @@ export default function ProviderRegisterPage() {
                   </div>
                   <div className="bg-white/5 rounded-lg p-4">
                     <h4 className="font-semibold text-white mb-2">Services & Areas</h4>
-                    <p className="text-white/70 mb-2">Services: {formData.services.map(id => services.find(s => s.id === id)?.name).join(', ')}</p>
-                    <p className="text-white/70">Areas: {formData.areas.map(id => areas.find(a => a.id === id)?.name).join(', ')}</p>
+                    <p className="text-white/70 mb-2">Services: {formData.services.map(id => servicesDb.find(s => (s.id || s.slug) === id)?.name).filter(Boolean).join(', ')}</p>
+                    <p className="text-white/70">Areas: {formData.areas.map(id => areasDb.find(a => (a.id || a.slug) === id)?.name).filter(Boolean).join(', ')}</p>
                   </div>
                   <div className="bg-white/5 rounded-lg p-4">
                     <h4 className="font-semibold text-white mb-2">Professional Details</h4>

@@ -33,6 +33,21 @@ const iconMap: { [key: string]: any } = {
   Wind, Droplets, Sparkles, Bug, Wrench, Zap, Hammer, Shirt, Truck, Shield, Settings, Package
 };
 
+// Stable UUIDs to persist category selection in Supabase (no categories table required)
+const categorySlugToUuid: Record<string, string> = {
+  'ac-repair-cleaning': '11111111-1111-1111-1111-111111111111',
+  'appliance-repair': '22222222-2222-2222-2222-222222222222',
+  'deep-cleaning': '33333333-3333-3333-3333-333333333333',
+  'pest-control': '44444444-4444-4444-4444-444444444444',
+  'plumbing': '55555555-5555-5555-5555-555555555555',
+  'electrician': '66666666-6666-6666-6666-666666666666',
+  'handyman': '77777777-7777-7777-7777-777777777777',
+  'laundry': '88888888-8888-8888-8888-888888888888',
+  'packers-movers': '99999999-9999-9999-9999-999999999999',
+  'sanitization': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+};
+const categoryUuidToSlug: Record<string, string> = Object.fromEntries(Object.entries(categorySlugToUuid).map(([k,v])=>[v,k]));
+
 export default function ServicesManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -58,13 +73,14 @@ export default function ServicesManagement() {
       // merge with local metadata for demo fields
       const enhanced: ServiceData[] = db.map((row: any) => {
         const base = services.find(s => s.slug === row.slug);
+        const categoryFromDb = row.category_id ? (categoryUuidToSlug[String(row.category_id)] || 'general') : 'general';
         return {
           ...(base || {
             id: row.id,
             name: row.name,
             slug: row.slug,
             description: `${row.name} services`,
-            category: 'general',
+            category: categoryFromDb,
             icon: 'Settings',
             averagePrice: 'AED 0',
             estimatedTime: '—',
@@ -132,7 +148,9 @@ export default function ServicesManagement() {
     if (!newServiceName || !newServiceSlug) return;
     setIsSaving(true);
     try {
-      const res = await createServiceInSupabase(newServiceName, newServiceSlug, newServiceCategoryId || null);
+      // Persist category using a stable UUID so it fits the `uuid` column
+      const categoryUuid = newServiceCategoryId ? (categorySlugToUuid[newServiceCategoryId] || null) : null;
+      const res = await createServiceInSupabase(newServiceName, newServiceSlug, categoryUuid);
       const row: any = res.data;
       setServicesData(prev => [{
         ...(services.find(s => s.slug === row.slug) || {
@@ -140,7 +158,7 @@ export default function ServicesManagement() {
           name: row.name,
           slug: row.slug,
           description: `${row.name} services`,
-          category: 'general',
+          category: categoryUuid ? (categoryUuidToSlug[categoryUuid] || 'general') : 'general',
           icon: 'Settings',
           averagePrice: 'AED 0',
           estimatedTime: '—',

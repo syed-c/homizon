@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { services, areas, type Provider } from '@/lib/data';
-import { getProviderByIdFromSupabase } from '@/lib/supabase';
+import { type Provider } from '@/lib/data';
+import { getProviderByIdFromSupabase, listServicesFromSupabase, listAreasFromSupabase } from '@/lib/supabase';
 import ProviderProfileClient from './provider-profile-client';
 
 type PageProps = {
@@ -28,8 +28,32 @@ export default async function ProviderProfilePage({ params }: PageProps) {
   const supaProvider = data as any;
   if (!supaProvider) return notFound();
 
-  const providerServices = services.filter(s => (supaProvider.services || []).includes(s.slug));
-  const providerAreas = areas.filter(a => (supaProvider.areas || []).includes(a.slug));
+  // Load active services and areas from Supabase and intersect with provider selections
+  const [svcRes, areaRes] = await Promise.all([
+    listServicesFromSupabase(),
+    listAreasFromSupabase()
+  ]);
+  const activeServices: any[] = (svcRes.data || []).filter((s: any) => s.status === 'active');
+  const activeAreas: any[] = (areaRes.data || []).filter((a: any) => a.status === 'active');
+  const normalize = (v: any) => String(v).toLowerCase().replace(/\s+/g, '-');
+  const providerServiceTokens = new Set<string>();
+  (supaProvider.services || []).forEach((val: any) => {
+    const str = String(val);
+    providerServiceTokens.add(str);
+    providerServiceTokens.add(normalize(str));
+  });
+  const providerAreaTokens = new Set<string>();
+  (supaProvider.areas || []).forEach((val: any) => {
+    const str = String(val);
+    providerAreaTokens.add(str);
+    providerAreaTokens.add(normalize(str));
+  });
+  const providerServices = activeServices
+    .filter((s: any) => providerServiceTokens.has(String(s.slug)) || providerServiceTokens.has(String(s.id)))
+    .map((s: any) => ({ slug: s.slug, name: s.name, category: s.category || '' }));
+  const providerAreas = activeAreas
+    .filter((a: any) => providerAreaTokens.has(String(a.slug)) || providerAreaTokens.has(String(a.id)))
+    .map((a: any) => ({ slug: a.slug, name: a.name }));
 
   return (
     <ProviderProfileClient 

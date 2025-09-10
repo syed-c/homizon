@@ -484,3 +484,42 @@ This document tracks all changes, fixes, and deployment-related actions performe
 - Added category tabs to `/admin/pages-editor`: Main Pages, Locations, Location's Services, Services
 - Added stat cards showing counts for each category at the top.
 
+### 2025-09-09 (About page CMS)
+
+- Enabled CMS editing for `/about` via `pages_content` slug `about`.
+  - `components/about-page-content.tsx` now loads hero, mission, vision, values (h2/paragraph/items), and CTA texts from CMS with safe fallbacks.
+  - Removed the "Meet Our Leadership" team section per request.
+
+### 2025-09-10
+
+- Services page category visibility + zero-provider pages
+  - Implemented category inference when Supabase `services.category_id` is null so categories still render.
+  - File: `components/services-page-content.tsx` – map service slug to category; compute `visibleCategories` from loaded services.
+  - File: `app/services/[service]/page.tsx` – ensure category pages render full layout even with 0 providers; only inactive services 404.
+
+- Persist category when creating a service from Admin
+  - File: `app/admin/services/page.tsx` – Add Service modal now saves selected category by passing a stable UUID to API; maps UUID back to category slug for display and filtering.
+  - Categories do not require a DB table; we use fixed UUIDs per category slug stored in `services.category_id`.
+
+- Notes
+  - Next step (optional): if we add a dedicated `service_categories` table later, replace stable UUID mapping with real FK IDs and expose categories via Supabase.
+
+- Category pages show Supabase-only services
+  - File: `app/services/[service]/service-page-client.tsx` – load all active services, resolve each row's category via `category_id→slug` map or slug inference, and filter by current category. This ensures newly created services appear in their selected category.
+
+- Accurate provider counts in Services directory
+  - File: `components/services-page-content.tsx` – normalized provider service matching:
+    - Accepts provider services as slugs, names, or IDs (and CSV strings), mapping them to canonical service slugs.
+    - Fixed `countProvidersForService` and `countProvidersForCategory` to use normalized sets.
+    - Header and category tiles now use `visibleCategories.length` and dynamic service lists for accurate totals.
+
+- Individual service page shows providers reliably
+  - File: `app/services/[service]/service-page-client.tsx` – provider filtering now normalizes provider services (slug/name/id or CSV) against Supabase services so matching works even if providers stored values differently. Also applied the same normalization for category provider counts.
+
+- Pages Editor save creates/updates correct records
+  - File: `app/admin/pages-editor/page.tsx` – normalized slug before saving (maps `service-page/{slug}` to `services/{slug}`, strips leading `/`, converts `/` to empty).
+  - Detects whether the slug already exists in CMS; uses POST to create new rows for virtual pages like `services/{slug}`, categories, and `about`, and PUT to update existing ones.
+
+- Service pages fetch CMS from the correct slug
+  - File: `app/services/[service]/service-page-client.tsx` – now loads page content from `services/{slug}` with a fallback to legacy `service-page/{slug}` so edits in the editor reflect on the public page immediately.
+
