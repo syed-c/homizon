@@ -283,7 +283,7 @@ export default function ServicePageClient({ service, category }: ServicePageClie
               transition={{ duration: 1, delay: 0.2 }}
             >
               <span className="bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-                {cmsContent?.hero?.h1 ? cmsContent.hero.h1.replace(' in Dubai','') : service.name}
+                {cmsContent?.hero?.h1}
               </span>
               <br />
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
@@ -297,8 +297,7 @@ export default function ServicePageClient({ service, category }: ServicePageClie
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.3 }}
             >
-              {cmsContent?.hero?.description || service.description}. Connect with {providers.length} verified professionals 
-              with an average rating of {averageRating.toFixed(1)} stars across Dubai.
+              {cmsContent?.hero?.description}
             </motion.p>
 
             {/* Quick Stats */}
@@ -1353,7 +1352,7 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.3 }}
             >
-              {cmsHero?.description || `${category.description} Find trusted professionals across Dubai with verified reviews and instant booking.`}
+              {cmsHero?.description}
             </motion.p>
 
             {/* Quick Stats */}

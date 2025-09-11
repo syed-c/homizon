@@ -22,10 +22,16 @@ export async function POST(request: NextRequest) {
     // Remove password from response for security
     const { password: _, ...providerWithoutPassword } = provider;
 
-    return NextResponse.json({ 
-      success: true, 
-      provider: providerWithoutPassword 
+    const res = NextResponse.json({ success: true, provider: providerWithoutPassword });
+    // Set a lightweight session cookie for middleware protection
+    res.cookies.set('provider_session', '1', {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60 * 8,
     });
+    return res;
 
   } catch (error) {
     console.error('Provider login error:', error);

@@ -3,6 +3,7 @@
   - Provider profile editor: added Pricing section and normalized pricing on save so both service UUID and slug keys are populated, ensuring reads succeed across pages.
   - Service detail page: pricing reader now resolves provider price by id, slug, or name, and supports legacy object shapes `{ basePrice }`.
   - Services directory: shows min–max pricing aggregated from provider numeric prices.
+  - Category services grid now displays min–max pricing per service card (aggregated from providers) in `app/services/[service]/service-page-client.tsx` under `CategoryPageContent`. Removed inline usage of undefined `filteredProviders` and now compute pricing during provider-count load, stored in `priceLabels` used by the grid.
 - /areas aggregates corrected
   - Replaced placeholder/random stats with real-time provider and bookings aggregation:
     - Normalizes provider.areas (Postgres array/JSON/comma strings) and maps area ids/names to slugs; treats global coverage (empty areas / “all areas”) as present in every area.
@@ -26,6 +27,19 @@
     - Provider area matching also maps provider.areas id/name → canonical slugs using the live `areas` table; empty/"all areas" implies citywide coverage. This ensures location service boxes count the same providers as the service detail pages.
   - `/areas` list aggregates remain dynamic but now better reflect real provider counts via normalized stats.
   - Further improvement: If a provider lists no areas at all, we treat them as citywide (available in any location) to prevent false negatives on area service pages.
+  - Service detail provider cards now render human-readable area names using a preloaded map of active areas (id/slug → name) passed to `ProviderLineItem`, eliminating raw IDs/slugs on cards.
+
+### 2025-09-11
+
+- Authentication and route protection
+  - Added `middleware.ts` to protect `'/admin/**'` and `'/provider/**'` routes using httpOnly cookies.
+  - Provider login (`/api/auth/provider-login`) now sets `provider_session` cookie on success; UI still stores profile in localStorage for display.
+  - Created Admin login API `app/api/auth/admin-login/route.ts` with fixed credentials `info@homizon.com` / `aDMIN@8899`; sets `admin_session` cookie on success and supports logout via DELETE.
+  - Updated `/admin` login page to call the new API and redirect to `/admin/pages-editor` on success.
+  - Result: unauthenticated users are redirected from `/provider/*` to `/login` and from `/admin/*` to `/admin`.
+
+- CMS fallback removal (no default content)
+  - `app/services/[service]/service-page-client.tsx`: removed all hardcoded hero/description fallbacks on both service and category views; sections now render only when CMS provides content (or show minimal stats only when data exists). This ensures pages show only CMS-managed content without defaults.
 - Provider registration mapping verification
   - Reviewed `app/providers/register/page.tsx` – we save provider `services` and `areas` as arrays to Supabase. Confirmed shapes against DB screenshots.
   - Services page normalization updated to read providers who store tokens such as `"ac-repair"`, `"central-ac"`, `"ac-cleaning"` by aliasing them to `air-conditioner-repair` and counting correctly across categories.

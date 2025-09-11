@@ -23,12 +23,20 @@ export default function AdminLoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate login process
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // For demo purposes, accept any credentials
-    router.push('/admin/dashboard');
+    try {
+      const res = await fetch('/api/auth/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      if (!res.ok) {
+        alert('Invalid credentials');
+        return;
+      }
+      router.push('/admin/pages-editor');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const stats = [
@@ -132,9 +140,7 @@ export default function AdminLoginPage() {
                 </form>
 
                 <div className="mt-6 text-center">
-                  <p className="text-white/60 text-sm">
-                    Demo Access: Use any email/password combination
-                  </p>
+                  <p className="text-white/60 text-sm">Use admin credentials to continue.</p>
                 </div>
               </CardContent>
             </Card>

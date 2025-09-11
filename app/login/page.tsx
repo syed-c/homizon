@@ -33,7 +33,7 @@ export default function ProviderLoginPage() {
       const data = await response.json();
 
       if (response.ok && data.provider) {
-        // Store provider info in localStorage for session management
+        // Optional: still store provider profile for UI, but auth is cookie-based
         localStorage.setItem('provider', JSON.stringify(data.provider));
         // Redirect to provider dashboard using /provider/[providerName] route
         const providerSlug = data.provider.name.toLowerCase().replace(/\s+/g, '-');
