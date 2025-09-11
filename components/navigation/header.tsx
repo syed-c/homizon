@@ -53,7 +53,7 @@ export default function Header() {
     { label: 'How It Works', url: '/how-it-works' },
     { label: 'About', url: '/about' }
   ]);
-  const [ctas, setCtas] = useState<Array<{ label: string; url: string; variant?: 'primary' | 'outline' }>>([
+  const [ctas, setCtas] = useState<Array<{ label: string; url: string; variant?: 'primary' | 'secondary' | 'outline' }>>([
     { label: 'Browse Providers', url: '/providers', variant: 'outline' },
     { label: 'Find Services', url: '/providers', variant: 'primary' }
   ]);
@@ -159,9 +159,15 @@ export default function Header() {
               <>
                 {ctas.map((b, i) => (
                   <Link key={`${b.label}-${i}`} href={b.url}>
-                    <Button 
+                    <Button
                       variant={b.variant === 'outline' ? 'outline' : undefined}
-                      className={b.variant === 'outline' ? 'hidden md:flex border-neon-green/50 text-neon-green hover:bg-neon-green/10 transition-all duration-300' : 'bg-gradient-to-r from-neon-blue to-neon-green hover:from-neon-blue/80 hover:to-neon-green/80 text-black font-semibold transition-all duration-300'}
+                      className={
+                        b.variant === 'outline'
+                          ? 'hidden md:flex border-neon-green/50 text-neon-green hover:bg-neon-green/10 transition-all duration-300'
+                          : b.variant === 'secondary'
+                          ? 'hidden md:flex border border-white/20 text-white hover:bg-white/10 transition-all duration-300'
+                          : 'bg-gradient-to-r from-neon-blue to-neon-green hover:from-neon-blue/80 hover:to-neon-green/80 text-black font-semibold transition-all duration-300'
+                      }
                     >
                       {b.label}
                     </Button>

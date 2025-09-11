@@ -541,9 +541,13 @@ This document tracks all changes, fixes, and deployment-related actions performe
 
 - CMS editable Header and Footer
   - File: `components/navigation/header.tsx` – main nav menus and CTA buttons load from `pages_content` slug `header` (content.menus[], content.ctas[]). Defaults preserved; logo remains static.
-  - File: `components/navigation/footer.tsx` – footer columns load from `pages_content` slug `footer` (content.columns[] with title + links[]). Defaults provided.
-  - Pages Editor updated to manage these (implemented):
-    - Virtual entries added for `header` and `footer` under Main Pages.
-    - Header editor tabs: Menus (JSON), CTAs (JSON).
-    - Footer editor tab: Columns (JSON).
-    - Saving uses existing pages-content API; changes reflect immediately in UI.
+  - File: `components/navigation/footer.tsx` – footer now supports structured fields from `pages_content` slug `footer`:
+    - `tagline` (string), `infoList` (array of { type: Phone|Email|Address, label, link }), `sections`/`columns` (array of { title, links[] }), and `bottom` ({ copyright, policies[], tagline }). Backward compatible with existing `columns`.
+  - Pages Editor upgraded to structured UI (no raw JSON):
+    - `app/admin/pages-editor/page.tsx` – For `header` slug: Menus with add/remove, submenus, drag-and-drop; CTAs with label/url/style (primary/secondary/outline) and drag-and-drop.
+    - For `footer` slug: Tagline text area; Info List with type/label/link; Footer Sections (title + repeatable links with drag-and-drop); Footer Bottom (copyright, policies list, tagline).
+    - All inputs persist as JSON via existing pages-content API; UI is friendly forms.
+  - Editor UX updates:
+    - Added tabs: Header → Menus, CTAs. Footer → Tagline, Info, Sections, Bottom.
+    - Fixed footer editor data initialization to load saved `tagline`, `infoList`, `sections`/`columns`, and `bottom` when reopening.
+    - Virtual `header`/`footer` entries are shown only if missing from Supabase to prevent overriding stored entries when reopening editor.

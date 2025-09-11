@@ -25,6 +25,9 @@ export default function Footer() {
       { label: 'Sitemap', url: '/sitemap' }
     ] }
   ]);
+  const [tagline, setTagline] = React.useState<string>('');
+  const [infoList, setInfoList] = React.useState<Array<{ type: 'Phone' | 'Email' | 'Address'; label: string; link: string }>>([]);
+  const [bottom, setBottom] = React.useState<{ copyright?: string; policies?: Array<{ label: string; url: string }>; tagline?: string }>({});
 
   React.useEffect(() => {
     const loadFooter = async () => {
@@ -32,6 +35,9 @@ export default function Footer() {
         const res = await getPageContentFromSupabase('footer');
         const content: any = (res as any)?.data?.content;
         if (content?.columns && Array.isArray(content.columns)) setColumns(content.columns);
+        if (typeof content?.tagline === 'string') setTagline(content.tagline);
+        if (Array.isArray(content?.infoList)) setInfoList(content.infoList);
+        if (content?.bottom) setBottom(content.bottom);
       } catch {}
     };
     loadFooter();
@@ -132,26 +138,42 @@ export default function Footer() {
               </div>
               
               <p className="text-white/70 text-sm mb-6 leading-relaxed">
-                {settings.site_description}
+                {tagline || settings.site_description}
               </p>
               
               <div className="space-y-3 mb-6">
-                <div className="flex items-center space-x-3 text-white/60 text-sm">
-                  <Phone className="h-4 w-4 text-neon-green flex-shrink-0" />
-                  <a href={`tel:${settings.contact_phone}`} className="hover:text-neon-green transition-colors">
-                    {settings.contact_phone}
-                  </a>
-                </div>
-                <div className="flex items-center space-x-3 text-white/60 text-sm">
-                  <Mail className="h-4 w-4 text-neon-blue flex-shrink-0" />
-                  <a href={`mailto:${settings.contact_email}`} className="hover:text-neon-blue transition-colors">
-                    {settings.contact_email}
-                  </a>
-                </div>
-                <div className="flex items-center space-x-3 text-white/60 text-sm">
-                  <MapPin className="h-4 w-4 text-neon-green flex-shrink-0" />
-                  <span>Dubai, UAE</span>
-                </div>
+                {infoList.length === 0 && (
+                  <>
+                    <div className="flex items-center space-x-3 text-white/60 text-sm">
+                      <Phone className="h-4 w-4 text-neon-green flex-shrink-0" />
+                      <a href={`tel:${settings.contact_phone}`} className="hover:text-neon-green transition-colors">
+                        {settings.contact_phone}
+                      </a>
+                    </div>
+                    <div className="flex items-center space-x-3 text-white/60 text-sm">
+                      <Mail className="h-4 w-4 text-neon-blue flex-shrink-0" />
+                      <a href={`mailto:${settings.contact_email}`} className="hover:text-neon-blue transition-colors">
+                        {settings.contact_email}
+                      </a>
+                    </div>
+                    <div className="flex items-center space-x-3 text-white/60 text-sm">
+                      <MapPin className="h-4 w-4 text-neon-green flex-shrink-0" />
+                      <span>Dubai, UAE</span>
+                    </div>
+                  </>
+                )}
+                {infoList.map((info, idx) => (
+                  <div key={idx} className="flex items-center space-x-3 text-white/60 text-sm">
+                    {info.type === 'Phone' && <Phone className="h-4 w-4 text-neon-green flex-shrink-0" />}
+                    {info.type === 'Email' && <Mail className="h-4 w-4 text-neon-blue flex-shrink-0" />}
+                    {info.type === 'Address' && <MapPin className="h-4 w-4 text-neon-green flex-shrink-0" />}
+                    {info.link ? (
+                      <a href={info.link} className="hover:text-neon-green transition-colors">{info.label || info.link}</a>
+                    ) : (
+                      <span>{info.label}</span>
+                    )}
+                  </div>
+                ))}
               </div>
 
               {/* CTA Buttons */}
@@ -198,22 +220,26 @@ export default function Footer() {
             <div className="flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0">
               
               <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-6 text-sm text-white/60">
-                <p>&copy; {currentYear} {settings.site_name}. All rights reserved.</p>
+                <p>{bottom?.copyright || `© ${currentYear} ${settings.site_name}. All rights reserved.`}</p>
                 <div className="flex items-center space-x-4">
-                  <Link href="/privacy" className="hover:text-neon-green transition-colors">
-                    Privacy Policy
-                  </Link>
-                  <span className="text-white/30">•</span>
-                  <Link href="/terms" className="hover:text-neon-green transition-colors">
-                    Terms of Service
-                  </Link>
+                  {(bottom?.policies || [
+                    { label: 'Privacy Policy', url: '/privacy' },
+                    { label: 'Terms of Service', url: '/terms' }
+                  ]).map((p, i) => (
+                    <>
+                      {i>0 && <span className="text-white/30">•</span>}
+                      <Link key={`${p.label}-${i}`} href={p.url} className="hover:text-neon-green transition-colors">{p.label}</Link>
+                    </>
+                  ))}
                 </div>
               </div>
 
               <div className="flex items-center space-x-4">
-                <div className="bg-gradient-to-r from-neon-green/20 to-neon-blue/20 border border-neon-green/30 px-4 py-2 rounded-full">
-                  <span className="text-white/90 text-sm font-medium">Dubai's #1 Service Platform</span>
-                </div>
+                {(bottom?.tagline || 'Dubai\'s #1 Service Platform') && (
+                  <div className="bg-gradient-to-r from-neon-green/20 to-neon-blue/20 border border-neon-green/30 px-4 py-2 rounded-full">
+                    <span className="text-white/90 text-sm font-medium">{bottom?.tagline || "Dubai's #1 Service Platform"}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

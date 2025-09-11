@@ -263,7 +263,14 @@ export default function PagesEditor() {
     } else if (page.page_slug === 'footer') {
       setPageType('globalFooter' as any);
       const incoming = (page.content || {}) as any;
-      setPageContent({ columns: incoming.columns || [] });
+      setPageContent({
+        tagline: incoming.tagline || '',
+        infoList: Array.isArray(incoming.infoList) ? incoming.infoList : [],
+        // prefer sections, fallback to columns; mirror both keys for backward compatibility
+        sections: Array.isArray(incoming.sections) ? incoming.sections : (incoming.columns || []),
+        columns: Array.isArray(incoming.columns) ? incoming.columns : (incoming.sections || []),
+        bottom: incoming.bottom || { copyright: '', policies: [], tagline: '' }
+      } as any);
       setMetaData({ slug: 'footer', meta_title: page.meta_title, meta_description: page.meta_description });
       setEditModalOpen(true);
       return;
@@ -778,9 +785,9 @@ export default function PagesEditor() {
   const mergedPages = [
     // Include About page if missing
     ...(furtherFilteredCmsPages.some(p => p.page_slug === 'about') ? [] : [aboutVirtualPage]),
-    // Global: Header & Footer
-    { id: 'global-header', page_slug: 'header', content: { menus: [], ctas: [] }, meta_title: 'Header | HOMIZON', meta_description: 'Global header configuration', updated_at: new Date().toISOString() } as PageContent,
-    { id: 'global-footer', page_slug: 'footer', content: { columns: [] }, meta_title: 'Footer | HOMIZON', meta_description: 'Global footer configuration', updated_at: new Date().toISOString() } as PageContent,
+    // Global: Header & Footer (only if missing in CMS)
+    ...(furtherFilteredCmsPages.some(p => p.page_slug === 'header') ? [] : [{ id: 'global-header', page_slug: 'header', content: { menus: [], ctas: [] }, meta_title: 'Header | HOMIZON', meta_description: 'Global header configuration', updated_at: new Date().toISOString() } as PageContent]),
+    ...(furtherFilteredCmsPages.some(p => p.page_slug === 'footer') ? [] : [{ id: 'global-footer', page_slug: 'footer', content: { columns: [] }, meta_title: 'Footer | HOMIZON', meta_description: 'Global footer configuration', updated_at: new Date().toISOString() } as PageContent]),
     // Include service detail virtual pages (only for services active in Supabase) when missing from CMS
     ...serviceDetailVirtualPages.filter(v => !furtherFilteredCmsPages.some(p => p.page_slug === v.page_slug)),
     // Only show pages that actually exist in Supabase (and categories for active services)
@@ -939,7 +946,7 @@ export default function PagesEditor() {
             </DialogTitle>
           </DialogHeader>
           
-          <Tabs defaultValue={editingPage?.page_slug==='header' ? 'menus' : editingPage?.page_slug==='footer' ? 'columns' : 'hero'} className="w-full">
+          <Tabs defaultValue={editingPage?.page_slug==='header' ? 'menus' : editingPage?.page_slug==='footer' ? 'tagline' : 'hero'} className="w-full">
             {editingPage?.page_slug === 'header' && (
               <TabsList className="grid w-full grid-cols-2 bg-white/10">
                 <TabsTrigger value="menus">Menus</TabsTrigger>
@@ -947,31 +954,220 @@ export default function PagesEditor() {
               </TabsList>
             )}
             {editingPage?.page_slug === 'footer' && (
-              <TabsList className="grid w-full grid-cols-1 bg-white/10">
-                <TabsTrigger value="columns">Columns</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4 bg-white/10">
+                <TabsTrigger value="tagline">Tagline</TabsTrigger>
+                <TabsTrigger value="info">Info</TabsTrigger>
+                <TabsTrigger value="sections">Sections</TabsTrigger>
+                <TabsTrigger value="bottom">Bottom</TabsTrigger>
               </TabsList>
             )}
 
             {/* Fallback: render raw editors even if tabs library fails */}
             {editingPage?.page_slug === 'header' && (
-              <div className="space-y-4 mt-4">
+              <>
+                <TabsContent value="menus" className="space-y-8 mt-4">
+                  <h3 className="text-white font-semibold mb-2">Menus</h3>
+                  <div className="space-y-3">
+                    {(((pageContent as any)?.menus as any[]) || []).map((item:any, idx:number) => (
+                      <div key={idx} className="bg-white/5 border border-white/10 rounded-lg p-3" draggable
+                        onDragStart={(e)=>{ e.dataTransfer.setData('text/plain', String(idx)); }}
+                        onDragOver={(e)=>{ e.preventDefault(); }}
+                        onDrop={(e)=>{ e.preventDefault(); const from = Number(e.dataTransfer.getData('text/plain')); const to = idx; if (Number.isFinite(from)) { setPageContent((prev:any)=>{ const list = [...(prev?.menus||[])]; const [moved] = list.splice(from,1); list.splice(to,0,moved); return { ...(prev||{}), menus: list }; }); } }}
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-white">Menus JSON</Label>
-                  <Textarea rows={12} value={JSON.stringify((pageContent as any)?.menus || [], null, 2)} onChange={(e)=>{ try { setPageContent((prev:any)=>({ ...(prev||{}), menus: JSON.parse(e.target.value||'[]') })); } catch {} }} className="bg-white/5 border-white/20 text-white font-mono text-xs" />
+                            <Label className="text-white/80">Label</Label>
+                            <Input value={item.label||''} onChange={(e)=>setPageContent((prev:any)=>{ const list=[...(prev?.menus||[])]; list[idx]={...list[idx], label:e.target.value}; return { ...prev, menus:list }; })} className="bg-white/5 border-white/20 text-white" />
                 </div>
                 <div>
-                  <Label className="text-white">CTAs JSON</Label>
-                  <Textarea rows={10} value={JSON.stringify((pageContent as any)?.ctas || [], null, 2)} onChange={(e)=>{ try { setPageContent((prev:any)=>({ ...(prev||{}), ctas: JSON.parse(e.target.value||'[]') })); } catch {} }} className="bg-white/5 border-white/20 text-white font-mono text-xs" />
+                            <Label className="text-white/80">URL</Label>
+                            <Input value={item.url||''} onChange={(e)=>setPageContent((prev:any)=>{ const list=[...(prev?.menus||[])]; list[idx]={...list[idx], url:e.target.value}; return { ...prev, menus:list }; })} className="bg-white/5 border-white/20 text-white" />
                 </div>
               </div>
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-white/70 text-sm">Sub-menus</span>
+                            <Button size="sm" variant="outline" onClick={()=>setPageContent((prev:any)=>{ const list=[...(prev?.menus||[])]; const children=[...(list[idx]?.children||[]), { label:'', url:'' }]; list[idx] = { ...list[idx], children }; return { ...prev, menus:list }; })}>Add Sub-menu</Button>
+                          </div>
+                          <div className="space-y-2">
+                            {(item.children||[]).map((child:any, ci:number) => (
+                              <div key={ci} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2" draggable
+                                onDragStart={(e)=>{ e.dataTransfer.setData('text/plain', `c:${idx}:${ci}`); }}
+                                onDragOver={(e)=>{ e.preventDefault(); }}
+                                onDrop={(e)=>{ e.preventDefault(); const data=e.dataTransfer.getData('text/plain'); if(data.startsWith('c:')){ const [,pi,fromStr]=data.split(':'); const from=Number(fromStr); const parent=Number(pi); if(Number.isFinite(from) && parent===idx){ setPageContent((prev:any)=>{ const list=[...(prev?.menus||[])]; const kids=[...(list[idx]?.children||[])]; const [moved]=kids.splice(from,1); kids.splice(ci,0,moved); list[idx]={...list[idx], children:kids}; return { ...prev, menus:list }; }); } } }}
+                              >
+                                <Input value={child.label||''} placeholder="Label" onChange={(e)=>setPageContent((prev:any)=>{ const list=[...(prev?.menus||[])]; const kids=[...(list[idx]?.children||[])]; kids[ci]={...kids[ci], label:e.target.value}; list[idx]={...list[idx], children:kids}; return { ...prev, menus:list }; })} className="bg-white/5 border-white/20 text-white" />
+                                <Input value={child.url||''} placeholder="URL" onChange={(e)=>setPageContent((prev:any)=>{ const list=[...(prev?.menus||[])]; const kids=[...(list[idx]?.children||[])]; kids[ci]={...kids[ci], url:e.target.value}; list[idx]={...list[idx], children:kids}; return { ...prev, menus:list }; })} className="bg-white/5 border-white/20 text-white" />
+                                <Button variant="destructive" onClick={()=>setPageContent((prev:any)=>{ const list=[...(prev?.menus||[])]; const kids=(list[idx]?.children||[]).filter((_:any,i:number)=>i!==ci); list[idx]={...list[idx], children:kids}; return { ...prev, menus:list }; })}>Remove</Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="mt-3 flex gap-2">
+                          <Button size="sm" variant="destructive" onClick={()=>setPageContent((prev:any)=>({ ...(prev||{}), menus: (prev?.menus||[]).filter((_:any,i:number)=>i!==idx) }))}>Remove Menu</Button>
+                        </div>
+                      </div>
+                    ))}
+                    <Button onClick={()=>setPageContent((prev:any)=>({ ...(prev||{}), menus:[...((prev?.menus)||[]), { label:'', url:'', children:[] }] }))}>
+                      Add New Menu
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="ctas" className="space-y-8 mt-4">
+                  <h3 className="text-white font-semibold mb-2">CTAs</h3>
+                  <div className="space-y-3">
+                    {(((pageContent as any)?.ctas as any[]) || []).map((cta:any, idx:number) => (
+                      <div key={idx} className="bg-white/5 border border-white/10 rounded-lg p-3 grid grid-cols-1 md:grid-cols-3 gap-3" draggable
+                        onDragStart={(e)=>{ e.dataTransfer.setData('text/plain', String(idx)); }}
+                        onDragOver={(e)=>{ e.preventDefault(); }}
+                        onDrop={(e)=>{ e.preventDefault(); const from = Number(e.dataTransfer.getData('text/plain')); const to = idx; if (Number.isFinite(from)) { setPageContent((prev:any)=>{ const list = [...(prev?.ctas||[])]; const [moved] = list.splice(from,1); list.splice(to,0,moved); return { ...(prev||{}), ctas: list }; }); } }}
+                      >
+                        <div>
+                          <Label className="text-white/80">Label</Label>
+                          <Input value={cta.label||''} onChange={(e)=>setPageContent((prev:any)=>{ const list=[...(prev?.ctas||[])]; list[idx]={...list[idx], label:e.target.value}; return { ...prev, ctas:list }; })} className="bg-white/5 border-white/20 text-white" />
+                        </div>
+                        <div>
+                          <Label className="text-white/80">URL</Label>
+                          <Input value={cta.url||''} onChange={(e)=>setPageContent((prev:any)=>{ const list=[...(prev?.ctas||[])]; list[idx]={...list[idx], url:e.target.value}; return { ...prev, ctas:list }; })} className="bg-white/5 border-white/20 text-white" />
+                        </div>
+                        <div>
+                          <Label className="text-white/80">Style</Label>
+                          <Select value={cta.variant || ''} onValueChange={(v)=>setPageContent((prev:any)=>{ const list=[...(prev?.ctas||[])]; list[idx]={...list[idx], variant:v}; return { ...prev, ctas:list }; })}>
+                            <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                              <SelectValue placeholder="Select style" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-neutral-900 text-white border-white/10">
+                              <SelectItem value="primary">Primary</SelectItem>
+                              <SelectItem value="secondary">Secondary</SelectItem>
+                              <SelectItem value="outline">Outline</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="md:col-span-3">
+                          <Button variant="destructive" onClick={()=>setPageContent((prev:any)=>({ ...(prev||{}), ctas: (prev?.ctas||[]).filter((_:any,i:number)=>i!==idx) }))}>Remove CTA</Button>
+                        </div>
+                      </div>
+                    ))}
+                    <Button onClick={()=>setPageContent((prev:any)=>({ ...(prev||{}), ctas:[...((prev?.ctas)||[]), { label:'', url:'', variant:'primary' }] }))}>Add New CTA</Button>
+                  </div>
+                </TabsContent>
+              </>
             )}
+
             {editingPage?.page_slug === 'footer' && (
-              <div className="space-y-4 mt-4">
+              <>
+                <TabsContent value="tagline" className="space-y-8 mt-4">
+                  <h3 className="text-white font-semibold mb-2">Tagline / Paragraph</h3>
+                  <Textarea rows={3} value={(pageContent as any)?.tagline || ''} onChange={(e)=>setPageContent((prev:any)=>({ ...(prev||{}), tagline: e.target.value }))} className="bg-white/5 border-white/20 text-white" />
+                </TabsContent>
+
+                <TabsContent value="info" className="space-y-8 mt-4">
+                  <h3 className="text-white font-semibold mb-2">Info List</h3>
+                  <div className="space-y-3">
+                    {(((pageContent as any)?.infoList as any[])||[]).map((info:any, idx:number)=> (
+                      <div key={idx} className="bg-white/5 border border-white/10 rounded-lg p-3 grid grid-cols-1 md:grid-cols-4 gap-3" draggable
+                        onDragStart={(e)=>{ e.dataTransfer.setData('text/plain', String(idx)); }}
+                        onDragOver={(e)=>{ e.preventDefault(); }}
+                        onDrop={(e)=>{ e.preventDefault(); const from = Number(e.dataTransfer.getData('text/plain')); const to = idx; if (Number.isFinite(from)) { setPageContent((prev:any)=>{ const list = [...(prev?.infoList||[])]; const [moved] = list.splice(from,1); list.splice(to,0,moved); return { ...(prev||{}), infoList: list }; }); } }}
+                      >
                 <div>
-                  <Label className="text-white">Columns JSON</Label>
-                  <Textarea rows={14} value={JSON.stringify((pageContent as any)?.columns || [], null, 2)} onChange={(e)=>{ try { setPageContent((prev:any)=>({ ...(prev||{}), columns: JSON.parse(e.target.value||'[]') })); } catch {} }} className="bg-white/5 border-white/20 text-white font-mono text-xs" />
+                          <Label className="text-white/80">Type</Label>
+                          <Select value={info.type || ''} onValueChange={(v)=>setPageContent((prev:any)=>{ const list=[...(prev?.infoList||[])]; list[idx]={...list[idx], type:v}; return { ...prev, infoList:list }; })}>
+                            <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-neutral-900 text-white border-white/10">
+                              <SelectItem value="Phone">Phone</SelectItem>
+                              <SelectItem value="Email">Email</SelectItem>
+                              <SelectItem value="Address">Address</SelectItem>
+                            </SelectContent>
+                          </Select>
                 </div>
+                        <div>
+                          <Label className="text-white/80">Label</Label>
+                          <Input value={info.label||''} onChange={(e)=>setPageContent((prev:any)=>{ const list=[...(prev?.infoList||[])]; list[idx]={...list[idx], label:e.target.value}; return { ...prev, infoList:list }; })} className="bg-white/5 border-white/20 text-white" />
               </div>
+                        <div>
+                          <Label className="text-white/80">Link</Label>
+                          <Input value={info.link||''} onChange={(e)=>setPageContent((prev:any)=>{ const list=[...(prev?.infoList||[])]; list[idx]={...list[idx], link:e.target.value}; return { ...prev, infoList:list }; })} className="bg-white/5 border-white/20 text-white" />
+                        </div>
+                        <div className="flex items-end">
+                          <Button variant="destructive" onClick={()=>setPageContent((prev:any)=>({ ...(prev||{}), infoList:(prev?.infoList||[]).filter((_:any,i:number)=>i!==idx) }))}>Remove</Button>
+                        </div>
+                      </div>
+                    ))}
+                    <Button onClick={()=>setPageContent((prev:any)=>({ ...(prev||{}), infoList:[...((prev?.infoList)||[]), { type:'Phone', label:'', link:'' }] }))}>Add Info Item</Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="sections" className="space-y-8 mt-4">
+                  <h3 className="text-white font-semibold mb-2">Footer Sections</h3>
+                  <div className="space-y-3">
+                    {(((pageContent as any)?.sections as any[]) || ((pageContent as any)?.columns as any[]) || []).map((section:any, idx:number)=> (
+                      <div key={idx} className="bg-white/5 border border-white/10 rounded-lg p-3" draggable
+                        onDragStart={(e)=>{ e.dataTransfer.setData('text/plain', String(idx)); }}
+                        onDragOver={(e)=>{ e.preventDefault(); }}
+                        onDrop={(e)=>{ e.preventDefault(); const from = Number(e.dataTransfer.getData('text/plain')); const to = idx; if (Number.isFinite(from)) { setPageContent((prev:any)=>{ const base = (prev?.sections ?? prev?.columns) || []; const list=[...base]; const [moved]=list.splice(from,1); list.splice(to,0,moved); return { ...(prev||{}), sections:list, columns:list }; }); } }}
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+                          <div>
+                            <Label className="text-white/80">Section Title</Label>
+                            <Input value={section.title||''} onChange={(e)=>setPageContent((prev:any)=>{ const base=(prev?.sections ?? prev?.columns) || []; const list=[...base]; list[idx]={...list[idx], title:e.target.value}; return { ...prev, sections:list, columns:list }; })} className="bg-white/5 border-white/20 text-white" />
+                          </div>
+                          <Button variant="destructive" onClick={()=>setPageContent((prev:any)=>{ const base=(prev?.sections ?? prev?.columns) || []; const list=base.filter((_:any,i:number)=>i!==idx); return { ...prev, sections:list, columns:list }; })}>Remove Section</Button>
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          {(section.links||[]).map((lnk:any, li:number)=> (
+                            <div key={li} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2" draggable
+                              onDragStart={(e)=>{ e.dataTransfer.setData('text/plain', `s:${idx}:${li}`); }}
+                              onDragOver={(e)=>{ e.preventDefault(); }}
+                              onDrop={(e)=>{ e.preventDefault(); const data=e.dataTransfer.getData('text/plain'); if(data.startsWith('s:')){ const [,si,fromStr]=data.split(':'); const sIndex=Number(si); const from=Number(fromStr); if(sIndex===idx && Number.isFinite(from)){ setPageContent((prev:any)=>{ const base=(prev?.sections ?? prev?.columns) || []; const list=[...base]; const links=[...(list[idx]?.links||[])]; const [moved]=links.splice(from,1); links.splice(li,0,moved); list[idx]={...list[idx], links}; return { ...prev, sections:list, columns:list }; }); } } }}
+                            >
+                              <Input value={lnk.label||''} placeholder="Label" onChange={(e)=>setPageContent((prev:any)=>{ const base=(prev?.sections ?? prev?.columns) || []; const list=[...base]; const links=[...(list[idx]?.links||[])]; links[li]={...links[li], label:e.target.value}; list[idx]={...list[idx], links}; return { ...prev, sections:list, columns:list }; })} className="bg-white/5 border-white/20 text-white" />
+                              <Input value={lnk.url||''} placeholder="URL" onChange={(e)=>setPageContent((prev:any)=>{ const base=(prev?.sections ?? prev?.columns) || []; const list=[...base]; const links=[...(list[idx]?.links||[])]; links[li]={...links[li], url:e.target.value}; list[idx]={...list[idx], links}; return { ...prev, sections:list, columns:list }; })} className="bg-white/5 border-white/20 text-white" />
+                              <Button variant="destructive" onClick={()=>setPageContent((prev:any)=>{ const base=(prev?.sections ?? prev?.columns) || []; const list=[...base]; const links=(list[idx]?.links||[]).filter((_:any,i:number)=>i!==li); list[idx]={...list[idx], links}; return { ...prev, sections:list, columns:list }; })}>Remove</Button>
+                            </div>
+                          ))}
+                          <Button size="sm" variant="outline" onClick={()=>setPageContent((prev:any)=>{ const base=(prev?.sections ?? prev?.columns) || []; const list=[...base]; const links=[...(list[idx]?.links||[]), { label:'', url:'' }]; list[idx]={...list[idx], links}; return { ...prev, sections:list, columns:list }; })}>Add New Link</Button>
+                        </div>
+                      </div>
+                    ))}
+                    <Button onClick={()=>setPageContent((prev:any)=>{ const base=(prev?.sections ?? prev?.columns) || []; const list=[...base, { title:'', links:[] }]; return { ...(prev||{}), sections:list, columns:list }; })}>Add Footer Section</Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="bottom" className="space-y-8 mt-4">
+                  <h3 className="text-white font-semibold mb-2">Footer Bottom</h3>
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-3 space-y-3">
+                    <div>
+                      <Label className="text-white/80">Copyright Text</Label>
+                      <Input value={(pageContent as any)?.bottom?.copyright || ''} onChange={(e)=>setPageContent((prev:any)=>({ ...(prev||{}), bottom:{ ...(prev?.bottom||{}), copyright:e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
+                    </div>
+                    <div>
+                      <Label className="text-white/80">Tagline</Label>
+                      <Input value={(pageContent as any)?.bottom?.tagline || ''} onChange={(e)=>setPageContent((prev:any)=>({ ...(prev||{}), bottom:{ ...(prev?.bottom||{}), tagline:e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
+                    </div>
+                    <div>
+                      <Label className="text-white/80 mb-2">Policies</Label>
+                      <div className="space-y-2">
+                        {((((pageContent as any)?.bottom?.policies) as any[])||[]).map((p:any, idx:number)=> (
+                          <div key={idx} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2" draggable
+                            onDragStart={(e)=>{ e.dataTransfer.setData('text/plain', String(idx)); }}
+                            onDragOver={(e)=>{ e.preventDefault(); }}
+                            onDrop={(e)=>{ e.preventDefault(); const from = Number(e.dataTransfer.getData('text/plain')); const to = idx; if (Number.isFinite(from)) { setPageContent((prev:any)=>{ const list = [...((prev?.bottom?.policies)||[])]; const [moved] = list.splice(from,1); list.splice(to,0,moved); return { ...(prev||{}), bottom: { ...(prev?.bottom||{}), policies:list } }; }); } }}
+                          >
+                            <Input value={p.label||''} placeholder="Label" onChange={(e)=>setPageContent((prev:any)=>{ const list=[...((prev?.bottom?.policies)||[])]; list[idx]={...list[idx], label:e.target.value}; return { ...(prev||{}), bottom:{ ...(prev?.bottom||{}), policies:list } }; })} className="bg-white/5 border-white/20 text-white" />
+                            <Input value={p.url||''} placeholder="URL" onChange={(e)=>setPageContent((prev:any)=>{ const list=[...((prev?.bottom?.policies)||[])]; list[idx]={...list[idx], url:e.target.value}; return { ...(prev||{}), bottom:{ ...(prev?.bottom||{}), policies:list } }; })} className="bg-white/5 border-white/20 text-white" />
+                            <Button variant="destructive" onClick={()=>setPageContent((prev:any)=>({ ...(prev||{}), bottom:{ ...(prev?.bottom||{}), policies: ((prev?.bottom?.policies)||[]).filter((_:any,i:number)=>i!==idx) } }))}>Remove</Button>
+                          </div>
+                        ))}
+                        <Button size="sm" variant="outline" onClick={()=>setPageContent((prev:any)=>({ ...(prev||{}), bottom:{ ...(prev?.bottom||{}), policies:[...((prev?.bottom?.policies)||[]), { label:'', url:'' }] } }))}>Add New Policy</Button>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+              </>
             )}
             {pageType === 'home' && (
               <TabsList className="grid w-full grid-cols-6 bg-white/10">
