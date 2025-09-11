@@ -132,20 +132,54 @@ export default function ServicePageClient({ service, category }: ServicePageClie
           const out = new Set<string>();
           let raw: any = p?.services ?? [];
           if (typeof raw === 'string') {
-            raw = raw.split(',').map((x: string) => x.trim()).filter(Boolean);
+            const t = raw.trim();
+            if (t.startsWith('{') && t.endsWith('}')) {
+              const inner = t.slice(1, -1);
+              raw = inner.split(',').map(s => s.replace(/^"|"$/g,'').trim());
+            } else if (t.startsWith('[') && t.endsWith(']')) {
+              try { raw = JSON.parse(t); } catch { raw = t.slice(1,-1).split(','); }
+            } else {
+              raw = t.split(',').map((x: string) => x.trim()).filter(Boolean);
+            }
           }
-          if (!Array.isArray(raw)) return out;
+          if (!Array.isArray(raw)) raw = [raw].filter(Boolean);
+          const addAll = () => { activeServices.forEach((s: any)=> out.add(String(s.slug).toLowerCase())); };
+          // Aliases for common variants across services
+          const alias = (token: string) => {
+            const k = token.replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+            // AC
+            if (['ac-repair','ac-cleaning','central-ac','aircon-repair','air-conditioner-repair'].includes(k)) return 'air-conditioner-repair';
+            // Appliances
+            if (['fridge','fridge-repair'].includes(k)) return 'refrigerator-repair';
+            if (['gas-cooker-repair'].includes(k)) return 'gas-stove-repair';
+            if (['electric-cooker-repair'].includes(k)) return 'electric-stove-repair';
+            if (['dish-washer-repair'].includes(k)) return 'dishwasher-repair';
+            if (['clothes-washer-repair'].includes(k)) return 'washing-machine-repair';
+            return k;
+          };
           for (const entry of raw) {
-            const asString = String(entry);
-            const lower = asString.toLowerCase();
-            if (lower === service.slug) { out.add(lower); continue; }
+            if (entry && typeof entry === 'object') {
+              const maybeSlug = (entry.slug ?? entry.service_slug ?? '').toString().toLowerCase();
+              const maybeId = (entry.id ?? entry.service_id ?? '').toString();
+              const maybeName = (entry.name ?? entry.service_name ?? '').toString().toLowerCase();
+              if (maybeSlug) { out.add(alias(maybeSlug)); continue; }
+              if (maybeId && idToSlug[maybeId]) { out.add(idToSlug[maybeId]); continue; }
+              if (maybeName && nameToSlug[maybeName]) { out.add(nameToSlug[maybeName]); continue; }
+            }
+            const lower = alias(String(entry).toLowerCase());
+            if (!lower) continue;
+            if (["all","any","all-services","all services","everything"].includes(lower)) { addAll(); continue; }
             if (nameToSlug[lower]) { out.add(nameToSlug[lower]); continue; }
-            if (idToSlug[asString]) { out.add(idToSlug[asString]); continue; }
+            if (idToSlug[String(entry)]) { out.add(idToSlug[String(entry)]); continue; }
+            out.add(lower);
           }
           return out;
         };
 
-        const filtered = allProviders.filter((p: any) => normalizeProviderServices(p).has(service.slug));
+        const filtered = allProviders.filter((p: any) => {
+          const set = normalizeProviderServices(p);
+          return set.has(String(service.slug).toLowerCase());
+        });
         setDbProviders(filtered);
       } catch {
         setDbProviders([]);
@@ -1038,14 +1072,66 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
         const normalizeProviderServices = (p: any): Set<string> => {
           const out = new Set<string>();
           let raw: any = p?.services ?? [];
-          if (typeof raw === 'string') raw = raw.split(',').map((x: string) => x.trim()).filter(Boolean);
-          if (!Array.isArray(raw)) return out;
+          // Parse different encodings: Postgres array, JSON array, comma string
+          if (typeof raw === 'string') {
+            const t = raw.trim();
+            if (t.startsWith('{') && t.endsWith('}')) {
+              const inner = t.slice(1, -1);
+              raw = inner.split(',').map(s => s.replace(/^"|"$/g,'').trim());
+            } else if (t.startsWith('[') && t.endsWith(']')) {
+              try { raw = JSON.parse(t); } catch { raw = t.slice(1,-1).split(','); }
+            } else {
+              raw = t.split(',').map((x: string) => x.trim()).filter(Boolean);
+            }
+          }
+          if (!Array.isArray(raw)) raw = [raw].filter(Boolean);
+
+          const addAll = () => { servicesDb.forEach((s: any) => out.add(String(s.slug).toLowerCase())); };
+
+          // Pull category hints from provider.categories/category
+          const categoryHints: string[] = [];
+          try {
+            const cats = (p?.categories ?? p?.category ?? []) as any;
+            if (typeof cats === 'string') {
+              const t = cats.trim();
+              if (t.startsWith('{') && t.endsWith('}')) {
+                const inner = t.slice(1, -1);
+                categoryHints.push(...inner.split(',').map(s => s.replace(/^"|"$/g,'').trim()));
+              } else if (t.startsWith('[') && t.endsWith(']')) {
+                categoryHints.push(...(JSON.parse(t)));
+              } else {
+                categoryHints.push(...t.split(',').map((x: string) => x.trim()));
+              }
+            } else if (Array.isArray(cats)) {
+              categoryHints.push(...cats);
+            }
+          } catch {}
+
           for (const entry of raw) {
-            const asString = String(entry);
-            const lower = asString.toLowerCase();
-            if (nameToSlug[lower]) { out.add(nameToSlug[lower]); continue; }
-            if (idToSlug[asString]) { out.add(idToSlug[asString]); continue; }
-            out.add(lower); // already a slug
+            if (entry && typeof entry === 'object') {
+              const maybeSlug = (entry.slug ?? entry.service_slug ?? '').toString().toLowerCase();
+              const maybeId = (entry.id ?? entry.service_id ?? '').toString();
+              const maybeName = (entry.name ?? entry.service_name ?? '').toString().toLowerCase();
+              if (maybeSlug) { out.add(maybeSlug); continue; }
+              if (maybeId && idToSlug[maybeId]) { out.add(idToSlug[maybeId]); continue; }
+              if (maybeName && nameToSlug[maybeName]) { out.add(nameToSlug[maybeName]); continue; }
+            }
+            const token = String(entry).toLowerCase().trim();
+            if (!token) continue;
+            if (["all","any","all-services","all services","everything"].includes(token)) { addAll(); continue; }
+            const cat = ['appliance-repair','ac-repair-cleaning','deep-cleaning','pest-control','plumbing','electrician','handyman','laundry']
+              .find(c => token.includes(c) || token.replace(/\s+/g,'-') === c);
+            if (cat) { servicesDb.filter((s:any)=>String(s.category)===cat).forEach((s:any)=>out.add(String(s.slug).toLowerCase())); continue; }
+            if (nameToSlug[token]) { out.add(nameToSlug[token]); continue; }
+            if (idToSlug[String(entry)]) { out.add(idToSlug[String(entry)]); continue; }
+            out.add(token);
+          }
+
+          for (const hint of categoryHints) {
+            const t = String(hint).toLowerCase();
+            const c = ['appliance-repair','ac-repair-cleaning','deep-cleaning','pest-control','plumbing','electrician','handyman','laundry']
+              .find(cat => t.includes(cat) || t.replace(/\s+/g,'-') === cat);
+            if (c) { servicesDb.filter((s:any)=>String(s.category)===c).forEach((s:any)=>out.add(String(s.slug).toLowerCase())); }
           }
           return out;
         };
@@ -1053,7 +1139,14 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
         const counts: Record<string, number> = {};
         servicesDb.forEach(svc => {
           const slug = String(svc.slug).toLowerCase();
-          counts[slug] = providers.filter(p => normalizeProviderServices(p).has(slug)).length;
+          const seen = new Set<string>();
+          for (const p of providers) {
+            if (normalizeProviderServices(p).has(slug)) {
+              const pid = String(p.id || p.uuid || p.email || p.phone || Math.random());
+              seen.add(pid);
+            }
+          }
+          counts[slug] = seen.size;
         });
         setProviderCounts(counts);
       } catch (e) {

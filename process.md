@@ -1,3 +1,42 @@
+- /areas aggregates corrected
+  - Replaced placeholder/random stats with real-time provider and bookings aggregation:
+    - Normalizes provider.areas (Postgres array/JSON/comma strings) and maps area ids/names to slugs; treats global coverage (empty areas / “all areas”) as present in every area.
+    - Updates provider counts and derived response metrics so the All Areas grid shows accurate “Providers” numbers consistent with location pages and service detail pages.
+- Area pages provider matching fixes
+  - `app/areas/[area]/area-page-client.tsx`
+    - Parse `areas.services` and provider `areas` when stored as Postgres array literal, JSON array, or comma string.
+    - Normalized area slugs consistently (lowercase, hyphenated, ampersand → and) to ensure matches.
+    - Built allowed services for the area from normalized array, with fallback to all active services.
+  - `app/areas/[area]/[service]/page.tsx`
+    - Same normalization for provider `areas` and `services` (including AC aliases) and simplified checks using slugs only.
+    - Treat providers with empty areas or descriptors like "all areas", "any area", or "Dubai" as serving all locations.
+    - Added cross-service alias mapping (fridge→refrigerator, cooker→stove, dish-washer→dishwasher, clothes-washer→washing-machine) and detection of "all services" phrases to expand coverage.
+  - `app/areas/[area]/area-page-client.tsx`
+    - If no providers match strictly but providers exist, display a top-3 fallback so the page isn't empty during data normalization.
+  - Result: Area pages and area+service pages now correctly list providers even when DB fields are stored as strings/Postgres arrays or providers describe global coverage.
+  - Area page service boxes
+    - Provider service normalization in `app/areas/[area]/area-page-client.tsx` now parses Postgres arrays/JSON, applies the same alias set as service pages, and counts providers that declare global service coverage (empty services list) toward every service. This makes the per-service "providers" counts on the location page match the counts seen when clicking into a specific service page for that location.
+    - Additionally, it maps provider service entries given as IDs or human-readable names to canonical slugs using the live `services` table, ensuring counts are accurate even when providers list services by id/name instead of slug.
+    - Removed prior "top-3" fallback; provider counts now rely entirely on normalized data so numbers match exactly.
+    - Provider area matching also maps provider.areas id/name → canonical slugs using the live `areas` table; empty/"all areas" implies citywide coverage. This ensures location service boxes count the same providers as the service detail pages.
+  - `/areas` list aggregates remain dynamic but now better reflect real provider counts via normalized stats.
+  - Further improvement: If a provider lists no areas at all, we treat them as citywide (available in any location) to prevent false negatives on area service pages.
+- Provider registration mapping verification
+  - Reviewed `app/providers/register/page.tsx` – we save provider `services` and `areas` as arrays to Supabase. Confirmed shapes against DB screenshots.
+  - Services page normalization updated to read providers who store tokens such as `"ac-repair"`, `"central-ac"`, `"ac-cleaning"` by aliasing them to `air-conditioner-repair` and counting correctly across categories.
+  - Added alias map for common synonyms (fridge→refrigerator-repair, cooker→stove, aircon→ac, ac-repair/central-ac/ac-cleaning→air-conditioner-repair).
+  - Category service page now uses the same robust normalization and aliasing when filtering providers so service card counts and service detail provider lists match (e.g., AC Repair now shows all providers).
+  - Applied the same normalization to area+service pages (`app/areas/[area]/[service]/page.tsx`) including Postgres array parsing and AC aliases, so providers lists are consistent there as well.
+  - Fixed category service counts on `/services` by computing `servicesByCategory` from Supabase rows and using that for both visibility and the count label, eliminating mismatches (e.g., AC=1, Appliances=8).
+  - Added detection of "all services" phrases in provider JSON and expansion to all active services.
+- Services directory data accuracy fixes
+  - Strengthened provider-service normalization in `components/services-page-content.tsx`:
+    - Handles providers declaring services as JSON arrays, comma strings, IDs, names, or objects
+    - Supports global tokens like `all services` and category tokens (e.g., `appliance-repair`) that expand to all services in that category
+    - Builds service slug maps from Supabase `services` for exact counting
+  - Category and service provider counts now reflect real Supabase data, avoiding under-counts (e.g., providers serving all services now counted in every relevant service/category).
+  - Added parsing for Postgres array-literals (`{"a","b"}`) and a `categories` fallback on provider rows to seed inferred service coverage.
+  - Normalized service categories from Supabase (lowercase, hyphenated) to ensure category → service grouping is exact. De-duped provider counts using provider identifiers so a provider counted once per category.
 - 2025-09-09: Service-area routing refactor and editor integration
   - Switched URL pattern from `/{service}/{area}` to `/areas/{area}/{service}`.
   - Added server route `app/areas/[area]/[service]/page.tsx` that fetches service, area and real providers from Supabase (filtered by both area and service).

@@ -55,10 +55,10 @@ export default function AreasPage() {
           slug: area.slug,
           description: area.description || `${area.name} area in Dubai`,
           subAreas: [],
-          serviceProviders: Math.floor(Math.random() * 30) + 15,
-          avgResponseTime: `${Math.floor(Math.random() * 30) + 20} mins`,
-          rating: 4.5 + Math.random() * 0.5,
-          totalBookings: Math.floor(Math.random() * 2000) + 800,
+          serviceProviders: 0,
+          avgResponseTime: `30 mins`,
+          rating: 4.6,
+          totalBookings: 0,
           emergencyAvailable: Math.random() > 0.3,
           featured: !!area.featured,
           image: getAreaImage(area.name),
@@ -140,36 +140,84 @@ export default function AreasPage() {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const [provRes, leadsRes] = await Promise.all([
+        const [provRes, leadsRes, areasRes] = await Promise.all([
           listProvidersFromSupabase(),
-          listLeadsFromSupabase()
+          listLeadsFromSupabase(),
+          listAreasFromSupabase()
         ]);
         const providers: any[] = provRes.data || [];
         const leads: any[] = leadsRes.data || [];
         const nameToSlug: Record<string, string> = {};
-        dubaiAreas.forEach(a => { nameToSlug[a.name] = a.slug; });
+        const normalizedNameToSlug: Record<string, string> = {};
+        const idToSlug: Record<string, string> = {};
+        const areasRows: any[] = (areasRes.data || []).filter((a: any) => a.status === 'active');
+        areasRows.forEach((a: any) => { idToSlug[String(a.id)] = String(a.slug).toLowerCase(); });
+        const slugSet = new Set<string>();
+        const norm = (s: string) => s.toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+        dubaiAreas.forEach((a: any) => { 
+          nameToSlug[a.name.toLowerCase()] = a.slug; 
+          normalizedNameToSlug[norm(a.name)] = a.slug; 
+          slugSet.add(a.slug); 
+        });
+        // Build id map from areas API rows if present through earlier loadAreas call is not keeping ids; we can fallback to name mapping only
 
         const stats: Record<string, { providers: number; bookings: number; responseMins: number; _samples: number; _sum: number }>
           = {} as any;
         dubaiAreas.forEach(a => { stats[a.slug] = { providers: 0, bookings: 0, responseMins: 0, _samples: 0, _sum: 0 }; });
 
-        providers.forEach(p => {
-          if (Array.isArray(p.areas)) {
-            p.areas.forEach((slug: string) => {
-              if (stats[slug]) stats[slug].providers += 1;
-            });
+        const toArray = (val: any): any[] => {
+          if (Array.isArray(val)) return val;
+          if (typeof val === 'string') {
+            const t = val.trim();
+            if (t.startsWith('{') && t.endsWith('}')) {
+              const inner = t.slice(1, -1);
+              return inner.split(',').map(s => s.replace(/^"|"$/g,'').trim());
+            }
+            try { const parsed = JSON.parse(t); if (Array.isArray(parsed)) return parsed; } catch {}
+            return t.split(',').map(s => s.trim()).filter(Boolean);
           }
+          return [];
+        };
+        const normalizeSlug = (v: string) => String(v).toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+
+        const slugFromAny = (val: any): string | null => {
+          if (val === undefined || val === null) return null;
+          const s = String(val).trim();
+          if (idToSlug[s]) return idToSlug[s];
+          const lowered = s.toLowerCase();
+          const normalized = norm(s);
+          if (slugSet.has(s)) return s;
+          if (slugSet.has(lowered)) return lowered; // in case slugSet stores lowercase only
+          if (slugSet.has(normalized)) return normalized;
+          if (nameToSlug[lowered]) return nameToSlug[lowered];
+          if (normalizedNameToSlug[normalized]) return normalizedNameToSlug[normalized];
+          return null;
+        };
+
+        providers.forEach(p => {
+          const areaVals = toArray(p.areas);
+          const blob = JSON.stringify(p).toLowerCase();
+          const servesAllAreas = areaVals.length === 0 || /all\s*areas|any\s*area|dubai/.test(blob);
+          if (servesAllAreas) {
+            // Count toward every area
+            Object.keys(stats).forEach(slug => { stats[slug].providers += 1; });
+            return;
+          }
+          areaVals.forEach((val: any) => {
+            const s = slugFromAny(val);
+            if (s && stats[s]) stats[s].providers += 1;
+          });
         });
 
         leads.forEach(l => {
-          const slug = nameToSlug[l.area] || '';
-          if (slug && stats[slug]) {
-            stats[slug].bookings += 1;
+          const s = slugFromAny((l as any).area_slug || (l as any).area || (l as any).areaname || (l as any).area_name);
+          if (s && stats[s]) {
+            stats[s].bookings += 1;
             const created = new Date(l.createdat || l.created_at || l.createdAt || 0).getTime();
             const updated = new Date(l.updatedat || l.updated_at || l.updatedAt || 0).getTime();
             if (created && updated && updated > created) {
-              stats[slug]._samples += 1;
-              stats[slug]._sum += Math.round((updated - created) / 60000);
+              stats[s]._samples += 1;
+              stats[s]._sum += Math.round((updated - created) / 60000);
             }
           }
         });
@@ -356,15 +404,15 @@ export default function AreasPage() {
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div className="flex items-center space-x-2">
                             <Users className="h-4 w-4 text-neon-blue" />
-                            <span className="text-white/80">{area.serviceProviders} experts</span>
+                            <span className="text-white/80">{areaStats[area.slug]?.providers ?? 0} experts</span>
                           </div>
                           <div className="flex items-center space-x-2">
                             <Clock className="h-4 w-4 text-neon-green" />
-                            <span className="text-white/80">{area.avgResponseTime}</span>
+                            <span className="text-white/80">{(areaStats[area.slug]?.responseMins ?? 30).toString()} mins</span>
                           </div>
                           <div className="flex items-center space-x-2">
                             <TrendingUp className="h-4 w-4 text-neon-blue" />
-                            <span className="text-white/80">{area.totalBookings} bookings</span>
+                            <span className="text-white/80">{areaStats[area.slug]?.bookings ?? 0} bookings</span>
                           </div>
                           <div className="flex items-center space-x-2">
                             <Shield className="h-4 w-4 text-neon-green" />

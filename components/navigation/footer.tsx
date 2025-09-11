@@ -226,10 +226,10 @@ export default function Footer() {
                     { label: 'Privacy Policy', url: '/privacy' },
                     { label: 'Terms of Service', url: '/terms' }
                   ]).map((p, i) => (
-                    <>
+                    <span key={`${p.label}-${p.url}-${i}`} className="flex items-center space-x-0">
                       {i>0 && <span className="text-white/30">•</span>}
-                      <Link key={`${p.label}-${i}`} href={p.url} className="hover:text-neon-green transition-colors">{p.label}</Link>
-                    </>
+                      <Link href={p.url} className="hover:text-neon-green transition-colors ml-0.5">{p.label}</Link>
+                    </span>
                   ))}
                 </div>
               </div>

@@ -88,7 +88,18 @@ export default function ServicesPageContent() {
       try {
         const res = await listServicesFromSupabase();
         const db = (res.data || []).filter((s: any) => s.status === 'active');
-        // Merge with defaults expected by UI
+        // Authoritative category mapping from category_id with safe fallback
+        const toSlug = (v: string) => String(v || '').toLowerCase().trim().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+        const uuidToSlug: Record<string, string> = {
+          '11111111-1111-1111-1111-111111111111': 'ac-repair-cleaning',
+          '22222222-2222-2222-2222-222222222222': 'appliance-repair',
+          '33333333-3333-3333-3333-333333333333': 'deep-cleaning',
+          '44444444-4444-4444-4444-444444444444': 'pest-control',
+          '55555555-5555-5555-5555-555555555555': 'plumbing',
+          '66666666-6666-6666-6666-666666666666': 'electrician',
+          '77777777-7777-7777-7777-777777777777': 'handyman',
+          '88888888-8888-8888-8888-888888888888': 'laundry'
+        };
         const categorize = (slug: string, fallback: string = 'appliance-repair') => {
           const s = String(slug).toLowerCase();
           if (/(^|[-])ac(?![a-z])|air-?conditioner|airconditioner|a\s*c/.test(s)) return 'ac-repair-cleaning';
@@ -105,7 +116,7 @@ export default function ServicesPageContent() {
           name: row.name,
           slug: row.slug,
           description: `${row.name} services in Dubai`,
-          category: row.category || row.category_slug || categorize(row.slug),
+          category: uuidToSlug[String(row.category_id)] || toSlug(row.category) || toSlug(row.category_slug) || categorize(row.slug),
           icon: 'Settings',
           averagePrice: 'AED 0',
           estimatedTime: '—',
@@ -130,11 +141,21 @@ export default function ServicesPageContent() {
   console.log("Selected category:", selectedCategory);
   console.log("Search query:", searchQuery);
 
-  // Only keep categories that have at least one service from Supabase
-  const visibleCategories = useMemo(() => {
-    const slugsWithService = new Set<string>(servicesData.map(s => String(s.category)));
-    return serviceCategories.filter(cat => slugsWithService.has(cat.slug));
+  // Build category -> services list strictly from Supabase rows
+  const servicesByCategory = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    servicesData.forEach(svc => {
+      const cat = String(svc.category);
+      if (!map[cat]) map[cat] = [];
+      map[cat].push(svc);
+    });
+    return map;
   }, [servicesData]);
+
+  // Only show categories that actually have services; use our computed counts
+  const visibleCategories = useMemo(() => {
+    return serviceCategories.filter(cat => (servicesByCategory[cat.slug]?.length || 0) > 0);
+  }, [servicesByCategory]);
 
   // Build quick lookup maps for service normalization
   const serviceSlugSet = useMemo(() => new Set(servicesData.map(s => String(s.slug).toLowerCase())), [servicesData]);
@@ -149,23 +170,128 @@ export default function ServicesPageContent() {
     return map;
   }, [servicesData]);
 
+  // Extra synonyms and alias mapping for common variations
+  const aliasToSlug = useMemo(() => {
+    const map: Record<string, string> = {};
+    const toKey = (s: string) => s.toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+    servicesData.forEach(s => { map[toKey(s.name)] = String(s.slug).toLowerCase(); });
+    // Manual variants
+    map['fridge-repair'] = 'refrigerator-repair';
+    map['fridge'] = 'refrigerator-repair';
+    map['gas-cooker-repair'] = 'gas-stove-repair';
+    map['electric-cooker-repair'] = 'electric-stove-repair';
+    map['dish-washer-repair'] = 'dishwasher-repair';
+    map['clothes-washer-repair'] = 'washing-machine-repair';
+    map['aircon-repair'] = 'ac-repair-cleaning';
+    map['air-conditioner-repair'] = 'ac-repair-cleaning';
+    // AC specific aliases to the AC repair service
+    map['ac-repair'] = 'air-conditioner-repair';
+    map['ac-cleaning'] = 'air-conditioner-repair';
+    map['central-ac'] = 'air-conditioner-repair';
+    return map;
+  }, [servicesData]);
+
   const normalizeProviderServiceSlugs = (provider: any): Set<string> => {
     const result = new Set<string>();
     let raw: any = provider?.services ?? [];
+
+    // Convert common encodings to array
     if (typeof raw === 'string') {
-      raw = raw.split(',').map((x: string) => x.trim()).filter(Boolean);
+      const trimmed = raw.trim();
+      // Postgres array literal: {a,b,c}
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        const inner = trimmed.slice(1, -1);
+        raw = inner.split(',').map(s => s.replace(/^"|"$/g,'').trim());
+      } else if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        try { raw = JSON.parse(trimmed); } catch { raw = trimmed.slice(1,-1).split(','); }
+      } else {
+        raw = trimmed.split(',');
+      }
     }
-    if (!Array.isArray(raw)) return result;
+    if (!Array.isArray(raw)) raw = [raw].filter(Boolean);
+
+    // Helper to add all active services when provider indicates "all"
+    const addAllServices = () => {
+      servicesData.forEach(s => result.add(String(s.slug).toLowerCase()));
+    };
+
+    // If provider has explicit categories field, seed tokens from it as well
+    const categoryHints: string[] = [];
+    try {
+      const cats = (provider?.categories ?? provider?.category ?? []) as any;
+      if (typeof cats === 'string') {
+        const t = cats.trim();
+        if (t.startsWith('{') && t.endsWith('}')) {
+          const inner = t.slice(1, -1);
+          categoryHints.push(...inner.split(',').map(s => s.replace(/^"|"$/g,'').trim()));
+        } else if (t.startsWith('[') && t.endsWith(']')) {
+          categoryHints.push(...(JSON.parse(t))); 
+        } else {
+          categoryHints.push(...t.split(',').map(s => s.trim()));
+        }
+      } else if (Array.isArray(cats)) {
+        categoryHints.push(...cats);
+      }
+    } catch {}
+
+    // Detect any implicit "all services" claim anywhere in provider object
+    try {
+      const blob = JSON.stringify(provider).toLowerCase();
+      if (/all\s*services|any\s*service|provides?_all|full\s*service/.test(blob)) { addAllServices(); }
+      if ((!raw || (Array.isArray(raw) && raw.length === 0)) && /appliance|ac|clean|pest|plumb|electric|handyman|laundry/.test(blob)) {
+        categoryHints.push(...['appliance-repair','ac-repair-cleaning','deep-cleaning','pest-control','plumbing','electrician','handyman','laundry'].filter(c=>blob.includes(c.split('-')[0])));
+      }
+    } catch {}
 
     for (const entry of raw) {
-      const lower = String(entry).toLowerCase();
-      // Direct matches by slug
-      if (serviceSlugSet.has(lower)) { result.add(lower); continue; }
-      // Match by name
-      if (nameToSlug[lower]) { result.add(nameToSlug[lower]); continue; }
-      // Match by id
+      // Object shapes: { slug }, { id }, { name }
+      if (entry && typeof entry === 'object') {
+        const maybeSlug = (entry.slug ?? entry.service_slug ?? '').toString().toLowerCase();
+        const maybeId = (entry.id ?? entry.service_id ?? '').toString();
+        const maybeName = (entry.name ?? entry.service_name ?? '').toString().toLowerCase();
+        if (maybeSlug && serviceSlugSet.has(maybeSlug)) { result.add(maybeSlug); continue; }
+        if (maybeId && idToSlug[maybeId]) { result.add(idToSlug[maybeId]); continue; }
+        if (maybeName && nameToSlug[maybeName]) { result.add(nameToSlug[maybeName]); continue; }
+      }
+
+      const token = String(entry ?? '').toLowerCase().trim();
+      if (!token) continue;
+
+      // Global tokens
+      if (['all', 'any', 'all-services', 'all services', 'everything'].includes(token)) { addAllServices(); continue; }
+
+      // Category tokens (map provider token to all services in that category)
+      const catMatch = ['appliance-repair','ac-repair-cleaning','deep-cleaning','pest-control','plumbing','electrician','handyman','laundry']
+        .find(c => token.includes(c) || token.replace(/\s+/g,'-') === c);
+      if (catMatch) {
+        servicesData.filter(s => String(s.category) === catMatch).forEach(s => result.add(String(s.slug).toLowerCase()));
+        continue;
+      }
+
+      // Additional fallbacks: other possible columns
+      if (token === 'service' || token === 'services' || token === 'service_list') { addAllServices(); continue; }
+
+      // Direct slug match
+      if (serviceSlugSet.has(token)) { result.add(token); continue; }
+      // Alias map
+      const tokenKey = token.replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+      if (aliasToSlug[tokenKey]) { result.add(aliasToSlug[tokenKey]); continue; }
+      // Name match
+      if (nameToSlug[token]) { result.add(nameToSlug[token]); continue; }
+      // ID match (numeric or string id)
       if (idToSlug[String(entry)]) { result.add(idToSlug[String(entry)]); continue; }
     }
+
+    // Expand category hints collected from provider.categories
+    for (const hint of categoryHints) {
+      const t = String(hint).toLowerCase();
+      const c = ['appliance-repair','ac-repair-cleaning','deep-cleaning','pest-control','plumbing','electrician','handyman','laundry']
+        .find(cat => t.includes(cat) || t.replace(/\s+/g,'-') === cat);
+      if (c) {
+        servicesData.filter(s => String(s.category) === c).forEach(s => result.add(String(s.slug).toLowerCase()));
+      }
+    }
+
     return result;
   };
 
@@ -217,7 +343,16 @@ export default function ServicesPageContent() {
   const countProvidersForService = (serviceSlug: string) => {
     try {
       const target = String(serviceSlug).toLowerCase();
-      return providers.filter((p: any) => normalizeProviderServiceSlugs(p).has(target)).length;
+      const seen = new Set<string>();
+      let count = 0;
+      for (const p of providers) {
+        const set = normalizeProviderServiceSlugs(p);
+        if (set.has(target)) {
+          const pid = String(p.id || p.uuid || p.email || p.phone || Math.random());
+          if (!seen.has(pid)) { seen.add(pid); count++; }
+        }
+      }
+      return count;
     } catch {
       return 0;
     }
@@ -230,11 +365,18 @@ export default function ServicesPageContent() {
         .filter(svc => String(svc.category) === String(categorySlug))
         .map(svc => String(svc.slug));
       if (categorySlugs.length === 0) return 0;
-      return providers.filter((p: any) => {
+      const seen = new Set<string>();
+      for (const p of providers) {
         const set = normalizeProviderServiceSlugs(p);
-        for (const slug of categorySlugs) { if (set.has(String(slug).toLowerCase())) return true; }
-        return false;
-      }).length;
+        for (const slug of categorySlugs) {
+          if (set.has(String(slug).toLowerCase())) {
+            const pid = String(p.id || p.uuid || p.email || p.phone || Math.random());
+            seen.add(pid);
+            break;
+          }
+        }
+      }
+      return seen.size;
     } catch {
       return 0;
     }
@@ -385,7 +527,7 @@ export default function ServicesPageContent() {
                       <h3 className="font-bold text-white text-lg mb-2">{category.name}</h3>
                       <p className="text-white/60 text-sm mb-4">{category.description}</p>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-neon-blue font-medium">{servicesData.filter(s => String(s.category) === String(category.slug)).length} services</span>
+                        <span className="text-neon-blue font-medium">{(servicesByCategory[category.slug]?.length || 0)} services</span>
                         <span className="text-neon-green font-medium">{countProvidersForCategory(category.slug)} providers</span>
                       </div>
                     </div>

@@ -34,6 +34,7 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
   const [providers, setProviders] = useState<any[]>([]);
   const [serviceCards, setServiceCards] = useState<any[]>([]);
   const { settings } = useSettings();
+  const [servicesDb, setServicesDb] = useState<{ id?: string; slug: string; name: string }[]>([]);
 
   console.log("Area page loaded:", { areaSlug: area.slug });
 
@@ -59,6 +60,7 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
         ]);
         const areaRow: any = (areasRes.data || []).find((a: any) => a.slug === area.slug);
         const activeServices: any[] = (servicesRes.data || []).filter((s: any) => s.status === 'active');
+        setServicesDb(activeServices.map((s:any)=>({ id: s.id, slug: s.slug, name: s.name })));
         const allowed: string[] = Array.isArray(areaRow?.services) && areaRow.services.length
           ? areaRow.services
           : activeServices.map((s: any) => s.slug);
@@ -78,24 +80,43 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
   useEffect(() => {
     const loadProviders = async () => {
       try {
-        const res = await listProvidersFromSupabase();
-        const rows: any[] = res.data || [];
+        const [provRes, areasRes] = await Promise.all([
+          listProvidersFromSupabase(),
+          listAreasFromSupabase()
+        ]);
+        const rows: any[] = provRes.data || [];
+        const areasRows: any[] = (areasRes.data || []).filter((a: any) => a.status === 'active');
         const toArray = (val: any): any[] => {
           if (Array.isArray(val)) return val;
           if (typeof val === 'string') {
-            try { const parsed = JSON.parse(val); if (Array.isArray(parsed)) return parsed; } catch {}
-            return val.split(',').map(s => s.trim()).filter(Boolean);
+            const t = val.trim();
+            if (t.startsWith('{') && t.endsWith('}')) {
+              const inner = t.slice(1, -1);
+              return inner.split(',').map(s => s.replace(/^"|"$/g,'').trim());
+            }
+            try { const parsed = JSON.parse(t); if (Array.isArray(parsed)) return parsed; } catch {}
+            return t.split(',').map(s => s.trim()).filter(Boolean);
           }
           return [];
         };
-        const normalizeSlug = (v: string) => String(v).toLowerCase().replace(/\s+/g, '-');
-        const areaSlugSet = new Set([area.slug, area.name.toLowerCase(), normalizeSlug(area.name)]);
+        const normalizeSlug = (v: string) => String(v).toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+        const areaSlugSet = new Set([area.slug, normalizeSlug(area.name)]);
+        const areaIdToSlug: Record<string,string> = {}; const areaNameToSlug: Record<string,string> = {};
+        areasRows.forEach((a: any) => { areaIdToSlug[String(a.id)] = String(a.slug).toLowerCase(); areaNameToSlug[String(a.name).toLowerCase()] = String(a.slug).toLowerCase(); });
         const filtered = rows.filter((p: any) => {
           const pAreas = toArray(p.areas);
-          const asSlugs = pAreas.map((x: any) => normalizeSlug(String(x)));
-          const asNames = pAreas.map((x: any) => String(x).toLowerCase());
-          return asSlugs.some(s => areaSlugSet.has(s)) || asNames.some(n => areaSlugSet.has(n));
+          const asSlugs = pAreas.map((x: any) => {
+            const raw = String(x);
+            const lower = raw.toLowerCase();
+            return areaIdToSlug[raw] || areaNameToSlug[lower] || normalizeSlug(raw);
+          });
+          // If provider lists no areas or declares all areas, consider it matched
+          const blob = JSON.stringify(p).toLowerCase();
+          const servesAllAreas = pAreas.length === 0 || /all\s*areas|any\s*area|dubai/.test(blob);
+          if (servesAllAreas) return true;
+          return asSlugs.some((s: string) => areaSlugSet.has(s));
         });
+
         setProviders(filtered);
       } catch {
         setProviders([]);
@@ -246,13 +267,34 @@ export default function AreaPageClient({ area }: AreaPageClientProps) {
               let raw: any = p?.services ?? [];
               if (typeof raw === 'string') raw = raw.split(',').map((x: string) => x.trim()).filter(Boolean);
               if (!Array.isArray(raw)) return out;
-              for (const entry of raw) out.add(String(entry).toLowerCase());
+              const alias = (token: string) => {
+                const k = String(token).toLowerCase();
+                if (['ac-repair','ac-cleaning','central-ac','aircon-repair','air-conditioner-repair'].includes(k)) return 'air-conditioner-repair';
+                if (['fridge','fridge-repair'].includes(k)) return 'refrigerator-repair';
+                if (['gas-cooker-repair'].includes(k)) return 'gas-stove-repair';
+                if (['electric-cooker-repair'].includes(k)) return 'electric-stove-repair';
+                if (['dish-washer-repair'].includes(k)) return 'dishwasher-repair';
+                if (['clothes-washer-repair'].includes(k)) return 'washing-machine-repair';
+                return k;
+              };
+              const idToSlug: Record<string,string> = {}; const nameToSlug: Record<string,string> = {};
+              servicesDb.forEach(s=>{ if (s.id) idToSlug[String(s.id)] = String(s.slug).toLowerCase(); nameToSlug[String(s.name).toLowerCase()] = String(s.slug).toLowerCase(); });
+              for (const entry of raw) {
+                const k = alias(String(entry));
+                const mapped = idToSlug[String(entry)] || nameToSlug[k] || k;
+                out.add(mapped);
+              }
               return out;
             };
 
             const enhanced = serviceCards.map((svc: any) => {
               const slug = String(svc.slug).toLowerCase();
-              const providersForService = providers.filter((p: any) => normalizeProviderServices(p).has(slug));
+              const providersForService = providers.filter((p: any) => {
+                const set = normalizeProviderServices(p);
+                // Global service coverage: if provider lists no specific services, count toward all
+                if (set.size === 0) return true;
+                return set.has(slug);
+              });
               const hasEmergency = providersForService.some((p: any) => p.availability?.emergency);
               return {
                 ...svc,
