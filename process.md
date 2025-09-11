@@ -1,3 +1,8 @@
+- Provider pricing data model alignment
+  - Registration: added inputs to capture per-service pricing; stored in `providers.pricing` keyed by service UUID.
+  - Provider profile editor: added Pricing section and normalized pricing on save so both service UUID and slug keys are populated, ensuring reads succeed across pages.
+  - Service detail page: pricing reader now resolves provider price by id, slug, or name, and supports legacy object shapes `{ basePrice }`.
+  - Services directory: shows min–max pricing aggregated from provider numeric prices.
 - /areas aggregates corrected
   - Replaced placeholder/random stats with real-time provider and bookings aggregation:
     - Normalizes provider.areas (Postgres array/JSON/comma strings) and maps area ids/names to slugs; treats global coverage (empty areas / “all areas”) as present in every area.

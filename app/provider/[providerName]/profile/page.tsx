@@ -91,9 +91,22 @@ export default function ProviderProfile() {
         }
       }
 
+      // Normalize pricing keys to include both service UUID and slug
+      const pricingNormalized: Record<string, number> = { ...(provider.pricing || {}) };
+      servicesDb.forEach((s: any) => {
+        const idKey = String(s.id);
+        const slugKey = String(s.slug);
+        const val = pricingNormalized[idKey] ?? pricingNormalized[slugKey];
+        if (typeof val === 'number' && val > 0) {
+          pricingNormalized[idKey] = val;
+          pricingNormalized[slugKey] = val;
+        }
+      });
+
       // Update provider in Supabase
       await updateProviderInSupabase(provider.id, {
         ...provider,
+        pricing: pricingNormalized,
         profileimage: profileUrl,
         status: provider.status as "pending" | "active" | "suspended"
       });
@@ -130,6 +143,14 @@ export default function ProviderProfile() {
       areas: prev.areas.includes(areaId) 
         ? prev.areas.filter(id => id !== areaId)
         : [...prev.areas, areaId]
+    } : null);
+  };
+
+  const handlePricingChange = (serviceId: string, value: number) => {
+    if (!provider) return;
+    setProvider(prev => prev ? {
+      ...prev,
+      pricing: { ...(prev.pricing || {}), [serviceId]: value }
     } : null);
   };
 
@@ -320,6 +341,26 @@ export default function ProviderProfile() {
                     </label>
                   </div>
                 ))}
+              </div>
+              <div>
+                <div className="text-white/80 font-medium mb-2">Service Pricing (AED)</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {servicesDb
+                    .filter(s => provider.services.includes(String(s.id)) || provider.services.includes(String(s.slug)))
+                    .map(s => (
+                      <div key={`price-${s.id}`} className="space-y-2">
+                        <label className="block text-white/70 text-sm">{s.name}</label>
+                        <Input
+                          type="number"
+                          value={Number(provider.pricing?.[String(s.id)]) || ''}
+                          onChange={(e)=>handlePricingChange(String(s.id), parseInt(e.target.value) || 0)}
+                          className="bg-white/10 border-white/20 text-white placeholder-white/50"
+                          placeholder="0"
+                          disabled={!editing}
+                        />
+                      </div>
+                    ))}
+                </div>
               </div>
             </CardContent>
           </Card>

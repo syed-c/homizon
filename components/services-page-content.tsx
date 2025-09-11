@@ -169,6 +169,11 @@ export default function ServicesPageContent() {
     servicesData.forEach(s => { map[String(s.id)] = String(s.slug).toLowerCase(); });
     return map;
   }, [servicesData]);
+  const slugToId = useMemo(() => {
+    const map: Record<string, string> = {};
+    servicesData.forEach(s => { map[String(s.slug).toLowerCase()] = String(s.id); });
+    return map;
+  }, [servicesData]);
 
   // Extra synonyms and alias mapping for common variations
   const aliasToSlug = useMemo(() => {
@@ -557,6 +562,29 @@ export default function ServicesPageContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {currentItems.map((service, index) => {
               const Icon = getIcon(service.icon);
+              // Average pricing across providers who offer this service
+              const serviceId = slugToId[String(service.slug).toLowerCase()];
+              const prices: number[] = [];
+              providers.forEach((p: any) => {
+                const pr = p?.pricing || {};
+                const keys = Object.keys(pr);
+                for (const k of keys) {
+                  const kSlug = idToSlug[k] || k.toLowerCase();
+                  if (kSlug === String(service.slug).toLowerCase()) {
+                    const n = Number(pr[k]);
+                    if (!Number.isNaN(n) && n > 0) prices.push(n);
+                  }
+                }
+              });
+              // Min–Max pricing aggregation
+              let min = 0; let max = 0;
+              if (prices.length) {
+                min = Math.min(...prices);
+                max = Math.max(...prices);
+              }
+              const avgPriceLabel = prices.length
+                ? (min === max ? `AED ${Math.round(min)}` : `AED ${Math.round(min)}–${Math.round(max)}`)
+                : service.averagePrice;
               const providersCount = countProvidersForService(service.slug);
               
               return (
@@ -603,7 +631,7 @@ export default function ServicesPageContent() {
                         {/* Pricing and Duration */}
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-xl font-bold text-neon-blue">{service.averagePrice}</div>
+                            <div className="text-xl font-bold text-neon-blue">{avgPriceLabel}</div>
                             <div className="flex items-center space-x-1 text-sm text-white/60">
                               <Clock className="w-4 h-4" />
                               <span>{service.estimatedTime}</span>

@@ -24,7 +24,7 @@ import {
   Provider,
   getProvidersByCategory
 } from '@/lib/data';
-import { listProvidersFromSupabase, listServicesFromSupabase } from '@/lib/supabase';
+import { listProvidersFromSupabase, listServicesFromSupabase, listAreasFromSupabase } from '@/lib/supabase';
 import { useSettings } from '@/lib/settings-context';
 import { getPageContentFromSupabase } from '@/lib/supabase';
 
@@ -58,6 +58,7 @@ export default function ServicePageClient({ service, category }: ServicePageClie
   const [customContent, setCustomContent] = useState<any>(null);
   const [cmsContent, setCmsContent] = useState<any>(null);
   const [dbProviders, setDbProviders] = useState<any[]>([]);
+  const [areaNameMap, setAreaNameMap] = useState<Record<string,string>>({});
   const [serviceSlugMap, setServiceSlugMap] = useState<{ idToSlug: Record<string,string>; nameToSlug: Record<string,string> }>({ idToSlug: {}, nameToSlug: {} });
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -114,12 +115,14 @@ export default function ServicePageClient({ service, category }: ServicePageClie
   useEffect(() => {
     const loadProviders = async () => {
       try {
-        const [provRes, svcRes] = await Promise.all([
+        const [provRes, svcRes, areasRes] = await Promise.all([
           listProvidersFromSupabase(),
-          listServicesFromSupabase()
+          listServicesFromSupabase(),
+          listAreasFromSupabase()
         ]);
         const allProviders: any[] = provRes.data || [];
         const activeServices: any[] = (svcRes.data || []).filter((s: any) => s.status === 'active');
+        const activeAreas: any[] = (areasRes.data || []).filter((a: any) => a.status === 'active');
         const idToSlug: Record<string,string> = {};
         const nameToSlug: Record<string,string> = {};
         activeServices.forEach((s: any) => {
@@ -127,6 +130,14 @@ export default function ServicePageClient({ service, category }: ServicePageClie
           nameToSlug[String(s.name).toLowerCase()] = String(s.slug).toLowerCase();
         });
         setServiceSlugMap({ idToSlug, nameToSlug });
+        // Build area id/slug to name map for display
+        const idToName: Record<string,string> = {};
+        const slugToName: Record<string,string> = {};
+        activeAreas.forEach((a:any)=>{
+          idToName[String(a.id)] = String(a.name);
+          slugToName[String(a.slug).toLowerCase()] = String(a.name);
+        });
+        setAreaNameMap({ ...idToName, ...slugToName });
 
         const normalizeProviderServices = (p: any): Set<string> => {
           const out = new Set<string>();
@@ -370,7 +381,8 @@ export default function ServicePageClient({ service, category }: ServicePageClie
               <ProviderLineItem 
                 provider={provider} 
                 service={service}
-                index={index} 
+                index={index}
+                areaNameMap={areaNameMap}
               />
             </div>
           ))}
@@ -848,12 +860,22 @@ function generateServiceFAQs(service: Service) {
   ];
 }
 
-function ProviderLineItem({ provider, service, index }: { 
+function ProviderLineItem({ provider, service, index, areaNameMap }: { 
   provider: Provider; 
   service: Service; 
   index: number; 
+  areaNameMap?: Record<string,string>;
 }) {
-  const servicePrice = provider.pricing[service.id];
+  const rawPricing = (provider as any)?.pricing || {};
+  let servicePriceNumber = Number(rawPricing?.[service.id] ?? rawPricing?.[service.slug] ?? rawPricing?.[service.name]);
+  // Support legacy object shape { basePrice }
+  if ((Number.isNaN(servicePriceNumber) || servicePriceNumber <= 0) && rawPricing) {
+    const maybeObj = (rawPricing as any)?.[service.id] || (rawPricing as any)?.[service.slug] || (rawPricing as any)?.[service.name];
+    if (maybeObj && typeof maybeObj === 'object') {
+      const n = Number(maybeObj.basePrice || maybeObj.price || 0);
+      if (!Number.isNaN(n) && n > 0) servicePriceNumber = n;
+    }
+  }
   
   return (
     <motion.div
@@ -919,11 +941,11 @@ function ProviderLineItem({ provider, service, index }: {
         {/* Price and Actions - Mobile */}
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            {servicePrice && (
+            {!Number.isNaN(servicePriceNumber) && servicePriceNumber > 0 && (
               <div className="mb-2">
                 <div className="text-white/60 text-xs">Starting from</div>
                 <div className="text-lg font-bold text-primary-400">
-                  {servicePrice.currency} {servicePrice.basePrice}
+                  AED {Math.round(servicePriceNumber)}
                 </div>
               </div>
             )}
@@ -982,7 +1004,14 @@ function ProviderLineItem({ provider, service, index }: {
                 <span>•</span>
                 <span>{provider.languages.join(', ')}</span>
                 <span>•</span>
-                <span>{provider.areas.slice(0, 2).map(area => area.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')).join(', ')}</span>
+                <span>{(provider.areas || []).slice(0, 2).map((val: any) => {
+                  const s = String(val);
+                  const lower = s.toLowerCase();
+                  // Prefer mapped display name when available
+                  const pretty = areaNameMap?.[s] || areaNameMap?.[lower];
+                  if (pretty) return pretty;
+                  return lower.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                }).join(', ')}</span>
                 {provider.availability.emergency && (
                   <>
                     <span>•</span>
@@ -999,11 +1028,11 @@ function ProviderLineItem({ provider, service, index }: {
           
           {/* Price and Actions */}
           <div className="flex items-center space-x-4 ml-4">
-            {servicePrice && (
+            {!Number.isNaN(servicePriceNumber) && servicePriceNumber > 0 && (
               <div className="text-right">
                 <div className="text-white/60 text-xs">Starting from</div>
                 <div className="text-2xl font-bold text-primary-400">
-                  {servicePrice.currency} {servicePrice.basePrice}
+                  AED {Math.round(servicePriceNumber)}
                 </div>
               </div>
             )}
@@ -1030,6 +1059,7 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
   const { settings } = useSettings();
   const [cmsHero, setCmsHero] = useState<{ h1?: string; description?: string } | null>(null);
   const [providerCounts, setProviderCounts] = useState<Record<string, number>>({});
+  const [priceLabels, setPriceLabels] = useState<Record<string, string>>({});
   const [servicesDb, setServicesDb] = useState<any[]>([]);
   const [serviceSlugMap, setServiceSlugMap] = useState<{ idToSlug: Record<string,string>; nameToSlug: Record<string,string> }>({ idToSlug: {}, nameToSlug: {} });
 
@@ -1137,6 +1167,7 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
         };
 
         const counts: Record<string, number> = {};
+        const pricesBySlug: Record<string, number[]> = {};
         servicesDb.forEach(svc => {
           const slug = String(svc.slug).toLowerCase();
           const seen = new Set<string>();
@@ -1144,16 +1175,40 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
             if (normalizeProviderServices(p).has(slug)) {
               const pid = String(p.id || p.uuid || p.email || p.phone || Math.random());
               seen.add(pid);
+              // Collect pricing for min–max aggregation
+              const pr = (p?.pricing || {}) as Record<string, any>;
+              let val = Number(pr[svc.id] ?? pr[svc.slug] ?? pr[svc.name]);
+              if ((Number.isNaN(val) || val <= 0) && pr) {
+                const maybeObj = pr[svc.id] || pr[svc.slug] || pr[svc.name];
+                if (maybeObj && typeof maybeObj === 'object') {
+                  const n = Number(maybeObj.basePrice || maybeObj.price || 0);
+                  if (!Number.isNaN(n) && n > 0) val = n;
+                }
+              }
+              if (!Number.isNaN(val) && val > 0) {
+                (pricesBySlug[slug] ||= []).push(val);
+              }
             }
           }
           counts[slug] = seen.size;
         });
         setProviderCounts(counts);
+        const labels: Record<string, string> = {};
+        Object.keys(pricesBySlug).forEach(slug => {
+          const arr = pricesBySlug[slug];
+          if (arr && arr.length) {
+            const min = Math.min(...arr);
+            const max = Math.max(...arr);
+            labels[slug] = min === max ? `AED ${Math.round(min)}` : `AED ${Math.round(min)}–${Math.round(max)}`;
+          }
+        });
+        setPriceLabels(labels);
       } catch (e) {
         // if providers fetch fails, show zeros
         const zeroCounts: Record<string, number> = {};
         servicesDb.forEach(svc => { zeroCounts[svc.slug] = 0; });
         setProviderCounts(zeroCounts);
+        setPriceLabels({});
       }
     };
     loadProviderCounts();
@@ -1401,6 +1456,7 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sortedServices.map((service, index) => {
               const ServiceIcon = getIcon(service.icon);
+              const priceLabel = priceLabels[String(service.slug).toLowerCase()] || service.averagePrice;
               
               return (
                 <motion.div
@@ -1446,7 +1502,7 @@ function CategoryPageContent({ category }: { category: ServiceCategory }) {
                         {/* Pricing and Duration */}
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-xl font-bold text-neon-blue">{service.averagePrice}</div>
+                            <div className="text-xl font-bold text-neon-blue">{priceLabel}</div>
                             <div className="flex items-center space-x-1 text-sm text-white/60">
                               <Clock className="w-4 h-4" />
                               <span>{service.estimatedTime}</span>
