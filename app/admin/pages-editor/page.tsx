@@ -169,7 +169,7 @@ export default function PagesEditor() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pageContent, setPageContent] = useState<HomePageContent | ServicesPageContent | ServiceDetailPageContent | any>(defaultHomePageContent);
-  const [pageType, setPageType] = useState<'home' | 'services' | 'category' | 'serviceDetail' | 'areas' | 'areaDetail' | 'serviceAreaDetail' | 'about'>('home');
+  const [pageType, setPageType] = useState<'home' | 'services' | 'category' | 'serviceDetail' | 'areas' | 'areaDetail' | 'serviceAreaDetail' | 'about' | 'howItWorks'>('home');
   const [metaData, setMetaData] = useState({
     slug: '',
     meta_title: "HOMIZON - Dubai's Premier Home Services Platform",
@@ -348,6 +348,16 @@ export default function PagesEditor() {
           h2: incoming?.cta?.h2 || 'Ready to Experience the Difference?',
           paragraph: incoming?.cta?.paragraph || 'Join thousands of satisfied customers who trust our directory to find the best service providers in Dubai'
         }
+      } as any);
+    } else if (page.page_slug === 'how-it-works') {
+      setPageType('howItWorks');
+      const incoming = (page.content || {}) as any;
+      setPageContent({
+        hero: { h1: incoming?.hero?.h1 || 'How ServiceDubai Works for You', paragraph: incoming?.hero?.paragraph || "Getting professional home services has never been easier. Follow our simple 4-step process to connect with verified experts and get your home maintenance done right." },
+        steps: { h2: incoming?.steps?.h2 || 'Simple 4-Step Process', paragraph: incoming?.steps?.paragraph || "From booking to completion, we've streamlined the entire process to save you time and effort.", items: Array.isArray(incoming?.steps?.items) ? incoming.steps.items : [] },
+        why: { h2: incoming?.why?.h2 || 'Why Choose ServiceDubai?', paragraph: incoming?.why?.paragraph || "We've built our platform with your needs in mind, ensuring the best possible experience.", items: Array.isArray(incoming?.why?.items) ? incoming.why.items : [] },
+        faqs: { h2: incoming?.faqs?.h2 || 'Frequently Asked Questions', paragraph: incoming?.faqs?.paragraph || "Got questions? We've got answers to help you get started.", items: Array.isArray(incoming?.faqs?.items) ? incoming.faqs.items : [] },
+        cta: { h2: incoming?.cta?.h2 || '' }
       } as any);
     } else if (page.page_slug && page.page_slug.startsWith('areas/')) {
       // handle area detail pages already above; here we catch area-service pages under areas/{area}/{service}
@@ -782,9 +792,27 @@ export default function PagesEditor() {
     return true;
   });
 
+  // Virtual How It Works page entry
+  const howItWorksVirtualPage: PageContent = {
+    id: 'how-it-works',
+    page_slug: 'how-it-works',
+    content: {
+      hero: { h1: 'How ServiceDubai Works for You', paragraph: 'Getting professional home services has never been easier. Follow our simple 4-step process to connect with verified experts and get your home maintenance done right.' },
+      steps: { h2: 'Simple 4-Step Process', paragraph: "From booking to completion, we've streamlined the entire process to save you time and effort.", items: [] },
+      why: { h2: 'Why Choose ServiceDubai?', paragraph: "We've built our platform with your needs in mind, ensuring the best possible experience.", items: [] },
+      faqs: { h2: 'Frequently Asked Questions', paragraph: "Got questions? We've got answers to help you get started.", items: [] },
+      cta: { h2: 'Ready to Get Started?' }
+    },
+    meta_title: 'How It Works | HOMIZON',
+    meta_description: 'How ServiceDubai works – simple booking, verified pros, great results',
+    updated_at: new Date().toISOString()
+  } as any;
+
   const mergedPages = [
     // Include About page if missing
     ...(furtherFilteredCmsPages.some(p => p.page_slug === 'about') ? [] : [aboutVirtualPage]),
+    // Include How It Works if missing
+    ...(furtherFilteredCmsPages.some(p => p.page_slug === 'how-it-works') ? [] : [howItWorksVirtualPage]),
     // Global: Header & Footer (only if missing in CMS)
     ...(furtherFilteredCmsPages.some(p => p.page_slug === 'header') ? [] : [{ id: 'global-header', page_slug: 'header', content: { menus: [], ctas: [] }, meta_title: 'Header | HOMIZON', meta_description: 'Global header configuration', updated_at: new Date().toISOString() } as PageContent]),
     ...(furtherFilteredCmsPages.some(p => p.page_slug === 'footer') ? [] : [{ id: 'global-footer', page_slug: 'footer', content: { columns: [] }, meta_title: 'Footer | HOMIZON', meta_description: 'Global footer configuration', updated_at: new Date().toISOString() } as PageContent]),
@@ -804,7 +832,7 @@ export default function PagesEditor() {
   const isLocation = (slug: string) => slug.startsWith('areas/') && slug.split('/').length === 2;
   const isLocationService = (slug: string) => slug.startsWith('areas/') && slug.split('/').length === 3;
   const isService = (slug: string) => slug.startsWith('services/') && slug.split('/').length === 2;
-  const isMain = (slug: string) => !slug || slug === '' || ['areas','services','contact','about','header','footer','/'].includes(slug);
+  const isMain = (slug: string) => !slug || slug === '' || ['areas','services','contact','about','how-it-works','header','footer','/'].includes(slug);
 
   type Cat = 'main' | 'locations' | 'locationServices' | 'services';
   const [activeCat, setActiveCat] = useState<Cat>('main');
@@ -1241,6 +1269,15 @@ export default function PagesEditor() {
                 <TabsTrigger value="meta">Meta SEO</TabsTrigger>
               </TabsList>
             )}
+            {pageType === 'howItWorks' && (
+              <TabsList className="grid w-full grid-cols-5 bg-white/10">
+                <TabsTrigger value="hero">Hero</TabsTrigger>
+                <TabsTrigger value="steps">Steps</TabsTrigger>
+                <TabsTrigger value="why">Why Choose</TabsTrigger>
+                <TabsTrigger value="faqs">FAQs</TabsTrigger>
+                <TabsTrigger value="meta">Meta SEO</TabsTrigger>
+              </TabsList>
+            )}
 
             {/* Hero Section - skip for global header/footer editors */}
             {editingPage?.page_slug !== 'header' && editingPage?.page_slug !== 'footer' && (
@@ -1260,16 +1297,16 @@ export default function PagesEditor() {
                 <div>
                   <Label className="text-white">Hero Description</Label>
                   <Textarea
-                    value={(pageContent as any).hero?.description || ''}
+                    value={(pageContent as any).hero?.[pageType === 'howItWorks' ? 'paragraph' : 'description'] || ''}
                     onChange={(e) => setPageContent(prev => ({
                       ...prev,
-                      hero: { ...(prev as any).hero, description: e.target.value }
+                      hero: { ...(prev as any).hero, [pageType === 'howItWorks' ? 'paragraph' : 'description']: e.target.value }
                     }))}
                     rows={4}
                     className="bg-white/5 border-white/20 text-white"
                   />
                 </div>
-                {(pageType === 'areaDetail' || pageType === 'about') && (
+                {(pageType === 'areaDetail' || pageType === 'about' || pageType === 'howItWorks') && (
                   <div>
                     <Label className="text-white">Hero Image URL</Label>
                     <Input
@@ -1779,6 +1816,203 @@ export default function PagesEditor() {
             </TabsContent>
             )}
 
+            {pageType === 'howItWorks' && (
+              <>
+                <TabsContent value="steps" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-white">Steps H2</Label>
+                      <Input
+                        value={(pageContent as any)?.steps?.h2 || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, steps: { ...(prev as any).steps, h2: e.target.value } }))}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white">Steps Paragraph</Label>
+                      <Textarea
+                        value={(pageContent as any)?.steps?.paragraph || ''}
+                        onChange={(e)=>setPageContent(prev=>({ ...prev, steps: { ...(prev as any).steps, paragraph: e.target.value } }))}
+                        rows={3}
+                        className="bg-white/5 border-white/20 text-white"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-white">Steps</Label>
+                      <Button size="sm" variant="outline" className="text-white border-white/20" onClick={()=>setPageContent(prev=>({ ...prev, steps: { ...(prev as any).steps, items: ([...(prev as any)?.steps?.items || [], { h3: '', paragraph: '', bullets: [], image_url: '' }]) } }))}>Add Step</Button>
+                    </div>
+                    <div className="space-y-3">
+                      {((pageContent as any)?.steps?.items || []).map((it: any, idx: number) => (
+                        <div key={idx} className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-white">H3</Label>
+                              <Input value={it.h3 || ''} onChange={(e)=>{
+                                const base = (pageContent as any)?.steps?.items;
+                                const items = Array.isArray(base) ? [...base] : [];
+                                items[idx] = { ...(items[idx] || {}), h3: e.target.value };
+                                setPageContent((prev:any)=>({ ...prev, steps: { ...(prev as any).steps, items } }));
+                              }} className="bg-white/5 border-white/20 text-white" />
+                            </div>
+                            <div>
+                              <Label className="text-white">Image URL</Label>
+                              <Input value={it.image_url || ''} onChange={(e)=>{
+                                const base = (pageContent as any)?.steps?.items;
+                                const items = Array.isArray(base) ? [...base] : [];
+                                items[idx] = { ...(items[idx] || {}), image_url: e.target.value };
+                                setPageContent((prev:any)=>({ ...prev, steps: { ...(prev as any).steps, items } }));
+                              }} className="bg-white/5 border-white/20 text-white" />
+                              <div className="mt-2">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    try {
+                                      setUploadingImage(true);
+                                      const folder = `how-it-works/steps`;
+                                      const result = await uploadImageToSupabaseStorage(file as any, folder);
+                                      if ((result as any)?.url) {
+                                        const base = (pageContent as any)?.steps?.items;
+                                        const items = Array.isArray(base) ? [...base] : [];
+                                        items[idx] = { ...(items[idx] || {}), image_url: (result as any).url };
+                                        setPageContent((prev:any)=>({ ...prev, steps: { ...(prev as any).steps, items } }));
+                                        toast({ title: 'Upload complete', description: 'Step image uploaded successfully' });
+                                      }
+                                    } catch (err: any) {
+                                      toast({ title: 'Upload failed', description: err?.message || 'Could not upload image', variant: 'destructive' });
+                                    } finally {
+                                      setUploadingImage(false);
+                                    }
+                                  }}
+                                  className="text-white text-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="text-white">Paragraph</Label>
+                            <Textarea value={it.paragraph || ''} onChange={(e)=>{
+                              const base = (pageContent as any)?.steps?.items;
+                              const items = Array.isArray(base) ? [...base] : [];
+                              items[idx] = { ...(items[idx] || {}), paragraph: e.target.value };
+                              setPageContent((prev:any)=>({ ...prev, steps: { ...(prev as any).steps, items } }));
+                            }} rows={3} className="bg-white/5 border-white/20 text-white" />
+                          </div>
+                          <div>
+                            <Label className="text-white">Bullets</Label>
+                            <div className="space-y-2">
+                              {(it.bullets || []).map((b: string, bi: number) => (
+                                <Input key={bi} value={b} onChange={(e)=>{
+                                  const base = (pageContent as any)?.steps?.items;
+                                  const items = Array.isArray(base) ? [...base] : [];
+                                  const bullets = Array.isArray(items[idx]?.bullets) ? [...items[idx].bullets] : [];
+                                  bullets[bi] = e.target.value;
+                                  items[idx] = { ...(items[idx] || {}), bullets };
+                                  setPageContent((prev:any)=>({ ...prev, steps: { ...(prev as any).steps, items } }));
+                                }} className="bg-white/5 border-white/20 text-white" />
+                              ))}
+                              <Button size="sm" variant="outline" className="text-white border-white/20" onClick={()=>{
+                                const base = (pageContent as any)?.steps?.items;
+                                const items = Array.isArray(base) ? [...base] : [];
+                                const bullets = Array.isArray(items[idx]?.bullets) ? [...items[idx].bullets] : [];
+                                bullets.push('');
+                                items[idx] = { ...(items[idx] || {}), bullets };
+                                setPageContent((prev:any)=>({ ...prev, steps: { ...(prev as any).steps, items } }));
+                              }}>Add Bullet</Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="why" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-white">Why H2</Label>
+                      <Input value={(pageContent as any)?.why?.h2 || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, why: { ...(prev as any).why, h2: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
+                    </div>
+                    <div>
+                      <Label className="text-white">Why Paragraph</Label>
+                      <Textarea value={(pageContent as any)?.why?.paragraph || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, why: { ...(prev as any).why, paragraph: e.target.value } }))} rows={3} className="bg-white/5 border-white/20 text-white" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-white">Info Boxes</Label>
+                      <Button size="sm" variant="outline" className="text-white border-white/20" onClick={()=>setPageContent(prev=>({ ...prev, why: { ...(prev as any).why, items: ([...(prev as any)?.why?.items || [], { h3: '', paragraph: '', image_url: '' }]) } }))}>Add Box</Button>
+                    </div>
+                    <div className="space-y-3">
+                      {((pageContent as any)?.why?.items || []).map((it: any, idx: number) => (
+                        <div key={idx} className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-3">
+                          <Label className="text-white">H3</Label>
+                          <Input value={it.h3 || ''} onChange={(e)=>{ const base = (pageContent as any)?.why?.items; const items = Array.isArray(base) ? [...base] : []; items[idx] = { ...(items[idx] || {}), h3: e.target.value }; setPageContent((prev:any)=>({ ...prev, why: { ...(prev as any).why, items } })); }} className="bg-white/5 border-white/20 text-white" />
+                          <Label className="text-white">Paragraph</Label>
+                          <Textarea value={it.paragraph || ''} onChange={(e)=>{ const base = (pageContent as any)?.why?.items; const items = Array.isArray(base) ? [...base] : []; items[idx] = { ...(items[idx] || {}), paragraph: e.target.value }; setPageContent((prev:any)=>({ ...prev, why: { ...(prev as any).why, items } })); }} rows={3} className="bg-white/5 border-white/20 text-white" />
+                          <Label className="text-white">Image URL (optional)</Label>
+                          <Input value={it.image_url || ''} onChange={(e)=>{ const base = (pageContent as any)?.why?.items; const items = Array.isArray(base) ? [...base] : []; items[idx] = { ...(items[idx] || {}), image_url: e.target.value }; setPageContent((prev:any)=>({ ...prev, why: { ...(prev as any).why, items } })); }} className="bg-white/5 border-white/20 text-white" />
+                          <div className="mt-2">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                try {
+                                  setUploadingImage(true);
+                                  const folder = `how-it-works/why`;
+                                  const result = await uploadImageToSupabaseStorage(file as any, folder);
+                                  if ((result as any)?.url) {
+                                    const base = (pageContent as any)?.why?.items;
+                                    const items = Array.isArray(base) ? [...base] : [];
+                                    items[idx] = { ...(items[idx] || {}), image_url: (result as any).url };
+                                    setPageContent((prev:any)=>({ ...prev, why: { ...(prev as any).why, items } }));
+                                    toast({ title: 'Upload complete', description: 'Image uploaded successfully' });
+                                  }
+                                } catch (err: any) {
+                                  toast({ title: 'Upload failed', description: err?.message || 'Could not upload image', variant: 'destructive' });
+                                } finally {
+                                  setUploadingImage(false);
+                                }
+                              }}
+                              className="text-white text-sm"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="faqs" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-white">FAQs H2</Label>
+                      <Input value={(pageContent as any)?.faqs?.h2 || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, faqs: { ...(prev as any).faqs, h2: e.target.value } }))} className="bg-white/5 border-white/20 text-white" />
+                    </div>
+                    <div>
+                      <Label className="text-white">FAQs Paragraph</Label>
+                      <Textarea value={(pageContent as any)?.faqs?.paragraph || ''} onChange={(e)=>setPageContent(prev=>({ ...prev, faqs: { ...(prev as any).faqs, paragraph: e.target.value } }))} rows={3} className="bg-white/5 border-white/20 text-white" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-white">FAQ Items</Label>
+                      <Button size="sm" variant="outline" className="text-white border-white/20" onClick={()=>setPageContent(prev=>({ ...prev, faqs: { ...(prev as any).faqs, items: ([...(prev as any)?.faqs?.items || [], { question: '', answer: '' }]) } }))}>Add FAQ</Button>
+                    </div>
+                    <div className="space-y-3">
+                      {((pageContent as any)?.faqs?.items || []).map((it: any, idx: number) => (
+                        <div key={idx} className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-3">
+                          <Label className="text-white">Question</Label>
+                          <Input value={it.question || ''} onChange={(e)=>{ const base = (pageContent as any)?.faqs?.items; const items = Array.isArray(base) ? [...base] : []; items[idx] = { ...(items[idx] || {}), question: e.target.value }; setPageContent((prev:any)=>({ ...prev, faqs: { ...(prev as any).faqs, items } })); }} className="bg-white/5 border-white/20 text-white" />
+                          <Label className="text-white">Answer</Label>
+                          <Textarea value={it.answer || ''} onChange={(e)=>{ const base = (pageContent as any)?.faqs?.items; const items = Array.isArray(base) ? [...base] : []; items[idx] = { ...(items[idx] || {}), answer: e.target.value }; setPageContent((prev:any)=>({ ...prev, faqs: { ...(prev as any).faqs, items } })); }} rows={3} className="bg-white/5 border-white/20 text-white" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </TabsContent>
+              </>
+            )}
             {/* Service Detail Sections */}
             {pageType === 'serviceDetail' && (
               <>

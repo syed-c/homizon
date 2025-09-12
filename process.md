@@ -392,6 +392,20 @@ This document tracks all changes, fixes, and deployment-related actions performe
 - The CMS editor system is fully functional with proper slug handling, content persistence, and comprehensive debugging capabilities.
 - All content updates now properly persist to Supabase database with real-time updates on the live website.
 
+### 2025-09-12
+
+- Pages Editor: How It Works fixes and image uploads
+  - Fixed Hero Description binding for `how-it-works` page: editor now reads/writes `hero.paragraph` instead of `hero.description` for this page type so edits persist and reflect on the live page and when reopening the editor.
+  - Added direct Supabase Storage uploads for images in How It Works:
+    - Steps items: per-item file input uploads to `how-it-works/steps`, auto-fills `steps.items[i].image_url` after upload.
+    - Why Choose items: per-item file input uploads to `how-it-works/why`, auto-fills `why.items[i].image_url`.
+  - Existing Hero image upload (shown for How It Works) remains available; progress and error toasts shown.
+  - Files updated: `app/admin/pages-editor/page.tsx`.
+
+- Stability and persistence
+  - No API changes required; existing `PUT /api/admin/pages-content` continues to update `pages_content` with normalized slugs.
+  - Uploads use `uploadImageToSupabaseStorage` which respects `NEXT_PUBLIC_SUPABASE_BUCKET` (defaults to `providers`), returning a public URL used by the editor and public pages.
+
 ### 2025-09-08
 
 - Service detail page content alignment and CMS FAQ integration
