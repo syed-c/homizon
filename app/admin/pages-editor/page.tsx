@@ -1269,7 +1269,7 @@ export default function PagesEditor() {
                     className="bg-white/5 border-white/20 text-white"
                   />
                 </div>
-                {pageType === 'areaDetail' && (
+                {(pageType === 'areaDetail' || pageType === 'about') && (
                   <div>
                     <Label className="text-white">Hero Image URL</Label>
                     <Input
@@ -1287,8 +1287,9 @@ export default function PagesEditor() {
                           if (!file) return;
                           try {
                             setUploadingImage(true);
-                            const areaSlug = (editingPage?.page_slug || '').split('/')[1] || 'area';
-                            const result = await uploadImageToSupabaseStorage(file as any, `areas/${areaSlug}`);
+                            const slug = (editingPage?.page_slug || '').replace(/\//g,'_') || 'page';
+                            const folder = pageType === 'about' ? 'about' : `areas/${(editingPage?.page_slug || '').split('/')[1] || 'area'}`;
+                            const result = await uploadImageToSupabaseStorage(file as any, folder);
                             if ((result as any)?.url) {
                               setPageContent(prev => ({ ...prev, hero: { ...(prev as any).hero, image_url: (result as any).url } }));
                               toast({ title: 'Upload complete', description: 'Hero image uploaded successfully' });

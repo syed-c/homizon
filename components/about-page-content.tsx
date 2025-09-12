@@ -123,14 +123,16 @@ export default function AboutPageContent() {
             </div>
 
             <div className="relative">
-              <div className="relative rounded-2xl overflow-hidden border border-neon-blue/20">
-                <img 
-                  src="https://images.pexels.com/photos/6195125/pexels-photo-6195125.jpeg?auto=compress&cs=tinysrgb&h=600&w=800"
-                  alt="ServiceDubai Team"
-                  className="w-full h-[500px] object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-              </div>
+              {cms?.hero?.image_url && (
+                <div className="relative rounded-2xl overflow-hidden border border-neon-blue/20">
+                  <img 
+                    src={cms.hero.image_url}
+                    alt="About hero"
+                    className="w-full h-[500px] object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                </div>
+              )}
 
               {/* Floating Stats Cards */}
               <div className="absolute -bottom-8 -left-8 bg-black/80 backdrop-blur-md rounded-xl p-4 border border-neon-green/30">
